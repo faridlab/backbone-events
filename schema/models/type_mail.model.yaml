@@ -1,0 +1,62 @@
+# =============================================================================
+# event — the template mail line: TypeMail.
+#
+# Upstream `event.type.mail` — the template's scheduler line, copied onto
+# events as Mail rows by template-apply (once at create; never
+# re-propagates). No seeded template lines ship (installs inert — the
+# family rule); officers configure template refs.
+# =============================================================================
+
+models:
+
+  - name: TypeMail
+    collection: type_mails
+    description: "Type Mail — a template's scheduler line. Copied onto events created from the template as Mail rows (template-apply, once). No seeds ship; officers configure the template refs."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_type_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(EventType.types)", "@indexed"]
+        description: "The owning template (real intra-schema FK, CASCADE — deleting a type removes its lines)."
+      interval_nbr:
+        type: int
+        attributes: ["@required", "@default(1)", "@non_negative"]
+        description: "The interval magnitude (copies onto the minted Mail rows)."
+      interval_unit:
+        type: EventIntervalUnit
+        attributes: ["@required", "@default(now)"]
+        description: "The interval unit (copies onto the minted Mail rows)."
+      interval_kind:
+        type: EventIntervalKind
+        attributes: ["@required", "@default(after_sub)"]
+        description: "The engine kind (copies onto the minted Mail rows)."
+      notification_channel:
+        type: EventNotificationChannel
+        attributes: ["@required", "@default(mail)"]
+        description: "The channel (single-value mail at core)."
+      template_ref:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL uuid of the rendering template (the seam is the host-installed EventTemplateRenderer port — a dead ref is a typed visible failure at run, never a cascade)."
+      template_kind:
+        type: string?
+        attributes: ["@max(40)"]
+        description: "The template store discriminator ('mail' at core)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event_type:
+        type: EventType
+        attributes: ["@one", "@foreign_key(event_type_id)", "@cascade"]
+        description: "The owning template"
+
+    indexes:
+      - type: index
+        fields: [event_type_id]
+        description: "The template-apply read (a type's mail lines)"

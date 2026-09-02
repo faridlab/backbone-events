@@ -1,0 +1,147 @@
+# =============================================================================
+# event Module - Schema Index
+# =============================================================================
+# Version: 2.0
+# Description: Module schema index. `module:`/`schema:` give this module its
+# OWN Postgres schema `event` (migrations emit `CREATE SCHEMA event` and
+# qualify tables as `event.<table>`) — the convention every backbone module
+# follows. The CRATE is `backbone-events` (plural, the whole upstream
+# eight-addon chain absorbs into it) while the SCHEMA is `event` (singular,
+# the upstream Odoo addon name), per the module council ruling "ONE crate
+# backbone-events (schema: event) … Route base /api/v1/event per the
+# schema-name ruling" — the same crate-name/schema-name relationship as
+# backbone-website/`website` and backbone-portal/`portal`.
+#
+# Enum types are created UNQUALIFIED in the `public` schema (the module
+# convention, ratified). The names below were census-checked against every
+# module migration in the tree before landing: backbone-calendar owns the
+# four `event_*` enums of ITS event family (event_attendee_state,
+# event_exception_kind, event_privacy, event_recurrence_freq) — every name
+# this module creates is distinct from those four and from every other
+# `event_*`/`*_event_*` stem in the tree. The census re-runs before the enum
+# migration lands.
+# =============================================================================
+
+module: event
+version: 2
+schema: event
+description: "event — the events core: registrations under one authoritative seat counter (lock-first, count-then-insert), the two-axis event lifecycle (stage + sticky-cancel kanban health), the publication-fenced capability surface (/ics, my-tickets), and the self-arming communication scheduler whose completion reads per-recipient receipts (Odoo `event` addon port, core arm of the eight-addon chain)"
+
+# =============================================================================
+# company_fence (ADR-0014): multi-tenant row-level-security posture
+# -----------------------------------------------------------------------------
+# Posture: shared_blank — the faithful port of upstream's SOFT company axis.
+#
+# Upstream `event.event.company_id` is required=FALSE with global
+# `company_ids + [False]` record rules: company-less events are visible to
+# EVERYONE (the register's EVM-15 "company is soft" finding). Synthesizing a
+# strict fence here would fragment the global stage set and the scheduler
+# rows — a behavior change dressed as hardening. The soft posture is ported
+# as the DECLARED shared_blank policy instead:
+#
+# Posture map (entity -> realized fence, all under this one declaration):
+#   events          -> shared_blank (nullable company_id; the NULL arm of the
+#                      policy is the port of Odoo's `[False]` escape —
+#                      company-less events are first-class "visible to all")
+#   registrations   -> shared_blank (nullable company_id derived from its
+#                      event at write; same policy)
+#   everything else (stages, types, tags, tag_categories, tickets, slots,
+#   questions, question_answers, registration_questions,
+#   registration_answers, the whole scheduler family: mails,
+#   mail_registrations, mail_slots, type_mails, event_audit_log)
+#                   -> NO company column, no policy — company-shared global
+#                      master data, exactly upstream (ADR-0014 names "event
+#                      stages" as a shared_blank exemplar).
+#
+# Making tenancy hard is a recorded additive decision for a future owner, not
+# a default this module may take unilaterally.
+# -----------------------------------------------------------------------------
+company_fence: shared_blank
+
+config:
+  database: postgresql
+  soft_delete: true          # `registrations.active` is the Odoo archive axis
+                             # (a SEPARATE declared column the seat + mail
+                             # domains read); metadata.deleted_at rides via
+                             # @audit_metadata as everywhere in the family
+  audit: true
+  default_timestamps: true
+  generators:
+    disabled:
+      - graphql
+      - grpc
+      - proto
+
+# No sapiens edge exists in this module: officers authenticate through the
+# host's company_auth; attendee identity is plain stored fields plus a
+# logical party ref. Actor columns are logical refs by construction (the
+# backbone-website shape).
+
+# Shared value-object types available to all models in this module.
+shared_types:
+  Timestamps:
+    created_at:
+      type: datetime
+      attributes: ["@default(now)"]
+      description: "Record creation timestamp"
+    updated_at:
+      type: datetime
+      attributes: ["@updated_at"]
+      description: "Last update timestamp"
+    deleted_at:
+      type: datetime?
+      description: "Soft delete timestamp"
+
+  Actors:
+    # Plain nullable uuids — NO sapiens edge in this module (officers arrive
+    # through the host's company_auth; the scheduler's system edges are NULL).
+    created_by:
+      type: uuid?
+      attributes: ["@exclude_from_foreign_key_check"]
+      description: "Officer who created this record (logical ref — no cross-schema constraint)"
+    updated_by:
+      type: uuid?
+      attributes: ["@exclude_from_foreign_key_check"]
+      description: "Officer who last updated this record (logical ref)"
+    deleted_by:
+      type: uuid?
+      attributes: ["@exclude_from_foreign_key_check"]
+      description: "Officer who deleted this record (logical ref)"
+
+  Metadata: [Timestamps, Actors]
+
+# Import each entity model. Discovery is a recursive glob, but the list is
+# kept accurate for readers.
+imports:
+  - stage.model.yaml                # Stage
+  - event_type.model.yaml           # EventType
+  - tag.model.yaml                  # Tag, TagCategory
+  - event.model.yaml                # Event
+  - ticket.model.yaml               # Ticket
+  - slot.model.yaml                 # Slot
+  - question.model.yaml             # Question, QuestionAnswer, RegistrationQuestion
+  - registration.model.yaml         # Registration
+  - registration_answer.model.yaml  # RegistrationAnswer
+  - mail.model.yaml                 # Mail (the scheduler row)
+  - mail_registration.model.yaml    # MailRegistration (the receipt grain)
+  - mail_slot.model.yaml            # MailSlot (slot-grain scheduler child)
+  - type_mail.model.yaml            # TypeMail (template mail line)
+  - event_audit_log.model.yaml      # EventAuditLog
+
+# =============================================================================
+# FLAG-ID COVERAGE — the register floor rows this increment owns
+# (docs/spec.md §13 is the normative table; this index carries the pointer):
+#   EBB-1  → ONE seat aggregation service + SELECT ... FOR UPDATE inside the
+#            registration verb (count-then-insert, one transaction).
+#   EBB-2  → completion from per-recipient receipts; late registrants
+#            re-open the scheduler.
+#   EBB-3  → 'sent'=queued documented (receipts mark at enqueue).
+#   EBB-4  → typed, visible per-scheduler failures (error_datetime/error_kind).
+#   EBB-6  → /ics + my-tickets publication-checked, Tier A capability
+#            tokens, not id-enumerable.
+#   EVM2-3 → UNIQUE(scheduler_id, registration_id) on the receipt grain (db).
+#   EVM2-4 → every seat count AND mail eligibility filter reads
+#            state IN ('open','done') AND active.
+#   EVM-15 → shared_blank declared with the per-model posture map (above).
+#   DRAFT-HEAL → any transition INTO 'open' arms the after_sub engines.
+# =============================================================================

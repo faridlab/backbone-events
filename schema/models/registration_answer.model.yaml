@@ -1,0 +1,59 @@
+# =============================================================================
+# event — the answer grain: RegistrationAnswer.
+#
+# Upstream `event.registration.answer`: one row per (registration, question).
+# The value XOR (EBG-13): exactly one of value_text / value_answer_id —
+# CHECK-enforced in the hardening migration (enforcement: db). Identity-kind
+# questions create no rows here (their values live on the registration's
+# attendee fields).
+# =============================================================================
+
+models:
+
+  - name: RegistrationAnswer
+    collection: registration_answers
+    description: "Registration Answer — one row per (registration, question). Value XOR (text vs suggested-choice ref) is CHECK-enforced (EBG-13)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      registration_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Registration.registrations)", "@indexed"]
+        description: "The owning registration (real intra-schema FK, CASCADE — upstream shape: answers die with the registration)."
+      question_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Question.questions)", "@indexed"]
+        description: "The answered question (real intra-schema FK, RESTRICT — EBG-19's immutability guard reads these rows)."
+      value_text:
+        type: string?
+        attributes: ["@max(2000)"]
+        description: "The free-text value arm of the XOR."
+      value_answer_id:
+        type: uuid?
+        attributes: ["@foreign_key(QuestionAnswer.question_answers)"]
+        description: "The suggested-choice value arm of the XOR (ref to QuestionAnswer)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      registration:
+        type: Registration
+        attributes: ["@one", "@foreign_key(registration_id)", "@cascade"]
+        description: "The owning registration"
+      question:
+        type: Question
+        attributes: ["@one", "@foreign_key(question_id)", "@restrict"]
+        description: "The answered question"
+      value_answer:
+        type: QuestionAnswer?
+        attributes: ["@one", "@foreign_key(value_answer_id)", "@restrict"]
+        description: "The chosen suggested value"
+
+    indexes:
+      - type: unique
+        fields: [registration_id, question_id]
+        description: "One answer row per (registration, question)"

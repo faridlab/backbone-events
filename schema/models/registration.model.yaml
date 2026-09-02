@@ -1,0 +1,196 @@
+# =============================================================================
+# event — the attendee row: Registration (THE core contract).
+#
+# PORT DECISIONS (source: docs/odoo/marketing/events/event{,_sale} —
+# docs/spec.md §1, §4):
+#
+#  THE SPLIT (declared ONCE, ADR-0016; this file is the falsifier's subject):
+#  `state` covers BOTH branches in ONE declaration — no cross-crate field
+#  redeclaration anywhere:
+#    - BARE branch (sale_order_state IS NULL — no sale linkage): hand-set,
+#      default 'open', the four one-liner verbs (set_draft/confirm/set_done/
+#      cancel), any->any, NO monotonicity guard. There is NO auto_confirm
+#      concept anywhere (no flag, no column, no setting — banned shape #14);
+#      'draft' is the sale-flow special case ONLY.
+#    - SALE-COMPOSED branch (sale_order_state set — the events-owned mirror
+#      written ONLY by the selling domain-event subscription, next
+#      increment): an EDITABLE COMPUTE per the upstream ES-1 truth table —
+#      the driver (mirrored SO state) + the mirrored zero-amount fact derive
+#      (state, sale_status) jointly; heal-forward-only (open/done rows are
+#      NEVER demoted); group semantics (derivation runs over the order's
+#      linked registrations as a group). The normative table lives in
+#      docs/spec.md §4.3; the DSL names the driver, the pair semantics ride
+#      this declaration + the spec (the pinned schema plugin's lifecycle
+#      vocabulary is metadata-only — structurally validated, not emitted).
+#
+#  SEATS (EBB-1): the ONE registration verb (register) is the ONLY
+#  seat-taking path — SELECT ... FOR UPDATE on the event row (slot row too
+#  when multi-slot) INSIDE the verb, count-then-insert in one transaction.
+#  The counting domain is ALWAYS state IN ('open','done') AND active.
+#
+#  BARCODE (EBG-1): decimal of 8 urandom bytes little-endian, minted at
+#  create, readonly, GLOBALLY unique across all events (one scanner desk
+#  serves every event — the constraint deliberately does NOT include
+#  event_id). The scan DESK verb itself is the next increment (docs/spec.md
+#  §11.2); the column, the constraint, and the branch-order table are fixed
+#  NOW so that arm changes nothing under it.
+#
+#  EVM2-4 FIXED BY CONSTRUCTION: archived rows (active=false) leave the seat
+#  count AND the mail eligibility together — every filter reads the pair.
+# =============================================================================
+
+models:
+
+  - name: Registration
+    collection: registrations
+    read_only: true
+    description: "Registration — the attendee row. Created/confirmed only through the ONE register verb (lock-first, count-then-insert); state moves only through the four one-liner verbs or the sale-composed split branch; barcode minted at create (globally unique). Attendee identity is plain stored fields plus an optional logical party ref."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@indexed"]
+        description: "The event (real intra-schema FK, RESTRICT — EBG-14)."
+      event_slot_id:
+        type: uuid?
+        attributes: ["@foreign_key(Slot.slots)", "@indexed"]
+        description: "The slot (real intra-schema FK, RESTRICT). MANDATORY when the event is_multi_slots and must belong to the event — intra-schema CHECKs (EBG-3) in the hardening migration."
+      event_ticket_id:
+        type: uuid?
+        attributes: ["@foreign_key(Ticket.tickets)", "@indexed"]
+        description: "The ticket tier (real intra-schema FK, RESTRICT). Must belong to the event — intra-schema CHECK (EBG-4) in the hardening migration."
+      # --- attendee identity (plain stored fields; upstream shape) -------
+      name:
+        type: string
+        attributes: ["@max(200)"]
+        description: "Attendee name."
+      email:
+        type: email
+        attributes: ["@max(254)"]
+        description: "Attendee email (format-validated at parse)."
+      phone:
+        type: string?
+        attributes: ["@max(40)"]
+        description: "Attendee phone (free-text at core — E.164 validation is a party-module concern)."
+      company_name:
+        type: string?
+        attributes: ["@max(200)"]
+        description: "Attendee company name (free text, stored on the row)."
+      partner_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Booked-by partner — logical party ref, set ONLY by explicit verbs (the create/patch verbs and sync_from_partner). NO cross-event partner sweep exists (EBB-5 not ported — no chatter hook, no mass assignment)."
+      # --- the state split (see file header; THE ADR-0016 declaration) ---
+      state:
+        type: EventRegistrationState
+        attributes: ["@required", "@default(open)"]
+        lifecycle:
+          shape: split
+          driver: sale_order_state
+          # The bare branch's transition surface: the hook machine
+          # registration_state (schema/hooks/registration_state.hook.yaml)
+          # declares initial 'open' + the four any->any one-liner verbs.
+          state_machine: registration_state
+        description: "Registration state — ONE declaration covering both branches. BARE (driver NULL): hand-set, default open (there is NO auto_confirm anywhere). SALE-COMPOSED (driver set): editable compute per the ES-1 truth table (docs/spec.md §4.3) — heal-forward-only, group semantics. Any transition INTO open (create-default-open + draft/cancel heal) arms the after_sub scheduler engines (DRAFT-HEAL); re-confirming an open row never re-arms."
+      date_closed:
+        type: datetime?
+        description: "The two-field-split companion: stamped now() when state becomes 'done' IF empty; never overwrites a manual value; hand-clearable."
+      # --- the sale seam mirror columns (events-owned; §4.3) -------------
+      sale_order_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "Logical ref to the selling module's sale order; nullable (the bare branch). Written ONLY by the selling domain-event subscription (SalesOrderConfirmed/Cancelled carriers) — the wiring lands with the event_sale arm (docs/spec.md §11.1); the columns are inert until then."
+      sale_order_state:
+        type: EventSaleOrderState?
+        description: "THE SPLIT DRIVER — events-owned mirror of the linked order's state, on THIS row (same-model by construction, exactly why the seam rides events-owned rows). Written only by the subscription."
+      sale_status:
+        type: EventSaleStatus?
+        description: "Derived-pair member 2 (the payability axis): free | sold | to_pay per the truth table. NULL on the bare branch."
+      # --- the archive axis (EVM2-4) -------------------------------------
+      active:
+        type: bool
+        attributes: ["@required", "@default(true)"]
+        description: "The Odoo archive axis. EVERY seat count AND every mail eligibility filter reads state IN ('open','done') AND active — archived rows leave both together (EVM2-4 fixed by construction)."
+      # --- barcode (EBG-1) ------------------------------------------------
+      barcode:
+        type: string
+        attributes: ["@required", "@unique", "@max(32)"]
+        description: "Decimal of 8 urandom bytes little-endian (Code128C compact), minted at create, readonly. GLOBALLY unique across all events (enforcement: db — the constraint deliberately excludes event_id: one scanner desk serves every event). The desk verb itself lands next increment (docs/spec.md §11.2)."
+      company_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "Nullable company axis derived from the event at write — shared_blank posture (same policy as the event row; logical corporate ref)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The event"
+      event_slot:
+        type: Slot?
+        attributes: ["@one", "@foreign_key(event_slot_id)", "@restrict"]
+        description: "The slot (mandatory on multi-slot events)"
+      event_ticket:
+        type: Ticket?
+        attributes: ["@one", "@foreign_key(event_ticket_id)", "@restrict"]
+        description: "The ticket tier"
+      answers:
+        type: RegistrationAnswer[]
+        attributes: ["@one_to_many", "@foreign_key(registration_id)", "@cascade"]
+        description: "The attendee's answers (cascade — upstream shape)"
+
+    indexes:
+      - type: index
+        fields: [event_id, state, active]
+        description: "The seat-count domain (state IN open,done AND active) — the ONE aggregation service's read"
+      - type: index
+        fields: [sale_order_id]
+        description: "The sale-seam group read (the order's linked registrations)"
+      - type: index
+        fields: [email]
+        description: "The per-attendee lookups (my_tickets pairs, officer search)"
+
+enums:
+  - name: EventRegistrationState
+    description: "Registration state — declared ONCE with lifecycle: split. The bare branch is hand-set default-open (NO auto_confirm exists); the sale-composed branch is an editable compute per the ES-1 truth table"
+    variants:
+      - name: draft
+        description: "Minted by paid single-order sale confirms (ES-3) and held there while the order is unpaid (to_pay) — the sale-flow special case ONLY"
+      - name: open
+        description: "Seat-holding state (default). Counted by the seat domain; arms the after_sub schedulers on entry"
+        default: true
+      - name: done
+        description: "Attended/used (stamps date_closed); the only auto-advancing path to done is the barcode desk (next increment)"
+      - name: cancel
+        description: "Cancelled — leaves the seat domain; the sale-composed cancel cascade heals forward (draft/cancel -> open) when the order confirms"
+
+  - name: EventSaleOrderState
+    description: "THE SPLIT DRIVER's value axis — the events-owned mirror of the linked sale order's state (written only by the selling domain-event subscription; NULL = the bare branch)"
+    variants:
+      - name: draft
+        description: "Order drafted (unpaid) — linked registrations held at draft/to_pay"
+        default: true
+      - name: sent
+        description: "Order sent (unpaid) — linked registrations held at draft/to_pay"
+      - name: sale
+        description: "Order confirmed — the heal-forward arm: draft/cancel -> open, sale_status -> sold (amount > 0)"
+      - name: cancel
+        description: "Order cancelled — the whole linked group cascades to cancel"
+
+  - name: EventSaleStatus
+    description: "Derived-pair member 2 (the payability axis) of the split — moves jointly with state per the ES-1 truth table; NULL on the bare branch"
+    variants:
+      - name: free
+        description: "Zero-amount order — born/healed open"
+        default: true
+      - name: sold
+        description: "Confirmed order with amount > 0 — healed open"
+      - name: to_pay
+        description: "Awaiting payment — registrations held at draft"

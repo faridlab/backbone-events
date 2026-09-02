@@ -1,0 +1,58 @@
+# =============================================================================
+# event — the slot-grain scheduler child: MailSlot (EBB-9 closed).
+#
+# Upstream `event.mail.slot` — lazily materialized per-slot children of an
+# event-based scheduler row on a multi-slot event (the DECLARED EVM2-11
+# redirect). Each child carries its own due date and cursor; the PARENT's
+# scheduled_date is RECOMPUTED from its pending children — the parent is
+# never event-level dead weight (EBB-9 closed).
+# =============================================================================
+
+models:
+
+  - name: MailSlot
+    collection: mail_slots
+    description: "Mail Slot — the lazily-materialized slot-grain child of an event-based scheduler row on a multi-slot event. Own due date + own cursor; the parent's scheduled_date recomputes from pending children (EBB-9)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      scheduler_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Mail.mails)", "@indexed"]
+        description: "The parent scheduler row (real intra-schema FK, CASCADE)."
+      slot_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Slot.slots)", "@indexed"]
+        description: "The slot this child serves (real intra-schema FK, RESTRICT)."
+      scheduled_date:
+        type: datetime?
+        description: "The child's due date (slot anchor + interval; T4 arms like the parent)."
+      mail_done:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Receipt-truth completion at the slot grain (same rule as the parent)."
+      last_registration_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The slot child's own cursor (advances past sent batches)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      scheduler:
+        type: Mail
+        attributes: ["@one", "@foreign_key(scheduler_id)", "@cascade"]
+        description: "The parent scheduler"
+      slot:
+        type: Slot
+        attributes: ["@one", "@foreign_key(slot_id)", "@restrict"]
+        description: "The served slot"
+
+    indexes:
+      - type: unique
+        fields: [scheduler_id, slot_id]
+        description: "One child per (scheduler, slot)"

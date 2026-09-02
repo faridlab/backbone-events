@@ -1,0 +1,60 @@
+# =============================================================================
+# registration_state — Registration.state's BARE-BRANCH transition surface.
+#
+# The field itself is declared ONCE with lifecycle: split in
+# registration.model.yaml (shape: split, driver: sale_order_state). This
+# machine declares the BARE branch only — the hand-set arm that governs
+# rows with no sale linkage:
+#   - initial 'open' (hand-set default — there is NO auto_confirm concept
+#     anywhere in this module; banned shape #14);
+#   - upstream's whole machine: FOUR one-liner verbs, any->any edges, NO
+#     guards, NO monotonicity requirement, no label inversion;
+#   - 'draft' is the sale-flow special case ONLY (paid single-order
+#     confirmations mint draft; free ones are born open).
+#
+# The sale-composed branch (driver set) is an EDITABLE COMPUTE per the ES-1
+# truth table — not a machine; its heal-forward + group semantics live in
+# docs/spec.md §4.3 and the verb layer.
+#
+# Reactive consequences only (no guards here): seat buckets (open ->
+# reserved, done -> used), mail eligibility, date_closed, and the arm rule
+# (any transition INTO open arms the after_sub engines — stated once, in
+# the registration verb; re-confirming an open row never re-arms;
+# open -> done never re-arms).
+# =============================================================================
+
+name: registration_state
+model: Registration
+
+states:
+  field: state
+  values:
+    draft:
+      description: "Sale-flow special case only — held while the linked order is to_pay"
+    open:
+      initial: true
+      description: "Seat-holding default (hand-set; no auto_confirm exists)"
+    done:
+      final: true   # the machine's resting outcome (the lint floor demands one); NOT irreversibility — set_draft/cancel re-enter from it by the any->any edges below. The only AUTO-advancing path to done is the barcode desk verb (next increment).
+      description: "Attended/used — stamps date_closed if empty"
+    cancel:
+      description: "Cancelled — leaves the seat domain; heals forward (-> open) when the linked order confirms"
+
+  # `transitions` nests UNDER `states:` (the parser scopes it there).
+  transitions:
+    set_draft:
+      from: "*"
+      to: draft
+      message: "Hand-set any->any one-liner (upstream's whole machine — no guard, no monotonicity)."
+    confirm:
+      from: "*"
+      to: open
+      message: "Hand-set any->any one-liner. ENTERING open from draft/cancel arms the after_sub scheduler engines (DRAFT-HEAL); re-confirming an already-open row never re-arms."
+    set_done:
+      from: "*"
+      to: done
+      message: "Hand-set any->any one-liner; stamps date_closed if empty. open -> done never re-arms the schedulers."
+    cancel:
+      from: "*"
+      to: cancel
+      message: "Hand-set any->any one-liner; the row leaves the seat domain and mail eligibility together (with active, the EVM2-4 pair)."

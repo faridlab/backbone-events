@@ -1,0 +1,170 @@
+# =============================================================================
+# event — the scheduler row: Mail (ONE row, THREE engines).
+#
+# Upstream `event.mail` — the self-arming communication scheduler. Dispatch
+# order (docs/spec.md §8.1):
+#   1. template validity sweep (a dead template ref is a typed visible
+#      failure, never a silent skip);
+#   2. after_sub -> the attendee-based engine (per-registration fan-out over
+#      mail_registrations receipts);
+#   3. event-based kinds on a multi-slot event -> the SLOT engine (the
+#      EVM2-11 redirect, DECLARED: the same row fans out per slot through
+#      mail_slots children; the parent's scheduled_date recomputes from
+#      pending children — EBB-9 closed);
+#   4. otherwise -> the event-based cursor walk (batched).
+#
+# mail_done is RECEIPT-TRUTH (EBB-2): TRUE exactly when no eligible
+# registration lacks a sent/settled receipt under the cursor AND the cursor
+# is exhausted; a late registrant RE-OPENS the scheduler. The upstream
+# seat-count completion inference is banned.
+#
+# mail_state (running/scheduled/sent/error/cancelled) is a NON-STORED
+# derived read over (error_datetime, event kanban_state, mail_done,
+# per-attendee progress) — the upstream pattern-7 virtual. NOTE (pinned
+# generator fact): a `lifecycle: virtual` field still emits a COLUMN (the
+# lifecycle key is metadata-only in this generator), so mail_state is
+# deliberately NOT a schema field — it is a service-layer derived read
+# declared here and in docs/spec.md §9.3. No second source of truth exists.
+#
+# 'sent' = QUEUED (EBB-3): receipts mark mail_sent AT ENQUEUE; downstream
+# SMTP/queue failures are the mail queue's truth, not this module's.
+# =============================================================================
+
+models:
+
+  - name: Mail
+    collection: mails
+    read_only: true
+    description: "Mail — the scheduler row: one row, three engines (after_sub fan-out / slot fan-out / event-based cursor). Self-arming (T1-T4 named in the scheduled_jobs declaration); completion reads receipts; failures typed and visible. Read-only over HTTP: created/edited/run through the typed verbs."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@indexed"]
+        description: "The owning event (real intra-schema FK, RESTRICT — a scheduler row never outlives its event silently)."
+      interval_nbr:
+        type: int
+        attributes: ["@required", "@default(1)", "@non_negative"]
+        description: "The interval magnitude paired with interval_unit (0 with unit 'now' = immediate)."
+      interval_unit:
+        type: EventIntervalUnit
+        attributes: ["@required", "@default(now)"]
+        description: "The interval unit. On multi-slot events the event-based kinds' semantics DECLARED-shift to per-slot grain (EVM2-11 explicit, not discovered)."
+      interval_kind:
+        type: EventIntervalKind
+        attributes: ["@required", "@default(after_sub)"]
+        description: "WHICH engine this row drives: after_sub (attendee-based) | before_event | after_event_start | after_event | before_event_end (the cursor family)."
+      notification_channel:
+        type: EventNotificationChannel
+        attributes: ["@required", "@default(mail)"]
+        description: "The CHANNEL SEAM — single-value 'mail' at core; the sms overlay widens it later (derived from template_kind when it does — never hand-set). The 'sent'=queued contract (docs/spec.md §8.6) is documented NOW for both arms."
+      scheduled_date:
+        type: datetime?
+        attributes: ["@indexed"]
+        description: "Trigger source T1: the self-triggering due date — recomputed at arm/write (after_sub: the earliest pending child; event-based kinds: event instant - interval; slot children: per-slot anchors). The daily cron tick is only the FLOOR."
+      mail_done:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "RECEIPT-TRUTH completion (EBB-2): true exactly when every eligible registration holds a sent/settled receipt and the cursor is exhausted. A late registrant re-opens it (false again) and the next pass sends to them. Never the seat-count heuristic."
+      last_registration_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The event-based engine's cursor — the last registration id a batch advanced past (per-slot cursors live on the mail_slots children)."
+      # --- the template seam (EVM2-2 closed) ------------------------------
+      template_ref:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL uuid of the rendering template (no cross-module FK, no cascade machinery — a deleted template is a dead uuid the validity sweep reports as a typed failure). Resolution goes through the host-installed EventTemplateRenderer port; unwired = every send refuses typed template_renderer_not_composed."
+      template_kind:
+        type: string?
+        attributes: ["@max(40)"]
+        description: "The template store discriminator ('mail' at core; the future sms arm widens it — the channel derives from it, never hand-set)."
+      # --- typed failures (EBB-4) ------------------------------------------
+      error_datetime:
+        type: datetime?
+        description: "When the last failure landed (cleared on the next successful pass)."
+      error_kind:
+        type: EventMailErrorKind?
+        description: "The typed failure class — one scheduler's failure never stops the pass (record -> continue); every distinct failure is recorded, no 1/hour throttle."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The owning event"
+      registrations_receipts:
+        type: MailRegistration[]
+        attributes: ["@one_to_many", "@foreign_key(scheduler_id)", "@cascade"]
+        description: "The per-recipient receipt rows (the UNIQUE(scheduler_id, registration_id) grain)"
+      slot_children:
+        type: MailSlot[]
+        attributes: ["@one_to_many", "@foreign_key(scheduler_id)", "@cascade"]
+        description: "The lazily-materialized slot-grain children (event-based kinds on multi-slot events)"
+
+    indexes:
+      - type: index
+        fields: [event_id, interval_kind]
+        description: "The per-event scheduler reads"
+      - type: index
+        fields: [scheduled_date, mail_done]
+        description: "The claim domain read (due AND not done)"
+
+enums:
+  - name: EventIntervalUnit
+    description: "The scheduler interval unit"
+    variants:
+      - name: now
+        description: "Immediate (interval_nbr ignored)"
+        default: true
+      - name: hours
+        description: "Hour-based offset"
+      - name: days
+        description: "Day-based offset"
+      - name: weeks
+        description: "Week-based offset"
+      - name: months
+        description: "Month-based offset"
+
+  - name: EventIntervalKind
+    description: "WHICH engine the scheduler row drives"
+    variants:
+      - name: after_sub
+        description: "Attendee-based: fan-out per registration, receipt due at registration created_at + interval (the REAL timing)"
+        default: true
+      - name: before_event
+        description: "Event-based: due at event begin - interval. A before-event mail whose event is already over is DROPPED with a visible receipt (dropped_window_closed) — upstream's silent drop made honest"
+      - name: after_event_start
+        description: "Event-based: due at event begin + interval"
+      - name: after_event
+        description: "Event-based: due at event end + interval"
+      - name: before_event_end
+        description: "Event-based: due at event end - interval"
+
+  - name: EventNotificationChannel
+    description: "The channel seam — single-value at core by design; the sms overlay widens the set and derives the value from template_kind (never hand-set)"
+    variants:
+      - name: mail
+        description: "The mail queue arm (the only channel at core)"
+        default: true
+
+  - name: EventMailErrorKind
+    description: "Typed per-scheduler failures (EBB-4) — recorded on the row, cleared on the next successful pass; every distinct failure recorded, no throttle"
+    variants:
+      - name: template_unresolved
+        description: "The template validity sweep found a dead/missing template ref"
+        default: true
+      - name: template_renderer_not_composed
+        description: "The host installed no EventTemplateRenderer adapter — every send refuses loudly (never a silent skip, never a registration blocker)"
+      - name: render_failed
+        description: "The renderer returned a typed refusal for a batch"
+      - name: enqueue_refused
+        description: "The mail queue refused the enqueue"
+      - name: recipient_invalid
+        description: "A recipient row failed eligibility/address shape"

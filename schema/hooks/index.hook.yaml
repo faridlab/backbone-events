@@ -1,0 +1,84 @@
+# event Module - Hooks Index
+# Version: 1
+#
+# Module-level configuration for hooks (lifecycle behaviors): the
+# registration bare-branch state machine, the ZERO-outbox-event declaration,
+# and the TWO declared scheduled jobs (ADR-0020 postures).
+
+module: event
+version: 1
+
+imports:
+  - registration_state.hook.yaml
+
+# =============================================================================
+# Module-level configuration
+# =============================================================================
+
+config:
+  audit:
+    retention_days: 365
+    critical_events:
+      - event_published          # the fence verb — publish state changed
+      - event_unpublished        # the fence verb — publish state changed
+      - publish_refused          # a generic patch tried to write the fence pair
+      - registration_refused     # a seat/sale-window refusal (durable fact)
+      - scheduler_failed         # a typed scheduler failure
+      - capability_refused       # a capability gate refusal (enumeration gate held)
+
+  notifications:
+    email_enabled: false
+    sms_enabled: false
+    push_enabled: false
+
+# =============================================================================
+# Shared domain events
+# =============================================================================
+# ZERO event-owned outbox events by design. The module owns NO outbox table
+# and the host's outbox_schemas producer set carries NO event entry
+# (absence is the truthful posture — adding a producer requires a real
+# consumer + an outbox_schemas decision in the same change):
+#  - OUTBOUND communication rides backbone-mail's queue directly (the ONE
+#    sibling crate edge) through the host-installed EventTemplateRenderer
+#    port;
+#  - INBOUND, nothing subscribes at core: the sale seam (selling's
+#    SalesOrderConfirmed/Cancelled at selling.hook.yaml:135-140 — the
+#    verified mint/cancel carriers) lands with the event_sale arm; the
+#    mirror columns it feeds are declared NOW in registration.model.yaml.
+events: {}
+
+# =============================================================================
+# Scheduled jobs (ADR-0020 postures) — exactly TWO
+# =============================================================================
+# Nothing else owns a clock: the ticket sale window is READ-TIME LAZY (a
+# pure read predicate over stored instants — no cron flips anything,
+# docs/spec.md §2.3); mail_state is a derived read; publication visibility
+# is read-derived.
+#
+# ASYNC MODE IS THE ONLY MODE: registration verbs ARM in-transaction (cheap
+# row updates) and NEVER execute the scheduler inline — the upstream inline
+# SUPERUSER execution path (EVM2-12) is banned; the verb never blocks on
+# mail.
+
+scheduled_jobs:
+
+  event-mail-scheduler:
+    schedule: "*/20 * * * *"            # the FLOOR tick; exact dispatch is event-driven
+    handler: "event::run_due_schedulers"
+    posture: self_arming
+    # Named trigger sources (the interval is a floor, the triggers are the
+    # contract — ADR-0020):
+    triggers:
+      - scheduler_row_scheduled_date_recompute   # T1: arm at write/recompute of the row's due date
+      - registration_entering_open               # T2: create-default-open + draft/cancel -> open heal (DRAFT-HEAL)
+      - batch_overflow_rearm                     # T3: a pass hit its per-pass cap with work left
+      - slot_child_materialization               # T4: slot-grain children arm like the parent
+    commit_policy: commit_per_batch             # batches of EVENT_MAIL_BATCH (default 50) inside EVENT_MAIL_CRON_LIMIT (default 1000); sends staged + cursor advanced + receipts written per COMMIT; overflow re-arms (T3). The at-least-once window per batch is the declared trade-off; consumers are idempotent (receipt UNIQUE + mail_sent).
+    pickup_lock: true                           # FOR UPDATE SKIP LOCKED claim — lint-enforced (MMB-4 class)
+
+  event-mark-done-sweep:
+    schedule: "41 3 * * *"              # daily 03:41 UTC (off the :00/:30 marks)
+    handler: "event::sweep_mark_done"
+    posture: pull                       # deviation, named: upstream _gc_mark_events_done rode @api.autovacuum (ADR-0020 autovacuum_ride); no shared backbone autovacuum host exists, so a daily pull on the host wall-clock scheduler is the truthful nearest posture (the website visitor-gc precedent)
+    commit_policy: commit_per_batch     # bounded batches with commit-progress (upstream's unbounded search is not ported)
+    pickup_lock: true                   # FOR UPDATE SKIP LOCKED event claims

@@ -1,0 +1,143 @@
+# Codegen policy for event (crate backbone-events).
+#
+# `user_owned` globs are hand-written files that live inside generator-owned
+# trees but are NOT schema-derived. `metaphor schema generate [--force]`
+# skips them wholesale (never reads, merges, or deletes them). Everything
+# else in src/ is regenerated from schema/models.
+#
+# Re-exports/declarations that must sit alongside generated code live inside
+# `// <<< CUSTOM ... // END CUSTOM` markers (lib.rs, application/service/
+# mod.rs, exports/services.rs) and are preserved by the marker mechanism,
+# not listed here.
+#
+# Declared BEFORE any file lands (the regen-safety contract): a landing
+# without the declaration is clobbered on the next regen; a declaration
+# without the file is the dangling class removed by review — later seats
+# extend this list on the same contract, declaring each hand file in the
+# same change that lands it.
+
+user_owned:
+
+  # The module's typed error surface (one enum, HTTP mappings) — shared by
+  # every hand service below.
+  - "src/application/service/event_error.rs"
+
+  # THE ONE seat aggregation service (EBB-1/EVM-3 replaced): state IN
+  # open,done AND active; 0 cap = unlimited; multi-slot x
+  # event_slot_count. The ONLY seat counter in the module — a second
+  # counter anywhere is the frozen W8 seam refusal.
+  - "src/application/service/seat_service.rs"
+
+  # The registration verbs: the ONE register verb (lock-first,
+  # count-then-insert, one transaction — SELECT ... FOR UPDATE on the
+  # event row, slot row too when multi-slot, INSIDE the verb), the four
+  # one-liner state verbs (arm rule: entering open arms the after_sub
+  # engines; re-confirm never re-arms), sync_from_partner (fill-only-
+  # when-empty), archive.
+  - "src/application/service/registration_service.rs"
+
+  # Event verbs: create (template-apply, once, never re-propagates), the
+  # typed patch whitelist (is_published/date_publish refused — the fence),
+  # publish/unpublish (the ONLY writers of the pair), mark_done (writes
+  # the first pipe_end stage by sequence), the daily done sweep verb
+  # (bounded batches, FOR UPDATE SKIP LOCKED claims, drives mark_done).
+  - "src/application/service/event_service.rs"
+
+  # Tier A capability tokens (ADR-0018): HMAC-SHA256, purpose-separated
+  # ("event-ics-access" expiry+rotation default; the my_tickets
+  # "event-registration-ticket-report-access" never-expiring DEVIATION
+  # documented at the mint), constant-time verify, fail-closed secret.
+  - "src/application/service/capability.rs"
+
+  # The /ics body builder + publication gate (uniform typed 404 for
+  # unpublished/archived/missing — no oracle; optionally slot-scoped under
+  # the SAME token).
+  - "src/application/service/ics_service.rs"
+
+  # The attendee ticket/badge read (responsive payloads over the API; the
+  # webapp renders).
+  - "src/application/service/my_tickets_service.rs"
+
+  # The guarded intake executor (the W8 funnel contract): typed field
+  # allowlist at parse (deny_unknown_fields; identity/authority columns
+  # NEVER admitted — no partner_id, no state, no sale_*, no active), no
+  # partner minting, per-identity AND per-IP fixed windows, then the ONE
+  # register verb.
+  - "src/application/service/intake_service.rs"
+
+  # The self-arming scheduler pass (ADR-0020): claim with FOR UPDATE SKIP
+  # LOCKED, the three engines off one row (after_sub receipts / slot
+  # fan-out / event cursor), receipt-truth completion (late registrants
+  # re-open), 'sent'=queued at enqueue, commit_per_batch with
+  # re-arm on overflow, typed per-scheduler failures (record ->
+  # continue), visible window-closed drops.
+  - "src/application/service/scheduler_service.rs"
+
+  # The template seam port (EVM2-2 closed): host-installed
+  # EventTemplateRenderer + the refusing default (unwired = typed
+  # template_renderer_not_composed, never a silent skip, never a
+  # registration blocker).
+  - "src/application/service/template_port.rs"
+
+  # The exported trait surface (seat availability, publication state, the
+  # guarded intake verb, the split's state+sale_status pair read,
+  # capability minting, the scheduler run verb) — the W8 seam contract.
+  - "src/application/service/event_surface.rs"
+
+  # Hand repositories carrying the transactional SQL the services compose
+  # (services hold no raw sqlx — the DDD boundary): the seat-lock
+  # registration transaction (lock -> count -> insert -> arm), the
+  # event verbs (create + one template-apply, fence-exempt patch,
+  # publish/unpublish/mark_done; separate filename — the generated
+  # CRUD event_repository.rs keeps its own path), and the scheduler's
+  # SKIP LOCKED claims + receipt fan-out + receipt-truth completion.
+  - "src/infrastructure/persistence/seat_repository.rs"
+  - "src/infrastructure/persistence/event_command_repository.rs"
+  - "src/infrastructure/persistence/scheduler_repository.rs"
+
+  # The declared public capability tree (ics + my-tickets; the intake
+  # verb's router rides here too — mounted by the host only when the W8
+  # funnel arms). Mounted BARE of company_auth: the capability + throttle
+  # are the fence.
+  - "src/presentation/http/public_routes.rs"
+
+  # The officer tree (events/registrations/mails + generated CRUD reads).
+  # The host mounts it behind company_auth with the module-write gate
+  # keyed "event" as the innermost route layer.
+  - "src/presentation/http/admin_routes.rs"
+
+  # GENERATOR-DEFECT FREEZE (the website-module pattern): the pinned
+  # generator maps the `@default(now)` attribute to the datetime
+  # sentinel even when the field's type is an ENUM whose variant is
+  # literally named `now` (EventIntervalUnit::Now — the spec-frozen
+  # upstream DB value). Two arms of the one defect, each frozen at its
+  # generated state plus the one-line fix; unlist ONLY after the
+  # generator fixes the attribute-to-type arm:
+  #  - Rust entity builders: `self.interval_unit.unwrap_or(Utc::now())`
+  #    (E0308 — expected EventIntervalUnit).
+  #  - SQL table DDL: `DEFAULT NOW()` on an enum column (CREATE TABLE
+  #    refuses: "default expression is of type timestamp with time
+  #    zone"); the fix is the enum literal `DEFAULT 'now'`.
+  - "src/domain/entity/mail.rs"
+  - "src/domain/entity/type_mail.rs"
+  - "migrations/20260426220005_create_mail_table.up.sql"
+  - "migrations/20260426220017_create_type_mail_table.up.sql"
+
+  # Hand-written DDL hardening: the EBG CHECK family (belonging, XOR,
+  # date orders, slot hours, default-question-reusable, per-order cap),
+  # the shared_blank RLS policies on events + registrations, and the
+  # EVM2-3/EBG-1 constraint polish.
+  - "migrations/*hardening*"
+
+  # Hand-authored module documentation (root docs + the frozen build
+  # contract).
+  - "README.md"
+  - "SPEC.md"
+  - "docs/**"
+
+  # The fail-hard probe suite (fresh scratch DB on 5433,
+  # EVENT_TEST_ADMIN_URL override; a missing scratch Postgres panics the
+  # suite) — the concurrent-registration zero-oversell DoD probe, the
+  # /ics refusal family, the receipt re-open probe, the arm-rule probe,
+  # the EVM2-4 pair probe, the fence probes, mount introspection.
+  - "tests/**"

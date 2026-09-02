@@ -1,0 +1,63 @@
+# =============================================================================
+# event — composition sugar: Tag + TagCategory.
+#
+# Upstream `event.tag` / `event.tag.category`. The random-color machinery is
+# NOT ported (EVM-13): `color` is a nullable officer-set column, default
+# NULL. Tags attach to events through the generated M2M join (composition
+# sugar only — no lifecycle semantics anywhere).
+# =============================================================================
+
+models:
+
+  - name: TagCategory
+    collection: tag_categories
+    description: "Tag Category — the grouping row for event tags. Company-shared master data, no semantics beyond grouping."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(120)"]
+        description: "Category label."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+  - name: Tag
+    collection: tags
+    description: "Event Tag — a composition-sugar label optionally grouped under a category. EVM-13 NOT ported: no random color; the nullable color column is officer-set, default NULL."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(120)"]
+        description: "Tag label."
+      category_id:
+        type: uuid?
+        attributes: ["@foreign_key(TagCategory.tag_categories)", "@indexed"]
+        description: "Optional grouping category (real intra-schema FK, RESTRICT)."
+      color:
+        type: string?
+        attributes: ["@max(32)"]
+        description: "Officer-set display color, default NULL — the random-color compute is not ported (EVM-13)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      category:
+        type: TagCategory?
+        attributes: ["@one", "@foreign_key(category_id)", "@restrict"]
+        description: "The optional grouping category"
+
+    indexes:
+      - type: index
+        fields: [category_id]
+        description: "The per-category tag read"

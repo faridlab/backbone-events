@@ -1,0 +1,65 @@
+# =============================================================================
+# event — the receipt grain: MailRegistration (EBB-2's truth).
+#
+# Upstream `event.mail.registration` + the EVM2-3 FIX: UNIQUE
+# (scheduler_id, registration_id) — the upstream missing unique let the
+# inline path race the cron's not-in-existing check and duplicate attendee
+# emails. Enforcement: db (enforcement declared in docs/spec.md §8.3).
+#
+# Eligibility for receipts AND sends: state IN ('open','done') AND active
+# (EVM2-4 closed). Cancellation propagation: pending (unsent) receipts of
+# registrations that left eligibility are DELETED at the next scheduler
+# pass, audited (upstream unlink-at-next-pass shape).
+# =============================================================================
+
+models:
+
+  - name: MailRegistration
+    collection: mail_registrations
+    description: "Mail Registration — the per-recipient RECEIPT grain for ALL engines. UNIQUE (scheduler_id, registration_id) — the EVM2-3 fix (db-enforced). after_sub children are lazily created for eligible registrations without one, due at registration created_at + interval (the REAL timing; the parent's own date is the recomputed earliest-pending child)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      scheduler_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Mail.mails)", "@indexed"]
+        description: "The scheduler row (real intra-schema FK, CASCADE — receipts die with their scheduler)."
+      registration_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Registration.registrations)", "@indexed"]
+        description: "The recipient registration (real intra-schema FK, CASCADE — receipts die with the registration)."
+      scheduled_date:
+        type: datetime?
+        description: "The receipt's own due date (after_sub: registration created_at + interval — the real timing)."
+      mail_sent:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "'sent' = QUEUED (EBB-3, preserved + documented): set true AT ENQUEUE. Downstream SMTP/queue failures are the mail queue's truth (mark_sent/mark_failed/requeue); this module never retries a transport failure itself."
+      outcome:
+        type: string?
+        attributes: ["@max(40)"]
+        description: "Settlement state of the receipt — closed vocabulary: 'queued' (enqueued normally) | 'dropped_window_closed' (a before-event mail whose event was already over — the visible drop; upstream's silent drop made honest)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      scheduler:
+        type: Mail
+        attributes: ["@one", "@foreign_key(scheduler_id)", "@cascade"]
+        description: "The scheduler row"
+      registration:
+        type: Registration
+        attributes: ["@one", "@foreign_key(registration_id)", "@cascade"]
+        description: "The recipient registration"
+
+    indexes:
+      - type: unique
+        fields: [scheduler_id, registration_id]
+        description: "THE EVM2-3 FIX — one receipt per (scheduler, registration), db-enforced: the inline-vs-cron duplicate-attendee-email race is closed at the grain"
+      - type: index
+        fields: [scheduled_date, mail_sent]
+        description: "The after_sub due-children read (pending receipts by date)"

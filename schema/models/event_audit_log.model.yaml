@@ -1,0 +1,85 @@
+# =============================================================================
+# event — the audit vocabulary: EventAuditLog (the website/portal pattern).
+#
+# Append-only, service-emitted by the verbs. Rows are never updated, never
+# deleted by application code. The closed vocabulary carries every
+# security-relevant edge: publish refusals, seat refusals, capability
+# refusals, and scheduler failures land here as durable facts (a refused
+# write is still a fact).
+# =============================================================================
+
+models:
+
+  - name: EventAuditLog
+    collection: event_audit_log
+    read_only: true
+    description: "Event Audit Log — the durable verb trail. Append-only: every event create/patch/publish/unpublish/mark-done/sweep, registration create/refusal/state move/archive, scheduler create/edit/run/failure, receipt drop, and capability-gate refusal lands as one row with structured detail."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event:
+        type: EventAuditEvent
+        attributes: ["@required", "@indexed"]
+        description: "WHAT happened — the closed enum (one row shape per security-relevant edge)."
+      actor:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "WHO performed it — the acting officer (logical ref) or NULL for system edges (the scheduler pass, the done sweep)."
+      subject_type:
+        type: string?
+        attributes: ["@max(120)"]
+        description: "The subject's entity kind ('event', 'registration', 'mail', 'capability')."
+      subject_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The subject's id, when the subject is a row."
+      detail:
+        type: json?
+        description: "Structured context (states, refusal reasons, batch counts) — facts only."
+      occurred_at:
+        type: datetime
+        attributes: ["@required", "@default(now)"]
+        description: "When the edge happened."
+
+    indexes:
+      - type: index
+        fields: [event, occurred_at]
+        description: "The per-event-kind timeline read"
+
+enums:
+  - name: EventAuditEvent
+    description: "The closed audit vocabulary — every verb edge, including refusals"
+    variants:
+      - name: event_created
+        description: "An event was created (template-apply copied its defaults once)"
+        default: true
+      - name: event_updated
+        description: "An event was patched through the typed whitelist"
+      - name: event_published
+        description: "The publish fence verb flipped is_published to true"
+      - name: event_unpublished
+        description: "The unpublish fence verb flipped is_published to false"
+      - name: publish_refused
+        description: "A generic PATCH carried is_published/date_publish and was refused (the fence holds)"
+      - name: event_mark_done
+        description: "The mark_done verb (or the done sweep through the verb) moved the event to a pipe_end stage"
+      - name: registration_created
+        description: "The register verb inserted an attendee row (seat taken under the lock)"
+      - name: registration_refused
+        description: "The register verb refused (seats exhausted / sale window closed / event not open) — the refusal is a durable fact"
+      - name: registration_state_changed
+        description: "One of the four one-liner state verbs moved a registration"
+      - name: registration_archived
+        description: "A registration left the active axis (leaves the seat count and mail eligibility together)"
+      - name: scheduler_created
+        description: "A scheduler row was created (or minted by template-apply)"
+      - name: scheduler_run
+        description: "A scheduler pass ran (batch counts in detail)"
+      - name: scheduler_failed
+        description: "A typed per-scheduler failure was recorded (error_kind in detail)"
+      - name: receipt_dropped_window_closed
+        description: "A before-event receipt was visibly dropped (the event was already over)"
+      - name: capability_refused
+        description: "A capability route refused a token (bad/expired/secret-unset) — the enumeration gate held"

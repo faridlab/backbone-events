@@ -1,0 +1,185 @@
+# =============================================================================
+# event — the aggregate root: Event.
+#
+# PORT DECISIONS (source: docs/odoo/marketing/events/event — docs/spec.md §3):
+#  - There is NO `state` column on the event (EVM-1). The lifecycle is TWO
+#    almost-orthogonal axes, both declared:
+#      stage_id     stage_ref — real FK to the Stage master, pipe_end is the
+#                   only semantic; terminal writes happen ONLY via mark_done
+#                   and the done sweep;
+#      kanban_state hybrid + sticky — hand-editable health mark; a stage
+#                   change RESETS any non-cancel value to normal (EBB-8
+#                   carried honestly — the reset IS the semantics), and
+#                   'cancel' is STICKY: it survives the reset and IS the
+#                   event-cancellation signal, consumed by registration-open
+#                   gating, the scheduler's cancelled-state derivation, and
+#                   the scheduler claim domain.
+#  - Publication pair (the WB-3 publish-contract pattern, module-side —
+#    docs/spec.md §6.1): is_published + date_publish are stored but
+#    publish-FENCED — the publish/unpublish verbs are the ONLY writers; a
+#    generic PATCH carrying either is a typed refusal.
+#  - Time posture (docs/spec.md §4.6): date_begin/date_end are UTC instants
+#    (timestamptz); date_tz is the IANA presentation/window-derivation
+#    timezone. ONE derivation path — windows compare instants against now()
+#    in UTC; presentation converts to date_tz. No naive local time anywhere.
+#  - Seats: seats_limited is an EXPLICIT boolean (EVM-9); seats_max 0 (or
+#    negative) = UNLIMITED, everywhere; is_multi_slots multiplies per-slot
+#    capacity by event_slot_count.
+#  - venue/organizer/officer are LOGICAL refs (party/company officer) — no
+#    cross-schema FK, no sapiens/party/corporate crate edge.
+# =============================================================================
+
+models:
+
+  - name: Event
+    collection: events
+    read_only: true
+    description: "Event — the aggregate root. Identity, dates/TZ, venue, the two-axis lifecycle (stage + sticky-cancel kanban health), seats configuration, the publication pair, and the multi-slot axis. Read-only over HTTP: events are created (template-apply), patched through the typed whitelist, published/unpublish (fence verbs), and mark_done'd only through the typed verbs — is_published/date_publish refuse every generic patch."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Event title."
+      event_type_id:
+        type: uuid?
+        attributes: ["@foreign_key(EventType.types)", "@indexed"]
+        description: "The template this event was created from (template-apply copied its defaults ONCE at create; the link is provenance only — re-propagation does not exist)."
+      stage_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Stage.stages)", "@indexed"]
+        lifecycle:
+          shape: stage_ref
+        description: "Pipeline stage (real intra-schema FK, RESTRICT). pipe_end on the target is the only semantic — terminal writes happen ONLY via the mark_done verb and the done sweep."
+      kanban_state:
+        type: EventKanbanState
+        attributes: ["@required", "@default(normal)"]
+        lifecycle:
+          shape: hybrid
+          sticky: true
+        description: "Per-stage health mark. A stage change resets any non-cancel value to 'normal' (upstream EBB-8 behavior, carried honestly — officers re-mark); 'cancel' is STICKY (survives the reset) and IS the event-cancellation signal, consumed by registration-open gating, the scheduler's cancelled derivation, and the scheduler claim domain."
+      date_begin:
+        type: datetime
+        attributes: ["@required", "@indexed"]
+        description: "Start instant (timestamptz, UTC compared — EBB-7/EBB-11 closed by the one-path instants posture)."
+      date_end:
+        type: datetime
+        attributes: ["@required", "@indexed"]
+        description: "End instant (>= date_begin, CHECK-enforced — EBG-5). The done sweep claims events with date_end < now() not on a pipe_end stage."
+      date_tz:
+        type: string
+        attributes: ["@required", "@default(UTC)", "@max(60)"]
+        description: "IANA timezone name for presentation and window derivation (windows compare stored UTC instants against now(); presentation converts here — one derivation path, docs/spec.md §4.6)."
+      is_multi_slots:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Multi-slot axis: registrations carry a mandatory slot (CHECK) and per-slot availability multiplies by event_slot_count."
+      event_slot_count:
+        type: int
+        attributes: ["@required", "@default(1)", "@range(1,100)"]
+        description: "The per-slot capacity multiplier when is_multi_slots (upstream shape)."
+      seats_limited:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "EXPLICIT boolean (EVM-9 fixed) — whether the event-level seat cap applies. Never integer truthiness."
+      seats_max:
+        type: int
+        attributes: ["@required", "@default(0)", "@non_negative"]
+        description: "Event-level seat cap. 0 (or negative) = UNLIMITED, everywhere. Enforced by the registration verb's lock-first count (docs/spec.md §4.4), never by a post-insert fence."
+      address_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Venue — logical ref to the party module's address row (no cross-schema FK, no crate edge)."
+      organizer_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Organizing partner — logical party ref; arm 1 of the enqueued-mail author fallback chain (organizer -> event company -> responsible officer)."
+      user_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Responsible officer — logical ref; arm 3 of the author fallback chain."
+      company_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "Nullable company axis (logical corporate ref). NULL rows are first-class 'visible to all' under the declared shared_blank posture — the faithful port of upstream's required=FALSE + [False] record rules (EVM-15). Never a cross-schema FK."
+      event_url:
+        type: url?
+        description: "Officer-set external event page (scheme CHECK at db — EBG-7). No venue-wipe trap, no one-way compute (EVM-10/11 not ported: officer-set plain field)."
+      badge_format:
+        type: EventBadgeFormat
+        attributes: ["@required", "@default(a4_french_fold)"]
+        description: "Badge layout for the my-tickets badge payload."
+      is_published:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "STORED publish state — writable ONLY through the publish/unpublish fence verbs; a PATCH carrying it refuses (typed event_field_not_patchable). /ics and every URL-gated read check publication (unpublished -> uniform typed 404)."
+      date_publish:
+        type: datetime?
+        description: "Publish instant stamp, written by the same fence verbs. Derived visibility (reads) = published AND date-past; the W8 website surfaces consume THIS pair — they do not re-declare a second flag."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event_type:
+        type: EventType?
+        attributes: ["@one", "@foreign_key(event_type_id)", "@restrict"]
+        description: "The source template (provenance only)"
+      stage:
+        type: Stage
+        attributes: ["@one", "@foreign_key(stage_id)", "@restrict"]
+        description: "The pipeline stage (stage_ref lifecycle axis)"
+      tags:
+        type: Tag[]
+        attributes: ["@many_to_many", "@join_table(event_tags)"]
+        description: "Composition-sugar tags (generated M2M join event_tags)."
+      tickets:
+        type: Ticket[]
+        attributes: ["@one_to_many", "@foreign_key(event_id)", "@restrict"]
+        description: "The event's ticket rows"
+      slots:
+        type: Slot[]
+        attributes: ["@one_to_many", "@foreign_key(event_id)", "@restrict"]
+        description: "The event's slot rows"
+      registrations:
+        type: Registration[]
+        attributes: ["@one_to_many", "@foreign_key(event_id)", "@restrict"]
+        description: "The event's registrations"
+
+    indexes:
+      - type: index
+        fields: [date_begin, date_end]
+        description: "The window reads (ongoing/finished) and the done sweep's date_end claim"
+      - type: index
+        fields: [is_published]
+        description: "The publication-gated reads"
+
+enums:
+  - name: EventKanbanState
+    description: "The kanban health axis — hand-editable, hybrid lifecycle with STICKY cancel (the ADR-0016 canonical sticky mark): a stage change resets non-cancel values to normal; 'cancel' survives every reset and IS the event-cancellation signal"
+    variants:
+      - name: normal
+        description: "The neutral resting mark (default)"
+        default: true
+      - name: done
+        description: "Ready-for-next-stage mark (wiped by the next stage change — officers re-mark)"
+      - name: blocked
+        description: "Attention mark (wiped by the next stage change)"
+      - name: cancel
+        description: "STICKY cancellation signal — survives stage-change resets; consumed by registration-open gating, the scheduler's cancelled-state derivation, and the scheduler claim domain"
+
+  - name: EventBadgeFormat
+    description: "Badge sheet layout for the my-tickets badge payload (presentation only)"
+    variants:
+      - name: a4_french_fold
+        description: "A4 french-fold sheet (the default)"
+        default: true
+      - name: a6
+        description: "A6 sheet"
+      - name: four_per_sheet
+        description: "Four badges per sheet"
+

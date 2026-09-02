@@ -1,0 +1,53 @@
+# =============================================================================
+# event — the slot grain: Slot.
+#
+# Upstream `event.slot`: dated segments inside the event range. A slot has NO
+# own cap — availability is measured against the EVENT's seats_max, with the
+# multi-slot axis multiplying per-slot capacity by event_slot_count. When the
+# parent event is_multi_slots, registrations MUST carry a slot (CHECK) and
+# the registration verb locks the slot row too.
+#
+# Slot-in-event-range (EBG-6) is enforced service-set-based plus the row-arm
+# CHECK in the hardening migration (enforcement: both).
+# =============================================================================
+
+models:
+
+  - name: Slot
+    collection: slots
+    description: "Slot — one dated segment inside an event's range. No own cap (measured against the event's seats_max; multi-slot multiplies by event_slot_count). Slot hours/range CHECKs live in the hardening migration (EBG-6/EBG-8)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@indexed"]
+        description: "The owning event (real intra-schema FK, RESTRICT)."
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Slot label."
+      date_begin:
+        type: datetime
+        attributes: ["@required", "@indexed"]
+        description: "Slot start instant (timestamptz)."
+      date_end:
+        type: datetime?
+        description: "Slot end instant (>= date_begin when set — EBG-8 CHECK in the hardening migration)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The owning event"
+
+    indexes:
+      - type: index
+        fields: [event_id, date_begin]
+        description: "The per-event slot timeline read"

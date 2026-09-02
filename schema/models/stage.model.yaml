@@ -1,0 +1,44 @@
+# =============================================================================
+# event — the pipeline grain: Stage.
+#
+# Upstream `event.stage`: freely-configured stage rows whose ONLY semantic is
+# `pipe_end` (the terminal marker). Company-shared master data (no company
+# column, no policy — the ADR-0014 shared_blank exemplar). No random color,
+# no per-stage mail templates at core (template lines live on the TYPE).
+# =============================================================================
+
+models:
+
+  - name: Stage
+    collection: stages
+    description: "Event Stage — one freely-configured pipeline stage row. pipe_end is the ONLY semantic (the terminal marker): terminal writes happen ONLY through the explicit mark_done verb and the daily done sweep, never by free PATCH. Company-shared master data."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(120)"]
+        description: "Stage label (officer-authored)."
+      sequence:
+        type: int
+        attributes: ["@required", "@default(1)", "@non_negative"]
+        description: "Presentation + mark_done ordering (mark_done writes the FIRST pipe_end stage by sequence)."
+      fold:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Folded-in kanban grouping mark (display only — carries no lifecycle semantics)."
+      pipe_end:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "THE terminal marker — a stage with pipe_end=true is done-terminal for every event sitting on it. The only load-bearing boolean on this model."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    indexes:
+      - type: index
+        fields: [sequence]
+        description: "The mark_done ordering read (first pipe_end by sequence)"

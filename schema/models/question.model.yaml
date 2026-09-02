@@ -1,0 +1,173 @@
+# =============================================================================
+# event — the question family: Question, QuestionAnswer, RegistrationQuestion.
+#
+# Upstream `event.question` is a SHARED LIBRARY (M2M-linked to events AND
+# types); `once_per_order` steers only the ASKING UI; identity-kind questions
+# (name/email/phone/company_name) create NO answer rows (the attendee fields
+# carry those values directly on the registration row).
+#
+# EVM-12 (ported): ONE rel table behind both the general (type-axis) and
+# specific (event-axis) question surfaces — never two tables. The rel row
+# carries exactly one of (event_id, type_id) — CHECK-enforced in the
+# hardening migration.
+#
+# EBG-12 (db): a default question must be reusable — CHECK on the question
+# row. EBG-19 (service, with justification note): the question kind is
+# immutable once any answer exists — a procedural write-path guard, not a
+# value constraint.
+# =============================================================================
+
+models:
+
+  - name: Question
+    collection: questions
+    description: "Question — a shared-library registration question. M2M-linked to events (specific axis) and types (general axis) through the ONE registration_questions rel table. Identity-kind questions (name/email/phone/company_name) create no answer rows."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      question:
+        type: string
+        attributes: ["@required", "@max(500)"]
+        description: "The question text."
+      question_kind:
+        type: EventQuestionKind
+        attributes: ["@required", "@default(text_box)"]
+        lifecycle:
+          shape: hand_set
+          # EBG-19: immutable ONCE ANSWERED — a procedural write-path guard
+          # (service enforcement + justification note), not a value
+          # constraint and not a transition graph. No state_machine ref is
+          # the truthful declaration: kind changes are legal until the first
+          # answer lands, which a machine on this field cannot express.
+        description: "The answer shape. Immutable once any answer exists (service write-guard, EBG-19 — enforcement: service, justified: it guards a WRITE PATH, not a value)."
+      is_default:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Pre-selected onto new events' question sets (implies reusability — EBG-12 CHECK in the hardening migration)."
+      is_reusable:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "May appear on many events' sets without one-off copies."
+      once_per_order:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Steers only the ASKING UI (asked once per order, not per attendee) — no answering-side semantics."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      answers:
+        type: QuestionAnswer[]
+        attributes: ["@one_to_many", "@foreign_key(question_id)", "@restrict"]
+        description: "The suggested choice values (simple_choice kind only)"
+
+    indexes:
+      - type: index
+        fields: [question_kind]
+        description: "The per-kind library read"
+
+  - name: QuestionAnswer
+    collection: question_answers
+    description: "Question Answer — a suggested choice value of a simple_choice question."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      question_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Question.questions)", "@indexed"]
+        description: "The owning question (real intra-schema FK, RESTRICT)."
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "The choice value."
+      sequence:
+        type: int
+        attributes: ["@required", "@default(1)", "@non_negative"]
+        description: "Choice ordering."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      question:
+        type: Question
+        attributes: ["@one", "@foreign_key(question_id)", "@restrict"]
+        description: "The owning question"
+
+  - name: RegistrationQuestion
+    collection: registration_questions
+    description: "Registration Question — the ONE M2M rel table behind both question surfaces (EVM-12: one rel, two declared views): a row keyed on type_id is that template's GENERAL question set (copied onto events at create); a row keyed on event_id is that event's SPECIFIC question set. Exactly one of the two axes is set — CHECK-enforced."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid?
+        attributes: ["@foreign_key(Event.events)", "@indexed"]
+        description: "The SPECIFIC axis — set when the question is attached to one event."
+      event_type_id:
+        type: uuid?
+        attributes: ["@foreign_key(EventType.types)", "@indexed"]
+        description: "The GENERAL axis — set when the question is attached to a template (its set copies onto events at create)."
+      question_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Question.questions)", "@indexed"]
+        description: "The shared-library question row."
+      sequence:
+        type: int
+        attributes: ["@required", "@default(1)", "@non_negative"]
+        description: "Asking order."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event?
+        attributes: ["@one", "@foreign_key(event_id)", "@cascade"]
+        description: "The specific axis (deleting an event removes its question-set rows)"
+      event_type:
+        type: EventType?
+        attributes: ["@one", "@foreign_key(event_type_id)", "@cascade"]
+        description: "The general axis (deleting a type removes its template set)"
+      question:
+        type: Question
+        attributes: ["@one", "@foreign_key(question_id)", "@restrict"]
+        description: "The shared-library question"
+
+    indexes:
+      - type: unique
+        fields: [event_id, question_id]
+        where: "event_id IS NOT NULL"
+        description: "One specific-set row per (event, question)"
+      - type: unique
+        fields: [event_type_id, question_id]
+        where: "event_type_id IS NOT NULL"
+        description: "One general-set row per (type, question)"
+
+enums:
+  - name: EventQuestionKind
+    description: "The answer shape of a question. Identity kinds carry their values on the registration's own attendee fields (no answer rows)."
+    variants:
+      - name: text_box
+        description: "Free-text answer (the default)"
+        default: true
+      - name: simple_choice
+        description: "One of the question's suggested values (QuestionAnswer rows)"
+      - name: name
+        description: "Attendee name — identity kind, no answer row"
+      - name: email
+        description: "Attendee email — identity kind, no answer row"
+      - name: phone
+        description: "Attendee phone — identity kind, no answer row"
+      - name: company_name
+        description: "Attendee company — identity kind, no answer row"

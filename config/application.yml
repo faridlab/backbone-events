@@ -1,0 +1,149 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+  grpc_port: 50051
+database:
+  url: postgresql://root:password@localhost:5432/skeletondb
+  max_connections: 10
+  min_connections: 5
+  connect_timeout: 30
+  idle_timeout: 600
+logging:
+  level: info
+  format: json
+  file: logs/event.log
+module:
+  name: event
+  enabled: true
+features:
+  soft_delete: true
+  state_machines: true
+  workflows: false
+entities:
+  event:
+    collection: events
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  event_audit_log:
+    collection: event_audit_log
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  event_type:
+    collection: types
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  mail:
+    collection: mails
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  mail_registration:
+    collection: mail_registrations
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  mail_slot:
+    collection: mail_slots
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  question:
+    collection: questions
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  question_answer:
+    collection: question_answers
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  registration_question:
+    collection: registration_questions
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  registration:
+    collection: registrations
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  registration_answer:
+    collection: registration_answers
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  slot:
+    collection: slots
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  stage:
+    collection: stages
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  tag_category:
+    collection: tag_categories
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  tag:
+    collection: tags
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  ticket:
+    collection: tickets
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  type_mail:
+    collection: type_mails
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+tracing:
+  enabled: true
+  exporter: otlp
+  endpoint: http://localhost:4317
+metrics:
+  enabled: true
+  endpoint: /metrics
+  port: 9090

@@ -1,0 +1,95 @@
+[package]
+name = "backbone-events"
+version = "0.1.0"
+edition = "2021"
+description = "Events core — registrations under one authoritative seat counter (lock-first, count-then-insert), the two-axis event lifecycle, the publication-fenced capability surface (/ics, my-tickets), and the self-arming communication scheduler whose completion reads per-recipient receipts (Odoo event port, core arm of the eight-addon chain)"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# -----------------------------------------------------------------------------
+# Backbone Framework crates
+#
+# Pulled directly from the public framework repository so this module works
+# anywhere on disk without path fix-up. Pinned to the framework tag current
+# at module creation (single-rev policy: every framework source in the
+# resolved graph resolves to this one tag — no branch floats, no [patch]).
+# -----------------------------------------------------------------------------
+backbone-core = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.11", features = ["postgres"] }
+backbone-orm = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.11" }
+backbone-auth = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.11" }
+backbone-rate-limit = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.11" }
+# NOTE (recorded deviation from docs/spec.md §10.4, forced by the pinned
+# generator): the schema generator's emitted event scaffolding
+# (src/domain/event/*.rs — CrudEvent / CrudEventPublisher imports) does not
+# compile without this crate. The module itself stages NO outbox events,
+# subscribes to NONE (hooks index declares events: {}), owns no outbox
+# table, and the host's outbox_schemas set carries no event entry — the
+# same zero-events-with-plumbing-dep posture as the website module.
+backbone-messaging = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.11" }
+
+# -----------------------------------------------------------------------------
+# THE ONE sibling module edge — backbone-mail (the scheduler's enqueue
+# substrate; no gateway features: this module enqueues, transport belongs to
+# the host).
+#
+# MAIL PIN RECORD (the mail dual-resolve heal, W7-C16): pinned v0.2.7
+# tag-equal with the host — the whole mail-resolver family (host direct,
+# notification, mailing, digest transitively) re-pinned to v0.2.7 in one
+# train and the lock resolves exactly ONE backbone-mail copy. The scheduler
+# passes no per-mail custom headers (transport headers are the sending
+# site's opt-in), which v0.2.7's enqueue signature accepts as None.
+# -----------------------------------------------------------------------------
+backbone-mail = { git = "https://github.com/faridlab/backbone-mail", tag = "v0.2.7" }
+
+# Sibling modules NOT consumed by design — recorded here so no later seat
+# adds them casually (docs/spec.md §Identity):
+#  - backbone-notification: the heal's vehicle, not this module's dependency.
+#  - backbone-selling: the sale seam rides events-owned mirror columns +
+#    the declared domain-event subscription (SalesOrderConfirmed/Cancelled
+#    carriers); the wiring lands with the event_sale arm.
+#  - backbone-sapiens / backbone-party / corporate / geo: logical uuid
+#    references only (@exclude_from_foreign_key_check), never crate edges.
+#  - backbone-website: the /ics guard consumes the publish-contract PATTERN
+#    module-side; it does not call website code.
+
+# Core async runtime and serialization
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Database (PostgreSQL primary)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
+
+# HTTP framework (Axum) — the module exports pure routers; the host mounts.
+axum = { version = "0.7", features = ["macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Logging
+tracing = "0.1"
+
+# Validation / errors / config plumbing used by the generated tree
+validator = { version = "0.16", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "1.0"
+config = "0.14"
+serde_yaml = "0.9"
+
+# The Tier A capability tokens (ADR-0018): HMAC-SHA256 domain-separated by
+# purpose string, constant-time verified; the registration barcode mint.
+hmac = "0.12"
+sha2 = "0.10"
+rand = "0.8"
+subtle = "2.5"
+
+[dev-dependencies]
+tempfile = "3.0"
+tokio-test = "0.4"
+pretty_assertions = "1.0"
+futures = "0.3"
+tower = { version = "0.4", features = ["util"] }

@@ -1,0 +1,61 @@
+# =============================================================================
+# event — the admission grain: Ticket.
+#
+# Upstream `event.event.ticket`: a named admission tier with its own optional
+# cap and sale window. NO price column at core — pricing is the event_product
+# arm (next increment, docs/spec.md §11.1).
+#
+# The sale window is READ-TIME LAZY (docs/spec.md §2.3): a pure read
+# predicate evaluated against stored UTC instants in the event TZ; no cron
+# flips anything; an expired ticket is simply unsellable (the registration
+# verb refuses with event_sale_window_closed — EVM-5's wall-clock is
+# virtual).
+# =============================================================================
+
+models:
+
+  - name: Ticket
+    collection: tickets
+    description: "Ticket — a named admission tier of one event with its own optional seat cap and read-time-lazy sale window. Seats are counted ONLY by the seat aggregation service (state IN open,done AND active); 0 cap = unlimited. Per-order cap is service-pre-checked and column-CHECK-bounded (EBG-11 both)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@indexed"]
+        description: "The owning event (real intra-schema FK, RESTRICT — EBG-14)."
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Ticket tier label."
+      seats_max:
+        type: int
+        attributes: ["@required", "@default(0)", "@non_negative"]
+        description: "Ticket-level seat cap. 0 = UNLIMITED, everywhere. Sold-out propagation (event is_sold_out) is a derived read of the ONE seat service — never separately stored."
+      seats_max_per_order:
+        type: int
+        attributes: ["@required", "@default(0)", "@range(0,30)"]
+        description: "Per-order cap for this ticket — 0 = no per-order cap. Column CHECK bounds it to [0,30]; the effective cap (min of this, seats_max, 30) is the service pre-check (EBG-11, enforcement both)."
+      start_sale_datetime:
+        type: datetime?
+        description: "Sale window start (read-time lazy predicate — no cron)."
+      end_sale_datetime:
+        type: datetime?
+        description: "Sale window end (read-time lazy predicate — no cron; order CHECK in the hardening migration, EBG-10)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The owning event"
+
+    indexes:
+      - type: index
+        fields: [event_id]
+        description: "The per-event ticket reads"

@@ -1,0 +1,52 @@
+# =============================================================================
+# event — the template grain: EventType.
+#
+# Upstream `event.type` (v1.9 `event.type`): the template whose defaults are
+# copied onto events at create (template-apply). Core carries the seats/time
+# defaults; the template's mail lines live in TypeMail (type_mail.model.yaml).
+# No TypeTicket table at core (pricing is the event_product arm, next
+# increment — docs/spec.md §11.1).
+#
+# Template-apply semantics (upstream EVM-2, ported as declared): the copy
+# happens ONCE at event create, never re-propagates; destructive-sync
+# protections ride the create verb.
+# =============================================================================
+
+models:
+
+  - name: EventType
+    collection: types
+    description: "Event Type — the template. Its seats/timezone defaults are copied onto an event at create (template-apply, once, never re-propagates); its TypeMail lines become the event's scheduler rows; its question set (via registration_questions on the type axis) becomes the event's general questions. Company-shared master data."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(120)"]
+        description: "Template label."
+      description:
+        type: string?
+        attributes: ["@max(2000)"]
+        description: "Free-text template description."
+      seats_limited:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "EXPLICIT boolean (EVM-9 fixed): whether events created from this template default to seat-limited. Never integer truthiness."
+      seats_max:
+        type: int
+        attributes: ["@required", "@default(0)", "@non_negative"]
+        description: "Default seat cap copied onto new events. 0 = UNLIMITED, everywhere (the module-wide convention)."
+      default_date_tz:
+        type: string
+        attributes: ["@required", "@default(UTC)", "@max(60)"]
+        description: "Default IANA timezone name copied onto new events (presentation + window derivation — docs/spec.md §4.6)."
+      is_multi_slots:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Default multi-slot flag copied onto new events (multi-slot multiplies per-slot seat capacity by event_slot_count)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
