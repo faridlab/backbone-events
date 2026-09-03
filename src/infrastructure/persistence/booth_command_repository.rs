@@ -20,6 +20,7 @@
 //! sale_order_line_id, partner/contact fill-if-empty per EBT-4) and
 //! the audit row commit together or not at all.
 
+use backbone_orm::company_scope;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -95,27 +96,33 @@ impl BoothCommandRepository {
         name: &str,
         actor: Option<Uuid>,
     ) -> Result<BoothRow, EventError> {
-        let row = sqlx::query_as::<_, BoothRow>(&format!(
-            r#"INSERT INTO event.booths (id, event_id, booth_category_id, name)
+        let row = company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, BoothRow>(&format!(
+                r#"INSERT INTO event.booths (id, event_id, booth_category_id, name)
                VALUES ($1, $2, $3, $4)
                RETURNING {BOOTH_COLUMNS}"#
-        ))
-        .bind(Uuid::new_v4())
-        .bind(event_id)
-        .bind(booth_category_id)
-        .bind(name)
-        .fetch_optional(&self.pool)
+            ))
+            .bind(Uuid::new_v4())
+            .bind(event_id)
+            .bind(booth_category_id)
+            .bind(name),
+        )
         .await
         .map_err(|e| match &e {
             // FK violation: event or category does not resolve -> the
             // typed shape refusal, not a 500.
             sqlx::Error::Database(db) if db.code().as_deref() == Some("23503") => {
-                EventError::Validation("booth create refused — event or category does not resolve".into())
+                EventError::Validation(
+                    "booth create refused — event or category does not resolve".into(),
+                )
             }
             _ => EventError::from(e),
         })?
         .ok_or_else(|| {
-            EventError::Validation("booth create refused — event or category does not resolve".into())
+            EventError::Validation(
+                "booth create refused — event or category does not resolve".into(),
+            )
         })?;
         record_audit(
             &self.pool,
@@ -143,8 +150,10 @@ impl BoothCommandRepository {
         contact_phone: Option<&str>,
         actor: Option<Uuid>,
     ) -> Result<BoothRow, EventError> {
-        let row = sqlx::query_as::<_, BoothRow>(&format!(
-            r#"UPDATE event.booths SET
+        let row = company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, BoothRow>(&format!(
+                r#"UPDATE event.booths SET
                    name             = COALESCE($2, name),
                    booth_category_id = COALESCE($3, booth_category_id),
                    partner_id       = COALESCE(partner_id, $4),
@@ -153,15 +162,15 @@ impl BoothCommandRepository {
                    contact_phone    = COALESCE(contact_phone, $7)
                 WHERE id = $1
                RETURNING {BOOTH_COLUMNS}"#
-        ))
-        .bind(booth_id)
-        .bind(name)
-        .bind(booth_category_id)
-        .bind(partner_id)
-        .bind(contact_name)
-        .bind(contact_email)
-        .bind(contact_phone)
-        .fetch_optional(&self.pool)
+            ))
+            .bind(booth_id)
+            .bind(name)
+            .bind(booth_category_id)
+            .bind(partner_id)
+            .bind(contact_name)
+            .bind(contact_email)
+            .bind(contact_phone),
+        )
         .await?
         .ok_or(EventError::BoothNotFound { booth_id })?;
         record_audit(
@@ -179,8 +188,13 @@ impl BoothCommandRepository {
     /// DELETE — refused while sale-linked (EBS-5c) or while ANY booking
     /// row exists (the booking history releases first; the FK would
     /// otherwise be the wall — the verb says it in words).
-    pub async fn delete_booth(&self, booth_id: Uuid, actor: Option<Uuid>) -> Result<(), EventError> {
+    pub async fn delete_booth(
+        &self,
+        booth_id: Uuid,
+        actor: Option<Uuid>,
+    ) -> Result<(), EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let linked = sqlx::query_as::<_, (Option<Uuid>, i64)>(
             r#"SELECT b.sale_order_line_id,
                       (SELECT count(*) FROM event.booth_bookings bb WHERE bb.event_booth_id = b.id)
@@ -218,11 +232,13 @@ impl BoothCommandRepository {
 
     /// Officer reads.
     pub async fn find_booth(&self, booth_id: Uuid) -> Result<BoothRow, EventError> {
-        sqlx::query_as::<_, BoothRow>(&format!(
-            "SELECT {BOOTH_COLUMNS} FROM event.booths WHERE id = $1"
-        ))
-        .bind(booth_id)
-        .fetch_optional(&self.pool)
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, BoothRow>(&format!(
+                "SELECT {BOOTH_COLUMNS} FROM event.booths WHERE id = $1"
+            ))
+            .bind(booth_id),
+        )
         .await?
         .ok_or(EventError::BoothNotFound { booth_id })
     }
@@ -232,12 +248,11 @@ impl BoothCommandRepository {
         event_id: Uuid,
         limit: i64,
     ) -> Result<Vec<BoothRow>, EventError> {
-        sqlx::query_as::<_, BoothRow>(&format!(
+        company_scope::fetch_all_scoped(&self.pool, sqlx::query_as::<_, BoothRow>(&format!(
             "SELECT {BOOTH_COLUMNS} FROM event.booths WHERE event_id = $1 ORDER BY name, id LIMIT $2"
         ))
         .bind(event_id)
-        .bind(limit)
-        .fetch_all(&self.pool)
+        .bind(limit))
         .await
         .map_err(EventError::from)
     }
@@ -258,15 +273,15 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<BoothBookingRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        let event_id: Uuid = sqlx::query_scalar::<_, Uuid>(
-            "SELECT event_id FROM event.booths WHERE id = $1",
-        )
-        .bind(event_booth_id)
-        .fetch_optional(&mut *tx)
-        .await?
-        .ok_or(EventError::BoothNotFound {
-            booth_id: event_booth_id,
-        })?;
+        company_scope::bind_current_company(&mut tx).await?;
+        let event_id: Uuid =
+            sqlx::query_scalar::<_, Uuid>("SELECT event_id FROM event.booths WHERE id = $1")
+                .bind(event_booth_id)
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or(EventError::BoothNotFound {
+                    booth_id: event_booth_id,
+                })?;
         if let Some(line) = sale_order_line_id {
             let cross: Option<Uuid> = sqlx::query_scalar::<_, Uuid>(
                 r#"SELECT b.event_id FROM event.booth_bookings bb
@@ -325,6 +340,7 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<(BoothBookingRow, BoothRow), EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
 
         // Lock the booking + its booth together.
         let locked = sqlx::query_as::<_, (Uuid, String)>(
@@ -403,6 +419,7 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<BoothRow, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         sqlx::query("DELETE FROM event.booth_bookings WHERE event_booth_id = $1")
             .bind(event_booth_id)
             .execute(&mut *tx)
@@ -438,11 +455,10 @@ impl BoothCommandRepository {
         booking_id: Uuid,
         actor: Option<Uuid>,
     ) -> Result<(), EventError> {
-        let outcome = sqlx::query_scalar::<_, Uuid>(
+        let outcome = company_scope::fetch_optional_scalar_scoped(&self.pool, sqlx::query_scalar::<_, Uuid>(
             "DELETE FROM event.booth_bookings WHERE id = $1 AND status = 'pending' RETURNING id",
         )
-        .bind(booking_id)
-        .fetch_optional(&self.pool)
+        .bind(booking_id))
         .await?;
         if outcome.is_none() {
             // Missing or not pending — both refuse the same way (a
@@ -461,15 +477,14 @@ impl BoothCommandRepository {
         Ok(())
     }
 
-    pub async fn find_booking(
-        &self,
-        booking_id: Uuid,
-    ) -> Result<BoothBookingRow, EventError> {
-        sqlx::query_as::<_, BoothBookingRow>(&format!(
-            "SELECT {BOOKING_COLUMNS} FROM event.booth_bookings WHERE id = $1"
-        ))
-        .bind(booking_id)
-        .fetch_optional(&self.pool)
+    pub async fn find_booking(&self, booking_id: Uuid) -> Result<BoothBookingRow, EventError> {
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, BoothBookingRow>(&format!(
+                "SELECT {BOOKING_COLUMNS} FROM event.booth_bookings WHERE id = $1"
+            ))
+            .bind(booking_id),
+        )
         .await?
         .ok_or(EventError::BoothBookingNotFound { booking_id })
     }
@@ -478,11 +493,10 @@ impl BoothCommandRepository {
         &self,
         event_booth_id: Uuid,
     ) -> Result<Vec<BoothBookingRow>, EventError> {
-        sqlx::query_as::<_, BoothBookingRow>(&format!(
+        company_scope::fetch_all_scoped(&self.pool, sqlx::query_as::<_, BoothBookingRow>(&format!(
             "SELECT {BOOKING_COLUMNS} FROM event.booth_bookings WHERE event_booth_id = $1 ORDER BY id"
         ))
-        .bind(event_booth_id)
-        .fetch_all(&self.pool)
+        .bind(event_booth_id))
         .await
         .map_err(EventError::from)
     }
@@ -493,13 +507,15 @@ impl BoothCommandRepository {
         if line_ids.is_empty() {
             return Ok(0);
         }
-        let rows = sqlx::query(
-            r#"UPDATE event.booths SET is_paid = true
+        let rows = company_scope::fetch_all_rows_scoped(
+            &self.pool,
+            sqlx::query(
+                r#"UPDATE event.booths SET is_paid = true
                 WHERE sale_order_line_id = ANY($1) AND NOT is_paid
                RETURNING id"#,
+            )
+            .bind(line_ids),
         )
-        .bind(line_ids)
-        .fetch_all(&self.pool)
         .await?;
         Ok(rows.len())
     }

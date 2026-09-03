@@ -10,6 +10,7 @@
 //! writers of the fence pair), mark_done (writes the first pipe_end
 //! stage by sequence), and the reads the capability surface needs.
 
+use backbone_orm::company_scope;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -82,7 +83,8 @@ pub struct PatchEventInput {
     pub badge_format: Option<String>,
 }
 
-const EVENT_COLUMNS: &str = "id, name, event_type_id, stage_id, kanban_state::text AS kanban_state, \
+const EVENT_COLUMNS: &str =
+    "id, name, event_type_id, stage_id, kanban_state::text AS kanban_state, \
      date_begin, date_end, date_tz, is_multi_slots, event_slot_count, seats_limited, seats_max, \
      company_id, badge_format::text AS badge_format, is_published, date_publish";
 
@@ -108,6 +110,7 @@ impl EventCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<EventRow, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let stage_id = match sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM event.stages ORDER BY sequence, id LIMIT 1",
         )
@@ -206,8 +209,10 @@ impl EventCommandRepository {
         patch: &PatchEventInput,
         actor: Option<Uuid>,
     ) -> Result<EventRow, EventError> {
-        let row = sqlx::query_as::<_, EventRow>(&format!(
-            r#"UPDATE event.events SET
+        let row = company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, EventRow>(&format!(
+                r#"UPDATE event.events SET
                    name             = COALESCE($2, name),
                    event_type_id    = COALESCE($3, event_type_id),
                    stage_id         = COALESCE($4, stage_id),
@@ -226,25 +231,25 @@ impl EventCommandRepository {
                    badge_format     = COALESCE($17::event_badge_format, badge_format)
                 WHERE id = $1
                RETURNING {EVENT_COLUMNS}"#
-        ))
-        .bind(id)
-        .bind(&patch.name)
-        .bind(patch.event_type_id)
-        .bind(patch.stage_id)
-        .bind(patch.date_begin)
-        .bind(patch.date_end)
-        .bind(patch.date_tz.as_deref())
-        .bind(patch.is_multi_slots)
-        .bind(patch.event_slot_count)
-        .bind(patch.seats_limited)
-        .bind(patch.seats_max)
-        .bind(patch.company_id)
-        .bind(patch.organizer_id)
-        .bind(patch.user_id)
-        .bind(patch.address_id)
-        .bind(&patch.event_url)
-        .bind(patch.badge_format.as_deref())
-        .fetch_optional(&self.pool)
+            ))
+            .bind(id)
+            .bind(&patch.name)
+            .bind(patch.event_type_id)
+            .bind(patch.stage_id)
+            .bind(patch.date_begin)
+            .bind(patch.date_end)
+            .bind(patch.date_tz.as_deref())
+            .bind(patch.is_multi_slots)
+            .bind(patch.event_slot_count)
+            .bind(patch.seats_limited)
+            .bind(patch.seats_max)
+            .bind(patch.company_id)
+            .bind(patch.organizer_id)
+            .bind(patch.user_id)
+            .bind(patch.address_id)
+            .bind(&patch.event_url)
+            .bind(patch.badge_format.as_deref()),
+        )
         .await?
         .ok_or(EventError::EventNotFound)?;
         record_audit(
@@ -263,36 +268,54 @@ impl EventCommandRepository {
     /// `date_publish` stamps now() on FIRST publish and is never
     /// rewritten on republish.
     pub async fn publish(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
-        let row = sqlx::query_as::<_, EventRow>(&format!(
-            r#"UPDATE event.events
+        let row = company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, EventRow>(&format!(
+                r#"UPDATE event.events
                   SET is_published = true,
                       date_publish = COALESCE(date_publish, now())
                 WHERE id = $1
                RETURNING {EVENT_COLUMNS}"#
-        ))
-        .bind(id)
-        .fetch_optional(&self.pool)
+            ))
+            .bind(id),
+        )
         .await?
         .ok_or(EventError::EventNotFound)?;
-        record_audit(&self.pool, "event_published", actor, "event", id, serde_json::json!({}))
-            .await;
+        record_audit(
+            &self.pool,
+            "event_published",
+            actor,
+            "event",
+            id,
+            serde_json::json!({}),
+        )
+        .await;
         Ok(row)
     }
 
     /// UNPUBLISH — the only writer that clears `is_published`
     /// (`date_publish` keeps the historical first-publish stamp).
     pub async fn unpublish(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
-        let row = sqlx::query_as::<_, EventRow>(&format!(
-            r#"UPDATE event.events SET is_published = false
+        let row = company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, EventRow>(&format!(
+                r#"UPDATE event.events SET is_published = false
                 WHERE id = $1
                RETURNING {EVENT_COLUMNS}"#
-        ))
-        .bind(id)
-        .fetch_optional(&self.pool)
+            ))
+            .bind(id),
+        )
         .await?
         .ok_or(EventError::EventNotFound)?;
-        record_audit(&self.pool, "event_unpublished", actor, "event", id, serde_json::json!({}))
-            .await;
+        record_audit(
+            &self.pool,
+            "event_unpublished",
+            actor,
+            "event",
+            id,
+            serde_json::json!({}),
+        )
+        .await;
         Ok(row)
     }
 
@@ -300,6 +323,7 @@ impl EventCommandRepository {
     /// FIRST pipe_end stage by sequence (upstream's two-axis close).
     pub async fn mark_done(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let pipe_end = sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM event.stages WHERE pipe_end ORDER BY sequence, id LIMIT 1",
         )
@@ -332,22 +356,26 @@ impl EventCommandRepository {
 
     /// Fetch one event row.
     pub async fn find(&self, id: Uuid) -> Result<EventRow, EventError> {
-        sqlx::query_as::<_, EventRow>(&format!(
-            "SELECT {EVENT_COLUMNS} FROM event.events WHERE id = $1"
-        ))
-        .bind(id)
-        .fetch_optional(&self.pool)
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, EventRow>(&format!(
+                "SELECT {EVENT_COLUMNS} FROM event.events WHERE id = $1"
+            ))
+            .bind(id),
+        )
         .await?
         .ok_or(EventError::EventNotFound)
     }
 
     /// List events (newest first), capped.
     pub async fn list(&self, limit: i64) -> Result<Vec<EventRow>, EventError> {
-        sqlx::query_as::<_, EventRow>(&format!(
-            "SELECT {EVENT_COLUMNS} FROM event.events ORDER BY date_begin DESC, id LIMIT $1"
-        ))
-        .bind(limit)
-        .fetch_all(&self.pool)
+        company_scope::fetch_all_scoped(
+            &self.pool,
+            sqlx::query_as::<_, EventRow>(&format!(
+                "SELECT {EVENT_COLUMNS} FROM event.events ORDER BY date_begin DESC, id LIMIT $1"
+            ))
+            .bind(limit),
+        )
         .await
         .map_err(EventError::from)
     }
@@ -357,10 +385,15 @@ impl EventCommandRepository {
     /// `event_linked_products` view. Events owns the linkage; the
     /// catalog consumes only this.
     pub async fn list_linked_products(&self) -> Result<Vec<Uuid>, EventError> {
-        sqlx::query_scalar::<_, Uuid>("SELECT product_id FROM event.event_linked_products ORDER BY product_id")
-            .fetch_all(&self.pool)
-            .await
-            .map_err(EventError::from)
+        company_scope::fetch_all_scoped(
+            &self.pool,
+            sqlx::query_as::<_, (Uuid,)>(
+                "SELECT product_id FROM event.event_linked_products ORDER BY product_id",
+            ),
+        )
+        .await
+        .map(|rows| rows.into_iter().map(|r| r.0).collect())
+        .map_err(EventError::from)
     }
 
     /// The publication-checked event read for the capability surface:
@@ -386,18 +419,16 @@ impl EventCommandRepository {
         slot_id: Uuid,
         event_id: Uuid,
     ) -> Result<Option<(Uuid, DateTime<Utc>, DateTime<Utc>)>, EventError> {
-        sqlx::query_as::<_, (Uuid, DateTime<Utc>, Option<DateTime<Utc>>)>(
-            "SELECT id, date_begin, date_end FROM event.slots WHERE id = $1 AND event_id = $2",
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, (Uuid, DateTime<Utc>, Option<DateTime<Utc>>)>(
+                "SELECT id, date_begin, date_end FROM event.slots WHERE id = $1 AND event_id = $2",
+            )
+            .bind(slot_id)
+            .bind(event_id),
         )
-        .bind(slot_id)
-        .bind(event_id)
-        .fetch_optional(&self.pool)
         .await
         .map_err(EventError::from)
-        .map(|row| {
-            row.map(|(id, begin, end)| {
-                (id, begin, end.unwrap_or(begin))
-            })
-        })
+        .map(|row| row.map(|(id, begin, end)| (id, begin, end.unwrap_or(begin))))
     }
 }

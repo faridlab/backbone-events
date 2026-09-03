@@ -38,6 +38,7 @@
 //! events count over the slot with the per-slot cap `seats_max`
 //! (event total = seats_max x event_slot_count).
 
+use backbone_orm::company_scope;
 use chrono::{DateTime, Utc};
 use rand::RngCore;
 use sqlx::PgPool;
@@ -140,16 +141,18 @@ pub async fn record_audit(
     subject_id: Uuid,
     detail: serde_json::Value,
 ) {
-    let _ = sqlx::query(
-        r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
+    let _ = company_scope::execute_scoped(
+        pool,
+        sqlx::query(
+            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
            VALUES ($1::event_audit_event, $2, $3, $4, $5)"#,
+        )
+        .bind(kind)
+        .bind(actor)
+        .bind(subject_type)
+        .bind(subject_id)
+        .bind(detail),
     )
-    .bind(kind)
-    .bind(actor)
-    .bind(subject_type)
-    .bind(subject_id)
-    .bind(detail)
-    .execute(pool)
     .await;
 }
 
@@ -184,6 +187,7 @@ impl SeatRepository {
     /// transaction. See the module doc for the full sequence.
     pub async fn register(&self, cmd: &RegisterCommand) -> Result<RegistrationRow, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let row = Self::register_core(&mut tx, cmd, None).await?;
         tx.commit().await?;
         Ok(row)
@@ -200,6 +204,7 @@ impl SeatRepository {
         link: &SaleLink,
     ) -> Result<RegistrationRow, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let row = Self::register_core(&mut tx, cmd, Some(link)).await?;
         tx.commit().await?;
         Ok(row)
@@ -216,7 +221,6 @@ impl SeatRepository {
         cmd: &RegisterCommand,
         link: Option<&SaleLink>,
     ) -> Result<RegistrationRow, EventError> {
-
         // Lock 1: the event row.
         let event = sqlx::query_as::<_, LockedEvent>(
             r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state, company_id
@@ -250,7 +254,9 @@ impl SeatRepository {
             .fetch_optional(&mut **tx)
             .await?;
             if belongs.is_none() {
-                return Err(EventError::EventSlotNotOfEvent { event_slot_id: slot });
+                return Err(EventError::EventSlotNotOfEvent {
+                    event_slot_id: slot,
+                });
             }
             Some(slot)
         } else {
@@ -269,8 +275,8 @@ impl SeatRepository {
             .ok_or(EventError::EventTicketNotOfEvent { event_ticket_id: ticket })?;
             let (start, end) = window;
             let now = Utc::now();
-            let shut = start.map(|s| now < s).unwrap_or(false)
-                || end.map(|e| now > e).unwrap_or(false);
+            let shut =
+                start.map(|s| now < s).unwrap_or(false) || end.map(|e| now > e).unwrap_or(false);
             if shut {
                 return Err(EventError::EventSaleWindowClosed {
                     event_ticket_id: ticket,
@@ -410,34 +416,37 @@ impl SeatRepository {
         event_id: Uuid,
         slot_id: Option<Uuid>,
     ) -> Result<SeatCounts, EventError> {
-        let event = sqlx::query_as::<_, LockedEvent>(
+        let event = company_scope::fetch_optional_scoped(&self.pool, sqlx::query_as::<_, LockedEvent>(
             r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state, company_id
                  FROM event.events WHERE id = $1"#,
         )
-        .bind(event_id)
-        .fetch_optional(&self.pool)
+        .bind(event_id))
         .await?
         .ok_or(EventError::EventNotFound)?;
 
         let taken: i64 = match slot_id {
             Some(slot) => {
-                sqlx::query_scalar::<_, i64>(
-                    r#"SELECT count(*) FROM event.registrations
+                company_scope::fetch_one_scalar_scoped(
+                    &self.pool,
+                    sqlx::query_scalar::<_, i64>(
+                        r#"SELECT count(*) FROM event.registrations
                         WHERE event_id = $1 AND event_slot_id = $2
                           AND state IN ('open','done') AND active"#,
+                    )
+                    .bind(event_id)
+                    .bind(slot),
                 )
-                .bind(event_id)
-                .bind(slot)
-                .fetch_one(&self.pool)
                 .await?
             }
             None => {
-                sqlx::query_scalar::<_, i64>(
-                    r#"SELECT count(*) FROM event.registrations
+                company_scope::fetch_one_scalar_scoped(
+                    &self.pool,
+                    sqlx::query_scalar::<_, i64>(
+                        r#"SELECT count(*) FROM event.registrations
                         WHERE event_id = $1 AND state IN ('open','done') AND active"#,
+                    )
+                    .bind(event_id),
                 )
-                .bind(event_id)
-                .fetch_one(&self.pool)
                 .await?
             }
         };
@@ -460,6 +469,7 @@ impl SeatRepository {
         actor: Option<Uuid>,
     ) -> Result<(String, String, bool), EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let outcome = sqlx::query_as::<_, (String, String, bool)>(
             r#"WITH prev AS (
                    SELECT state FROM event.registrations WHERE id = $1 FOR UPDATE
@@ -570,7 +580,11 @@ impl SeatRepository {
         // confirm arm; entering done is the done arm. Cheap row write
         // only — generation NEVER runs inline.
         if *active && (after == "open" || after == "done") && before != after {
-            let axis = if after == "done" { "on_done" } else { "on_confirm" };
+            let axis = if after == "done" {
+                "on_done"
+            } else {
+                "on_confirm"
+            };
             sqlx::query(
                 r#"INSERT INTO event.lead_requests (event_id)
                    SELECT r.event_id FROM event.registrations r
@@ -613,8 +627,10 @@ impl SeatRepository {
         company_name: Option<&str>,
         actor: Option<Uuid>,
     ) -> Result<RegistrationRow, EventError> {
-        let row = sqlx::query_as::<_, RegistrationRow>(
-            r#"UPDATE event.registrations SET
+        let row = company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, RegistrationRow>(
+                r#"UPDATE event.registrations SET
                    partner_id   = COALESCE(partner_id, $2),
                    name         = COALESCE(name, $3),
                    phone        = COALESCE(phone, $4),
@@ -624,13 +640,13 @@ impl SeatRepository {
                          company_name, partner_id, state::text AS state, date_closed,
                          sale_order_id, sale_order_state::text AS sale_order_state,
                          sale_status::text AS sale_status, active, barcode, company_id"#,
+            )
+            .bind(registration_id)
+            .bind(partner_id)
+            .bind(name)
+            .bind(phone)
+            .bind(company_name),
         )
-        .bind(registration_id)
-        .bind(partner_id)
-        .bind(name)
-        .bind(phone)
-        .bind(company_name)
-        .fetch_optional(&self.pool)
         .await?
         .ok_or(EventError::RegistrationNotFound)?;
         record_audit(
@@ -652,15 +668,17 @@ impl SeatRepository {
         &self,
         barcode: &str,
     ) -> Result<Option<RegistrationRow>, EventError> {
-        sqlx::query_as::<_, RegistrationRow>(
-            r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, RegistrationRow>(
+                r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
                       sale_order_id, sale_order_state::text AS sale_order_state,
                       sale_status::text AS sale_status, active, barcode, company_id
                  FROM event.registrations WHERE barcode = $1"#,
+            )
+            .bind(barcode),
         )
-        .bind(barcode)
-        .fetch_optional(&self.pool)
         .await
         .map_err(EventError::from)
     }
@@ -670,15 +688,17 @@ impl SeatRepository {
         &self,
         registration_id: Uuid,
     ) -> Result<RegistrationRow, EventError> {
-        sqlx::query_as::<_, RegistrationRow>(
-            r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, RegistrationRow>(
+                r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
                       sale_order_id, sale_order_state::text AS sale_order_state,
                       sale_status::text AS sale_status, active, barcode, company_id
                  FROM event.registrations WHERE id = $1"#,
+            )
+            .bind(registration_id),
         )
-        .bind(registration_id)
-        .fetch_optional(&self.pool)
         .await?
         .ok_or(EventError::RegistrationNotFound)
     }
@@ -690,19 +710,21 @@ impl SeatRepository {
         limit: i64,
         after: Option<Uuid>,
     ) -> Result<Vec<RegistrationRow>, EventError> {
-        sqlx::query_as::<_, RegistrationRow>(
-            r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+        company_scope::fetch_all_scoped(
+            &self.pool,
+            sqlx::query_as::<_, RegistrationRow>(
+                r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
                       sale_order_id, sale_order_state::text AS sale_order_state,
                       sale_status::text AS sale_status, active, barcode, company_id
                  FROM event.registrations
                 WHERE event_id = $1 AND ($2::uuid IS NULL OR id > $2)
                 ORDER BY id LIMIT $3"#,
+            )
+            .bind(event_id)
+            .bind(after)
+            .bind(limit),
         )
-        .bind(event_id)
-        .bind(after)
-        .bind(limit)
-        .fetch_all(&self.pool)
         .await
         .map_err(EventError::from)
     }

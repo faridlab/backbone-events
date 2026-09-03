@@ -17,6 +17,7 @@
 //! `'sent' = queued`: a successful enqueue sets `mail_sent` from
 //! this module's point of view; delivery belongs to the transport.
 
+use backbone_orm::company_scope;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -73,8 +74,10 @@ impl SchedulerRepository {
     /// a sent receipt). `FOR UPDATE SKIP LOCKED` — concurrent hosts
     /// never double-walk a row.
     pub async fn claim_due(&self, limit: i64) -> Result<Vec<SchedulerRow>, EventError> {
-        sqlx::query_as::<_, SchedulerRow>(
-            r#"WITH claimed AS (
+        company_scope::fetch_all_scoped(
+            &self.pool,
+            sqlx::query_as::<_, SchedulerRow>(
+                r#"WITH claimed AS (
                    SELECT m.id FROM event.mails m
                      JOIN event.events e ON e.id = m.event_id
                     WHERE NOT m.mail_done
@@ -99,9 +102,9 @@ impl SchedulerRepository {
                       m.template_ref, m.template_kind,
                       m.mail_done, m.last_registration_id
                  FROM event.mails m JOIN claimed c ON c.id = m.id"#,
+            )
+            .bind(limit),
         )
-        .bind(limit)
-        .fetch_all(&self.pool)
         .await
         .map_err(EventError::from)
     }
@@ -124,6 +127,7 @@ impl SchedulerRepository {
         cap: i64,
     ) -> Result<Vec<Uuid>, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let ids = sqlx::query_scalar::<_, Uuid>(
             r#"INSERT INTO event.mail_registrations (scheduler_id, registration_id, scheduled_date)
                SELECT m.id, r.id,
@@ -163,16 +167,18 @@ impl SchedulerRepository {
     /// How many eligible registrations still lack ANY receipt for
     /// this scheduler (the overflow signal for the re-arm rule).
     pub async fn unmaterialized_count(&self, scheduler_id: Uuid) -> Result<i64, EventError> {
-        sqlx::query_scalar::<_, i64>(
-            r#"SELECT count(*) FROM event.registrations r
+        company_scope::fetch_one_scalar_scoped(
+            &self.pool,
+            sqlx::query_scalar::<_, i64>(
+                r#"SELECT count(*) FROM event.registrations r
                 WHERE r.event_id = (SELECT event_id FROM event.mails WHERE id = $1)
                   AND r.state IN ('open','done') AND r.active
                   AND NOT EXISTS (
                       SELECT 1 FROM event.mail_registrations x
                        WHERE x.scheduler_id = $1 AND x.registration_id = r.id)"#,
+            )
+            .bind(scheduler_id),
         )
-        .bind(scheduler_id)
-        .fetch_one(&self.pool)
         .await
         .map_err(EventError::from)
     }
@@ -184,7 +190,7 @@ impl SchedulerRepository {
         scheduler_id: Uuid,
         limit: i64,
     ) -> Result<Vec<DueReceipt>, EventError> {
-        sqlx::query_as::<_, DueReceipt>(
+        company_scope::fetch_all_scoped(&self.pool, sqlx::query_as::<_, DueReceipt>(
             r#"SELECT mr.id AS receipt_id, mr.registration_id, r.name AS attendee_name,
                       r.email AS attendee_email, r.phone AS attendee_phone, r.barcode, mr.scheduled_date
                  FROM event.mail_registrations mr
@@ -197,8 +203,7 @@ impl SchedulerRepository {
                 LIMIT $2"#,
         )
         .bind(scheduler_id)
-        .bind(limit)
-        .fetch_all(&self.pool)
+        .bind(limit))
         .await
         .map_err(EventError::from)
     }
@@ -206,11 +211,10 @@ impl SchedulerRepository {
     /// Mark one receipt `'sent' = queued` (the idempotent send guard:
     /// only the first writer flips the flag).
     pub async fn mark_receipt_queued(&self, receipt_id: Uuid) -> Result<(), EventError> {
-        sqlx::query(
+        company_scope::execute_scoped(&self.pool, sqlx::query(
             "UPDATE event.mail_registrations SET mail_sent = true, outcome = 'queued' WHERE id = $1 AND NOT mail_sent",
         )
-        .bind(receipt_id)
-        .execute(&self.pool)
+        .bind(receipt_id))
         .await?;
         Ok(())
     }
@@ -222,11 +226,10 @@ impl SchedulerRepository {
         &self,
         receipt_id: Uuid,
     ) -> Result<(), EventError> {
-        sqlx::query(
+        company_scope::execute_scoped(&self.pool, sqlx::query(
             "UPDATE event.mail_registrations SET mail_sent = true, outcome = 'dropped_window_closed' WHERE id = $1 AND NOT mail_sent",
         )
-        .bind(receipt_id)
-        .execute(&self.pool)
+        .bind(receipt_id))
         .await?;
         Ok(())
     }
@@ -236,23 +239,24 @@ impl SchedulerRepository {
     /// refused / recipient invalid). Recorded and CONTINUED — never a
     /// registration blocker, never a throttle.
     pub async fn record_failure(&self, scheduler_id: Uuid, kind: &str) -> Result<(), EventError> {
-        sqlx::query(
+        company_scope::execute_scoped(&self.pool, sqlx::query(
             "UPDATE event.mails SET error_kind = $2::event_mail_error_kind, error_datetime = now() WHERE id = $1",
         )
         .bind(scheduler_id)
-        .bind(kind)
-        .execute(&self.pool)
+        .bind(kind))
         .await?;
         Ok(())
     }
 
     /// Clear the failure marker after a fully successful pass.
     pub async fn clear_failure(&self, scheduler_id: Uuid) -> Result<(), EventError> {
-        sqlx::query(
-            "UPDATE event.mails SET error_kind = NULL, error_datetime = NULL WHERE id = $1",
+        company_scope::execute_scoped(
+            &self.pool,
+            sqlx::query(
+                "UPDATE event.mails SET error_kind = NULL, error_datetime = NULL WHERE id = $1",
+            )
+            .bind(scheduler_id),
         )
-        .bind(scheduler_id)
-        .execute(&self.pool)
         .await?;
         Ok(())
     }
@@ -261,8 +265,10 @@ impl SchedulerRepository {
     /// eligible registration carries a sent (or dropped) receipt. A
     /// late registrant re-opens the row automatically.
     pub async fn recompute_mail_done(&self, scheduler_id: Uuid) -> Result<bool, EventError> {
-        let done: bool = sqlx::query_scalar::<_, bool>(
-            r#"UPDATE event.mails m
+        let done: bool = company_scope::fetch_optional_scalar_scoped(
+            &self.pool,
+            sqlx::query_scalar::<_, bool>(
+                r#"UPDATE event.mails m
                   SET mail_done = NOT EXISTS (
                           SELECT 1 FROM event.registrations r
                            WHERE r.event_id = m.event_id
@@ -274,9 +280,9 @@ impl SchedulerRepository {
                                     AND mr.mail_sent))
                 WHERE m.id = $1
                RETURNING mail_done"#,
+            )
+            .bind(scheduler_id),
         )
-        .bind(scheduler_id)
-        .fetch_optional(&self.pool)
         .await?
         .unwrap_or(true);
         Ok(done)
@@ -284,10 +290,14 @@ impl SchedulerRepository {
 
     /// The overflow re-arm: a pass hit its cap with work left.
     pub async fn rearm(&self, scheduler_id: Uuid) -> Result<(), EventError> {
-        sqlx::query("UPDATE event.mails SET scheduled_date = now() WHERE id = $1 AND NOT mail_done")
-            .bind(scheduler_id)
-            .execute(&self.pool)
-            .await?;
+        company_scope::execute_scoped(
+            &self.pool,
+            sqlx::query(
+                "UPDATE event.mails SET scheduled_date = now() WHERE id = $1 AND NOT mail_done",
+            )
+            .bind(scheduler_id),
+        )
+        .await?;
         Ok(())
     }
 
@@ -296,6 +306,7 @@ impl SchedulerRepository {
     /// audit row is the durable trace.
     pub async fn propagate_cancellations(&self, limit: i64) -> Result<i64, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let deleted = sqlx::query_scalar::<_, Uuid>(
             r#"DELETE FROM event.mail_registrations mr
                 WHERE mr.id IN (
@@ -345,6 +356,7 @@ impl SchedulerRepository {
         actor: Option<Uuid>,
     ) -> Result<(i64, i64), EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let mails = sqlx::query_scalar::<_, Uuid>(
             r#"DELETE FROM event.mails
                 WHERE template_ref = $1 AND template_kind = $2
@@ -383,16 +395,18 @@ impl SchedulerRepository {
 
     /// Officer read: one scheduler row.
     pub async fn find(&self, scheduler_id: Uuid) -> Result<SchedulerRow, EventError> {
-        sqlx::query_as::<_, SchedulerRow>(
-            r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
+        company_scope::fetch_optional_scoped(
+            &self.pool,
+            sqlx::query_as::<_, SchedulerRow>(
+                r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
                       interval_kind::text AS interval_kind,
                       notification_channel::text AS notification_channel,
                       template_ref, template_kind,
                       mail_done, last_registration_id
                  FROM event.mails WHERE id = $1"#,
+            )
+            .bind(scheduler_id),
         )
-        .bind(scheduler_id)
-        .fetch_optional(&self.pool)
         .await?
         .ok_or(EventError::RegistrationNotFound)
         .map_err(|e| match e {
@@ -402,20 +416,19 @@ impl SchedulerRepository {
     }
 
     /// Officer read: an event's scheduler rows.
-    pub async fn list_for_event(
-        &self,
-        event_id: Uuid,
-    ) -> Result<Vec<SchedulerRow>, EventError> {
-        sqlx::query_as::<_, SchedulerRow>(
-            r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
+    pub async fn list_for_event(&self, event_id: Uuid) -> Result<Vec<SchedulerRow>, EventError> {
+        company_scope::fetch_all_scoped(
+            &self.pool,
+            sqlx::query_as::<_, SchedulerRow>(
+                r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
                       interval_kind::text AS interval_kind,
                       notification_channel::text AS notification_channel,
                       template_ref, template_kind,
                       mail_done, last_registration_id
                  FROM event.mails WHERE event_id = $1 ORDER BY id"#,
+            )
+            .bind(event_id),
         )
-        .bind(event_id)
-        .fetch_all(&self.pool)
         .await
         .map_err(EventError::from)
     }
@@ -426,6 +439,7 @@ impl SchedulerRepository {
     /// a sweep. Returns the swept ids.
     pub async fn sweep_mark_done(&self, limit: i64) -> Result<Vec<Uuid>, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         let ids = sqlx::query_scalar::<_, Uuid>(
             r#"WITH claimed AS (
                    SELECT e.id FROM event.events e

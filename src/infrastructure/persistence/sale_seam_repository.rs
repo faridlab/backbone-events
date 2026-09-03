@@ -29,6 +29,7 @@
 //! sale-linked rows; the seam only heals FORWARD (an officer's done
 //! stamp survives every recompute).
 
+use backbone_orm::company_scope;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -130,6 +131,7 @@ impl SaleSeamRepository {
     ) -> Result<SeamOutcome, EventError> {
         let free = grand_total_is_zero(grand_total);
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
 
         if !Self::claim(
             &mut tx,
@@ -274,6 +276,7 @@ impl SaleSeamRepository {
         actor: Option<Uuid>,
     ) -> Result<SeamOutcome, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         if !Self::claim(
             &mut tx,
             consumer_key,
@@ -333,6 +336,7 @@ impl SaleSeamRepository {
         actor: Option<Uuid>,
     ) -> Result<SeamOutcome, EventError> {
         let mut tx = self.pool.begin().await?;
+        company_scope::bind_current_company(&mut tx).await?;
         if !Self::claim(
             &mut tx,
             consumer_key,
