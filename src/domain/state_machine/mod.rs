@@ -1,3 +1,4 @@
+mod booth_state_state_machine;
 mod registration_state_state_machine;
 
 /// Shared error type for all state machines in this module
@@ -28,4 +29,5 @@ pub enum StateMachineError {
     FinalStateReached(String),
 }
 
+pub use booth_state_state_machine::{booth_stateState, booth_stateTransition, booth_stateStateMachine};
 pub use registration_state_state_machine::{registration_stateState, registration_stateTransition, registration_stateStateMachine};

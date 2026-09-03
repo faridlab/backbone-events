@@ -203,6 +203,7 @@ impl IntakeService {
                 company_name: payload.company_name,
                 partner_id: None, // intake NEVER mints or links a party
                 actor: None,      // anonymous shape — no officer claim
+                lead_rule_skip: false, // public intake arms the lead queue like any registration
             })
             .await
     }

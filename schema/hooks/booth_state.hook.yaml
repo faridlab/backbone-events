@@ -1,0 +1,41 @@
+# =============================================================================
+# booth_state — Booth.state's transition surface (EBT-1).
+#
+# TWO values, UNGUARDED transitions, no compute, no sale-order inverse:
+# the confirm verb writes 'unavailable' (with the booking + fill-if-empty
+# contact writes in the same transaction); the release verb writes
+# 'available' (unguarded and silent — releasing a booth is a human
+# decision, and SalesOrderCancelled NEVER frees a booth automatically;
+# register row, docs/spec-overlay.md §R).
+#
+# A booth created directly with a confirmed booking (the direct-sale arm)
+# is BORN 'unavailable' — the create verb posts the born-unavailable
+# audit row; there is no transition to audit.
+#
+# is_paid is NOT part of this machine: it is a ONE-WAY latch set by the
+# paid-hook family (WHERE NOT is_paid) and cleared by nothing.
+# =============================================================================
+
+name: booth_state
+model: Booth
+
+states:
+  field: state
+  values:
+    available:
+      initial: true
+      description: "Bookable (the default)"
+    unavailable:
+      final: true   # the resting outcome of confirm; NOT irreversibility — the release verb re-enters 'available' by the edge below
+      description: "Held by a confirmed booking (or manually blocked)"
+
+  # `transitions` nests UNDER `states:` (the parser scopes it there).
+  transitions:
+    confirm:
+      from: "*"
+      to: unavailable
+      message: "The booking-confirm verb (EBT-3) — writes the booking row, the five booth values (state unavailable, sale_order_line_id, partner/contact fill-if-empty) and the audit row in one transaction."
+    release:
+      from: "*"
+      to: available
+      message: "The release verb — unguarded and silent (a human decision; an order cancel never triggers it). Clears nothing else: is_paid keeps its latch, and sale-linked booths refuse the delete verb (EBS-5c) — release only reopens BOOKING."

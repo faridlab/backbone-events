@@ -155,7 +155,10 @@ impl EventCommandRepository {
         .await?;
 
         // THE ONE TEMPLATE-APPLY: copy the type's scheduler templates
-        // as event-scoped scheduler rows. Runs ONLY here.
+        // as event-scoped scheduler rows, and the type's booth rows as
+        // event booths (WHITELIST: name + booth_category_id only — the
+        // type never templates booking state, contacts, or sale
+        // links). Runs ONLY here; never re-propagates.
         if let Some(type_id) = input.event_type_id {
             sqlx::query(
                 r#"INSERT INTO event.mails
@@ -164,6 +167,15 @@ impl EventCommandRepository {
                    SELECT $1, tm.interval_nbr, tm.interval_unit, tm.interval_kind,
                           tm.notification_channel, now(), tm.template_ref, tm.template_kind
                      FROM event.type_mails tm WHERE tm.event_type_id = $2"#,
+            )
+            .bind(id)
+            .bind(type_id)
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(
+                r#"INSERT INTO event.booths (id, event_id, booth_category_id, name)
+                   SELECT gen_random_uuid(), $1, tb.booth_category_id, tb.name
+                     FROM event.type_booths tb WHERE tb.event_type_id = $2"#,
             )
             .bind(id)
             .bind(type_id)
@@ -338,6 +350,17 @@ impl EventCommandRepository {
         .fetch_all(&self.pool)
         .await
         .map_err(EventError::from)
+    }
+
+    /// THE CATALOG READ (EP-2): the distinct product ids linked across
+    /// the event family (tickets + booth categories), through the
+    /// `event_linked_products` view. Events owns the linkage; the
+    /// catalog consumes only this.
+    pub async fn list_linked_products(&self) -> Result<Vec<Uuid>, EventError> {
+        sqlx::query_scalar::<_, Uuid>("SELECT product_id FROM event.event_linked_products ORDER BY product_id")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(EventError::from)
     }
 
     /// The publication-checked event read for the capability surface:

@@ -11,6 +11,114 @@ use chrono::{DateTime, Utc};
 use super::types::*;
 
 // ============================================================================
+// BOOTHCATEGORY EVENTS
+// ============================================================================
+
+/// Event published when a BoothCategory is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCategoryCreatedEvent {
+    pub id: BoothCategoryId,
+    pub data: BoothCategoryDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a BoothCategory is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCategoryUpdatedEvent {
+    pub id: BoothCategoryId,
+    pub data: BoothCategoryDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a BoothCategory is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCategoryDeletedEvent {
+    pub id: BoothCategoryId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// BOOTH EVENTS
+// ============================================================================
+
+/// Event published when a Booth is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCreatedEvent {
+    pub id: BoothId,
+    pub data: BoothDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Booth is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothUpdatedEvent {
+    pub id: BoothId,
+    pub data: BoothDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a Booth is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothDeletedEvent {
+    pub id: BoothId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// TYPEBOOTH EVENTS
+// ============================================================================
+
+/// Event published when a TypeBooth is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeBoothCreatedEvent {
+    pub id: TypeBoothId,
+    pub data: TypeBoothDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a TypeBooth is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeBoothUpdatedEvent {
+    pub id: TypeBoothId,
+    pub data: TypeBoothDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a TypeBooth is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeBoothDeletedEvent {
+    pub id: TypeBoothId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// BOOTHBOOKING EVENTS
+// ============================================================================
+
+/// Event published when a BoothBooking is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothBookingCreatedEvent {
+    pub id: BoothBookingId,
+    pub data: BoothBookingDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a BoothBooking is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothBookingUpdatedEvent {
+    pub id: BoothBookingId,
+    pub data: BoothBookingDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a BoothBooking is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothBookingDeletedEvent {
+    pub id: BoothBookingId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
 // EVENT EVENTS
 // ============================================================================
 
@@ -88,6 +196,141 @@ pub struct EventTypeUpdatedEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventTypeDeletedEvent {
     pub id: EventTypeId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// LEADPROVENANCE EVENTS
+// ============================================================================
+
+/// Event published when a LeadProvenance is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceCreatedEvent {
+    pub id: LeadProvenanceId,
+    pub data: LeadProvenanceDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadProvenance is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceUpdatedEvent {
+    pub id: LeadProvenanceId,
+    pub data: LeadProvenanceDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadProvenance is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceDeletedEvent {
+    pub id: LeadProvenanceId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// LEADPROVENANCEREGISTRATION EVENTS
+// ============================================================================
+
+/// Event published when a LeadProvenanceRegistration is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationCreatedEvent {
+    pub id: LeadProvenanceRegistrationId,
+    pub data: LeadProvenanceRegistrationDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadProvenanceRegistration is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationUpdatedEvent {
+    pub id: LeadProvenanceRegistrationId,
+    pub data: LeadProvenanceRegistrationDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadProvenanceRegistration is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationDeletedEvent {
+    pub id: LeadProvenanceRegistrationId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// LEADREQUEST EVENTS
+// ============================================================================
+
+/// Event published when a LeadRequest is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRequestCreatedEvent {
+    pub id: LeadRequestId,
+    pub data: LeadRequestDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadRequest is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRequestUpdatedEvent {
+    pub id: LeadRequestId,
+    pub data: LeadRequestDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadRequest is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRequestDeletedEvent {
+    pub id: LeadRequestId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// LEADRULE EVENTS
+// ============================================================================
+
+/// Event published when a LeadRule is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRuleCreatedEvent {
+    pub id: LeadRuleId,
+    pub data: LeadRuleDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadRule is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRuleUpdatedEvent {
+    pub id: LeadRuleId,
+    pub data: LeadRuleDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadRule is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRuleDeletedEvent {
+    pub id: LeadRuleId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// LEADRULEPREDICATE EVENTS
+// ============================================================================
+
+/// Event published when a LeadRulePredicate is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRulePredicateCreatedEvent {
+    pub id: LeadRulePredicateId,
+    pub data: LeadRulePredicateDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadRulePredicate is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRulePredicateUpdatedEvent {
+    pub id: LeadRulePredicateId,
+    pub data: LeadRulePredicateDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a LeadRulePredicate is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRulePredicateDeletedEvent {
+    pub id: LeadRulePredicateId,
     pub occurred_at: DateTime<Utc>,
 }
 
@@ -477,6 +720,18 @@ pub struct TypeMailDeletedEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum EventEvent {
+    BoothCategoryCreated(BoothCategoryCreatedEvent),
+    BoothCategoryUpdated(BoothCategoryUpdatedEvent),
+    BoothCategoryDeleted(BoothCategoryDeletedEvent),
+    BoothCreated(BoothCreatedEvent),
+    BoothUpdated(BoothUpdatedEvent),
+    BoothDeleted(BoothDeletedEvent),
+    TypeBoothCreated(TypeBoothCreatedEvent),
+    TypeBoothUpdated(TypeBoothUpdatedEvent),
+    TypeBoothDeleted(TypeBoothDeletedEvent),
+    BoothBookingCreated(BoothBookingCreatedEvent),
+    BoothBookingUpdated(BoothBookingUpdatedEvent),
+    BoothBookingDeleted(BoothBookingDeletedEvent),
     EventCreated(EventCreatedEvent),
     EventUpdated(EventUpdatedEvent),
     EventDeleted(EventDeletedEvent),
@@ -486,6 +741,21 @@ pub enum EventEvent {
     EventTypeCreated(EventTypeCreatedEvent),
     EventTypeUpdated(EventTypeUpdatedEvent),
     EventTypeDeleted(EventTypeDeletedEvent),
+    LeadProvenanceCreated(LeadProvenanceCreatedEvent),
+    LeadProvenanceUpdated(LeadProvenanceUpdatedEvent),
+    LeadProvenanceDeleted(LeadProvenanceDeletedEvent),
+    LeadProvenanceRegistrationCreated(LeadProvenanceRegistrationCreatedEvent),
+    LeadProvenanceRegistrationUpdated(LeadProvenanceRegistrationUpdatedEvent),
+    LeadProvenanceRegistrationDeleted(LeadProvenanceRegistrationDeletedEvent),
+    LeadRequestCreated(LeadRequestCreatedEvent),
+    LeadRequestUpdated(LeadRequestUpdatedEvent),
+    LeadRequestDeleted(LeadRequestDeletedEvent),
+    LeadRuleCreated(LeadRuleCreatedEvent),
+    LeadRuleUpdated(LeadRuleUpdatedEvent),
+    LeadRuleDeleted(LeadRuleDeletedEvent),
+    LeadRulePredicateCreated(LeadRulePredicateCreatedEvent),
+    LeadRulePredicateUpdated(LeadRulePredicateUpdatedEvent),
+    LeadRulePredicateDeleted(LeadRulePredicateDeletedEvent),
     MailCreated(MailCreatedEvent),
     MailUpdated(MailUpdatedEvent),
     MailDeleted(MailDeletedEvent),

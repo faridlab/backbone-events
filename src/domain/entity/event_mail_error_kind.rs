@@ -14,6 +14,7 @@ pub enum EventMailErrorKind {
     RenderFailed,
     EnqueueRefused,
     RecipientInvalid,
+    SmsEnqueueRefused,
 }
 
 impl std::fmt::Display for EventMailErrorKind {
@@ -24,6 +25,7 @@ impl std::fmt::Display for EventMailErrorKind {
             Self::RenderFailed => write!(f, "render_failed"),
             Self::EnqueueRefused => write!(f, "enqueue_refused"),
             Self::RecipientInvalid => write!(f, "recipient_invalid"),
+            Self::SmsEnqueueRefused => write!(f, "sms_enqueue_refused"),
         }
     }
 }
@@ -38,6 +40,7 @@ impl FromStr for EventMailErrorKind {
             "render_failed" => Ok(Self::RenderFailed),
             "enqueue_refused" => Ok(Self::EnqueueRefused),
             "recipient_invalid" => Ok(Self::RecipientInvalid),
+            "sms_enqueue_refused" => Ok(Self::SmsEnqueueRefused),
             _ => Err(format!("Unknown EventMailErrorKind variant: {}", s)),
         }
     }

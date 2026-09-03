@@ -4,9 +4,18 @@
 //!
 //! Uses backbone-orm's `DatabaseOperations<T>` trait.
 
+mod booth_category_repository;
+mod booth_repository;
+mod type_booth_repository;
+mod booth_booking_repository;
 mod event_repository;
 mod event_audit_log_repository;
 mod event_type_repository;
+mod lead_provenance_repository;
+mod lead_provenance_registration_repository;
+mod lead_request_repository;
+mod lead_rule_repository;
+mod lead_rule_predicate_repository;
 mod mail_repository;
 mod mail_registration_repository;
 mod mail_slot_repository;
@@ -30,12 +39,24 @@ mod type_mail_repository;
 pub mod seat_repository;
 pub mod event_command_repository;
 pub mod scheduler_repository;
+pub mod sale_seam_repository;
+pub mod booth_command_repository;
+pub mod lead_command_repository;
 // END CUSTOM
 
 // Re-exports
+pub use booth_category_repository::BoothCategoryRepository;
+pub use booth_repository::BoothRepository;
+pub use type_booth_repository::TypeBoothRepository;
+pub use booth_booking_repository::BoothBookingRepository;
 pub use event_repository::EventRepository;
 pub use event_audit_log_repository::EventAuditLogRepository;
 pub use event_type_repository::EventTypeRepository;
+pub use lead_provenance_repository::LeadProvenanceRepository;
+pub use lead_provenance_registration_repository::LeadProvenanceRegistrationRepository;
+pub use lead_request_repository::LeadRequestRepository;
+pub use lead_rule_repository::LeadRuleRepository;
+pub use lead_rule_predicate_repository::LeadRulePredicateRepository;
 pub use mail_repository::MailRepository;
 pub use mail_registration_repository::MailRegistrationRepository;
 pub use mail_slot_repository::MailSlotRepository;
@@ -60,9 +81,15 @@ pub use backbone_orm::repository::{
 
 // Re-export custom persistence types
 // <<< CUSTOM
-pub use seat_repository::{RegisterCommand, RegistrationRow, SeatCounts, SeatRepository};
+pub use seat_repository::{RegisterCommand, RegistrationRow, SaleLink, SeatCounts, SeatRepository};
 pub use event_command_repository::{
     CreateEventInput, EventCommandRepository, EventRow, PatchEventInput,
 };
 pub use scheduler_repository::{DueReceipt, SchedulerRepository, SchedulerRow};
+pub use sale_seam_repository::{SaleSeamRepository, SeamOutcome};
+pub use booth_command_repository::{BoothBookingRow, BoothCommandRepository, BoothRow};
+pub use lead_command_repository::{
+    EligibleRegistration, LeadCommandRepository, LeadPredicateRow, LeadRequestRow, LeadRuleRow,
+    PredicateInput,
+};
 // END CUSTOM

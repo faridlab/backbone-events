@@ -1,8 +1,8 @@
 [package]
 name = "backbone-events"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Events core — registrations under one authoritative seat counter (lock-first, count-then-insert), the two-axis event lifecycle, the publication-fenced capability surface (/ics, my-tickets), and the self-arming communication scheduler whose completion reads per-recipient receipts (Odoo event port, core arm of the eight-addon chain)"
+description = "Events core + the sale/booth/crm/sms/desk overlay — registrations under one authoritative seat counter, the sale seam (order-minted registrations, forward-only paid heal, SO-cancel mirror cascade), booth bookings with the DB exclusivity wall, closed-vocabulary lead rules through a host sink port, the dual-channel (mail/sms) self-arming scheduler, and the exact-match desk verb (Odoo event port, core + overlay)"
 
 [lib]
 path = "src/lib.rs"
@@ -61,9 +61,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+# The booth category's price field is a decimal — the pinned generator
+# emits `rust_decimal` into the generated entity/dto/handler for any
+# decimal field, so ship it (and the matching sqlx feature) by default.
+rust_decimal = { version = "1.36", features = ["serde"] }
 
 # Database (PostgreSQL primary)
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json", "migrate"] }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json", "migrate", "rust_decimal"] }
 
 # HTTP framework (Axum) — the module exports pure routers; the host mounts.
 axum = { version = "0.7", features = ["macros"] }

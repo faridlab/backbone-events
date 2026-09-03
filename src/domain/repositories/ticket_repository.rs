@@ -46,12 +46,13 @@ pub struct TicketPaginatedResult {
 pub struct TicketFilter {
     pub event_id: Option<Uuid>,
     pub name: Option<String>,
+    pub product_id: Option<Uuid>,
 }
 
 impl TicketFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.event_id.is_some() || self.name.is_some()
+        self.event_id.is_some() || self.name.is_some() || self.product_id.is_some()
     }
 }
 

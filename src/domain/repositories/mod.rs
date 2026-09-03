@@ -6,9 +6,18 @@
 //! Implementations should be in the infrastructure layer.
 
 
+pub mod booth_category_repository;
+pub mod booth_repository;
+pub mod type_booth_repository;
+pub mod booth_booking_repository;
 pub mod event_repository;
 pub mod event_audit_log_repository;
 pub mod event_type_repository;
+pub mod lead_provenance_repository;
+pub mod lead_provenance_registration_repository;
+pub mod lead_request_repository;
+pub mod lead_rule_repository;
+pub mod lead_rule_predicate_repository;
 pub mod mail_repository;
 pub mod mail_registration_repository;
 pub mod mail_slot_repository;
@@ -25,6 +34,30 @@ pub mod ticket_repository;
 pub mod type_mail_repository;
 
 // Re-exports
+pub use booth_category_repository::{
+    BoothCategoryRepository,
+    BoothCategoryPaginationParams,
+    BoothCategoryPaginatedResult,
+    BoothCategoryFilter,
+};
+pub use booth_repository::{
+    BoothRepository,
+    BoothPaginationParams,
+    BoothPaginatedResult,
+    BoothFilter,
+};
+pub use type_booth_repository::{
+    TypeBoothRepository,
+    TypeBoothPaginationParams,
+    TypeBoothPaginatedResult,
+    TypeBoothFilter,
+};
+pub use booth_booking_repository::{
+    BoothBookingRepository,
+    BoothBookingPaginationParams,
+    BoothBookingPaginatedResult,
+    BoothBookingFilter,
+};
 pub use event_repository::{
     EventRepository,
     EventPaginationParams,
@@ -42,6 +75,36 @@ pub use event_type_repository::{
     EventTypePaginationParams,
     EventTypePaginatedResult,
     EventTypeFilter,
+};
+pub use lead_provenance_repository::{
+    LeadProvenanceRepository,
+    LeadProvenancePaginationParams,
+    LeadProvenancePaginatedResult,
+    LeadProvenanceFilter,
+};
+pub use lead_provenance_registration_repository::{
+    LeadProvenanceRegistrationRepository,
+    LeadProvenanceRegistrationPaginationParams,
+    LeadProvenanceRegistrationPaginatedResult,
+    LeadProvenanceRegistrationFilter,
+};
+pub use lead_request_repository::{
+    LeadRequestRepository,
+    LeadRequestPaginationParams,
+    LeadRequestPaginatedResult,
+    LeadRequestFilter,
+};
+pub use lead_rule_repository::{
+    LeadRuleRepository,
+    LeadRulePaginationParams,
+    LeadRulePaginatedResult,
+    LeadRuleFilter,
+};
+pub use lead_rule_predicate_repository::{
+    LeadRulePredicateRepository,
+    LeadRulePredicatePaginationParams,
+    LeadRulePredicatePaginatedResult,
+    LeadRulePredicateFilter,
 };
 pub use mail_repository::{
     MailRepository,

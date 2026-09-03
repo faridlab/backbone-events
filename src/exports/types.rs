@@ -8,7 +8,250 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 use crate::domain::entity::*;
+
+// ============================================================================
+// BOOTHCATEGORY TYPES
+// ============================================================================
+
+/// Type-safe ID for BoothCategory
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BoothCategoryId(pub Uuid);
+
+impl BoothCategoryId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for BoothCategoryId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<BoothCategoryId> for Uuid {
+    fn from(id: BoothCategoryId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for BoothCategory
+///
+/// This is the public representation of BoothCategory for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCategoryDto {
+    pub id: BoothCategoryId,
+    pub name: String,
+    pub description: Option<String>,
+    pub product_id: Option<Uuid>,
+    pub price: Option<Decimal>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of BoothCategory for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCategorySummary {
+    pub id: BoothCategoryId,
+    pub name: String,
+}
+
+/// Reference to BoothCategory for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothCategoryRef {
+    pub id: BoothCategoryId,
+}
+
+// ============================================================================
+// BOOTH TYPES
+// ============================================================================
+
+/// Type-safe ID for Booth
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BoothId(pub Uuid);
+
+impl BoothId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for BoothId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<BoothId> for Uuid {
+    fn from(id: BoothId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for Booth
+///
+/// This is the public representation of Booth for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothDto {
+    pub id: BoothId,
+    pub event_id: Uuid,
+    pub booth_category_id: Uuid,
+    pub name: String,
+    pub state: EventBoothState,
+    pub partner_id: Option<Uuid>,
+    pub contact_name: Option<String>,
+    pub contact_email: Option<String>,
+    pub contact_phone: Option<String>,
+    pub sale_order_line_id: Option<Uuid>,
+    pub is_paid: bool,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of Booth for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothSummary {
+    pub id: BoothId,
+    pub name: String,
+    pub contact_name: Option<String>,
+}
+
+/// Reference to Booth for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothRef {
+    pub id: BoothId,
+}
+
+// ============================================================================
+// TYPEBOOTH TYPES
+// ============================================================================
+
+/// Type-safe ID for TypeBooth
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct TypeBoothId(pub Uuid);
+
+impl TypeBoothId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for TypeBoothId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<TypeBoothId> for Uuid {
+    fn from(id: TypeBoothId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for TypeBooth
+///
+/// This is the public representation of TypeBooth for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeBoothDto {
+    pub id: TypeBoothId,
+    pub event_type_id: Uuid,
+    pub booth_category_id: Uuid,
+    pub name: String,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of TypeBooth for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeBoothSummary {
+    pub id: TypeBoothId,
+    pub name: String,
+}
+
+/// Reference to TypeBooth for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeBoothRef {
+    pub id: TypeBoothId,
+}
+
+// ============================================================================
+// BOOTHBOOKING TYPES
+// ============================================================================
+
+/// Type-safe ID for BoothBooking
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BoothBookingId(pub Uuid);
+
+impl BoothBookingId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for BoothBookingId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<BoothBookingId> for Uuid {
+    fn from(id: BoothBookingId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for BoothBooking
+///
+/// This is the public representation of BoothBooking for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothBookingDto {
+    pub id: BoothBookingId,
+    pub event_booth_id: Uuid,
+    pub sale_order_line_id: Option<Uuid>,
+    pub status: EventBoothBookingStatus,
+    pub partner_id: Option<Uuid>,
+    pub contact_name: Option<String>,
+    pub contact_email: Option<String>,
+    pub contact_phone: Option<String>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of BoothBooking for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothBookingSummary {
+    pub id: BoothBookingId,
+    pub status: EventBoothBookingStatus,
+    pub contact_name: Option<String>,
+}
+
+/// Reference to BoothBooking for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BoothBookingRef {
+    pub id: BoothBookingId,
+}
 
 // ============================================================================
 // EVENT TYPES
@@ -199,6 +442,294 @@ pub struct EventTypeSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventTypeRef {
     pub id: EventTypeId,
+}
+
+// ============================================================================
+// LEADPROVENANCE TYPES
+// ============================================================================
+
+/// Type-safe ID for LeadProvenance
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct LeadProvenanceId(pub Uuid);
+
+impl LeadProvenanceId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for LeadProvenanceId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<LeadProvenanceId> for Uuid {
+    fn from(id: LeadProvenanceId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for LeadProvenance
+///
+/// This is the public representation of LeadProvenance for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceDto {
+    pub id: LeadProvenanceId,
+    pub rule_id: Uuid,
+    pub event_id: Uuid,
+    pub lead_id: Option<Uuid>,
+    pub group_key: String,
+    pub grouping: EventLeadGrouping,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of LeadProvenance for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceSummary {
+    pub id: LeadProvenanceId,
+}
+
+/// Reference to LeadProvenance for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRef {
+    pub id: LeadProvenanceId,
+}
+
+// ============================================================================
+// LEADPROVENANCEREGISTRATION TYPES
+// ============================================================================
+
+/// Type-safe ID for LeadProvenanceRegistration
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationId(pub Uuid);
+
+impl LeadProvenanceRegistrationId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for LeadProvenanceRegistrationId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<LeadProvenanceRegistrationId> for Uuid {
+    fn from(id: LeadProvenanceRegistrationId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for LeadProvenanceRegistration
+///
+/// This is the public representation of LeadProvenanceRegistration for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationDto {
+    pub id: LeadProvenanceRegistrationId,
+    pub provenance_id: Uuid,
+    pub registration_id: Uuid,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of LeadProvenanceRegistration for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationSummary {
+    pub id: LeadProvenanceRegistrationId,
+}
+
+/// Reference to LeadProvenanceRegistration for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadProvenanceRegistrationRef {
+    pub id: LeadProvenanceRegistrationId,
+}
+
+// ============================================================================
+// LEADREQUEST TYPES
+// ============================================================================
+
+/// Type-safe ID for LeadRequest
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct LeadRequestId(pub Uuid);
+
+impl LeadRequestId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for LeadRequestId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<LeadRequestId> for Uuid {
+    fn from(id: LeadRequestId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for LeadRequest
+///
+/// This is the public representation of LeadRequest for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRequestDto {
+    pub id: LeadRequestId,
+    pub event_id: Uuid,
+    pub done: bool,
+    pub error_detail: Option<String>,
+    pub claimed_at: Option<DateTime<Utc>>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of LeadRequest for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRequestSummary {
+    pub id: LeadRequestId,
+}
+
+/// Reference to LeadRequest for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRequestRef {
+    pub id: LeadRequestId,
+}
+
+// ============================================================================
+// LEADRULE TYPES
+// ============================================================================
+
+/// Type-safe ID for LeadRule
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct LeadRuleId(pub Uuid);
+
+impl LeadRuleId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for LeadRuleId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<LeadRuleId> for Uuid {
+    fn from(id: LeadRuleId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for LeadRule
+///
+/// This is the public representation of LeadRule for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRuleDto {
+    pub id: LeadRuleId,
+    pub name: String,
+    pub event_id: Option<Uuid>,
+    pub basis: EventLeadBasis,
+    pub on_create: bool,
+    pub on_confirm: bool,
+    pub on_done: bool,
+    pub active: bool,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of LeadRule for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRuleSummary {
+    pub id: LeadRuleId,
+    pub name: String,
+}
+
+/// Reference to LeadRule for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRuleRef {
+    pub id: LeadRuleId,
+}
+
+// ============================================================================
+// LEADRULEPREDICATE TYPES
+// ============================================================================
+
+/// Type-safe ID for LeadRulePredicate
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct LeadRulePredicateId(pub Uuid);
+
+impl LeadRulePredicateId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for LeadRulePredicateId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<LeadRulePredicateId> for Uuid {
+    fn from(id: LeadRulePredicateId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for LeadRulePredicate
+///
+/// This is the public representation of LeadRulePredicate for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRulePredicateDto {
+    pub id: LeadRulePredicateId,
+    pub rule_id: Uuid,
+    pub axis: EventLeadPredicateAxis,
+    pub question_id: Option<Uuid>,
+    pub value_ids: serde_json::Value,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of LeadRulePredicate for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRulePredicateSummary {
+    pub id: LeadRulePredicateId,
+}
+
+/// Reference to LeadRulePredicate for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeadRulePredicateRef {
+    pub id: LeadRulePredicateId,
 }
 
 // ============================================================================
@@ -955,6 +1486,7 @@ pub struct TicketDto {
     pub seats_max_per_order: i32,
     pub start_sale_datetime: Option<DateTime<Utc>>,
     pub end_sale_datetime: Option<DateTime<Utc>>,
+    pub product_id: Option<Uuid>,
     pub metadata: serde_json::Value,
 }
 

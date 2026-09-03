@@ -1,0 +1,74 @@
+# =============================================================================
+# event — the CRM arm's generation queue: LeadRequest (ECR-2).
+#
+# Upstream `event.lead` (the scheduler row, confusingly named) held a
+# cursor and ran lead generation under SUPERUSER with a sync arm on
+# registration create. The port keeps the 200-threshold queue shape but
+# re-postures it (ADR-0020):
+#
+#   - ONE open request per event (UNIQUE(event_id)) — a completed request
+#     re-arms (done -> false) when a new trigger lands, so the grain is
+#     "one generation request per event AT A TIME", upstream's exact
+#     meaning, as a DB constraint.
+#   - self_arming + pickup_lock: triggers are cheap in-transaction arm
+#     writes (the registration verbs); the JOB claims a request by
+#     LEASING it (claimed_at = now() in one UPDATE — SKIP LOCKED keeps
+#     concurrent claims from colliding mid-statement, and the lease
+#     column keeps them apart AFTER the statement, for the whole walk:
+#     a freshly-leased row is not claimable until the walk finishes
+#     (finish clears the lease) or the lease expires and the next tick
+#     re-runs at-least-once); commit_per_batch — each claimed request
+#     commits its own generated groups before the next claim, so a
+#     crash mid-run re-runs at-least-once and the provenance unique
+#     makes re-runs idempotent.
+#   - ASYNC-ONLY (§8.2 family posture): no sync arm anywhere. Upstream's
+#     _force_sync / superuser execution sites are the banned shape.
+#   - batch cap: EVENT_LEAD_BATCH (default 200) registrations per pass
+#     under EVENT_LEAD_CRON_LIMIT (default 1000) — upstream's 200
+#     threshold carried as the batch posture.
+#
+# Failures park LOUDLY: error_detail names the failure; done stays
+# false; the next pass retries.
+# =============================================================================
+
+models:
+
+  - name: LeadRequest
+    collection: lead_requests
+    read_only: true
+    description: "LeadRequest — the per-event lead-generation queue row: UNIQUE(event_id), self-arming (registration verbs re-open it), leased by the generation job (claimed_at — one walker per event at a time), committed per request. Read-only over HTTP (system-only writes)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@unique", "@indexed"]
+        description: "The event whose registrations feed generation. UNIQUE — one request per event at a time (ECR-2); a new trigger on a completed request re-opens it (done -> false)."
+      done:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "The pass completed for every eligible registration seen at claim time. A LATER trigger re-opens the row (the anti-join idempotence pattern — a registration created after a pass is never stranded)."
+      error_detail:
+        type: string?
+        attributes: ["@max(500)"]
+        description: "The loud parking lot: the typed failure that stopped the last pass (cleared on the next success)."
+      claimed_at:
+        type: datetime?
+        description: "The generation-pass LEASE: set when a walker claims the row, cleared when the pass finishes (done or parked). A fresh lease makes the row unclaimable by any other walker — the serialization point for the cron pass and the officer run verb. A walker that dies mid-pass leaves a stale lease; it expires (15 minutes) and the next tick re-runs at-least-once."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The event"
+
+    indexes:
+      - type: index
+        fields: [done]
+        description: "The claim domain read (NOT done)"

@@ -33,6 +33,7 @@ pub struct SchedulerRow {
     pub interval_nbr: i32,
     pub interval_unit: String,
     pub interval_kind: String,
+    pub notification_channel: String,
     pub template_ref: Option<Uuid>,
     pub template_kind: Option<String>,
     pub mail_done: bool,
@@ -40,13 +41,15 @@ pub struct SchedulerRow {
 }
 
 /// One due receipt joined to its registration (the render context's
-/// arms).
+/// arms — the phone arms the sms channel; the mail arm reads the
+/// email).
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct DueReceipt {
     pub receipt_id: Uuid,
     pub registration_id: Uuid,
     pub attendee_name: String,
     pub attendee_email: String,
+    pub attendee_phone: Option<String>,
     pub barcode: String,
     pub scheduled_date: Option<DateTime<Utc>>,
 }
@@ -91,7 +94,9 @@ impl SchedulerRepository {
                     FOR UPDATE SKIP LOCKED
                )
                SELECT m.id, m.event_id, m.interval_nbr, m.interval_unit::text AS interval_unit,
-                      m.interval_kind::text AS interval_kind, m.template_ref, m.template_kind,
+                      m.interval_kind::text AS interval_kind,
+                      m.notification_channel::text AS notification_channel,
+                      m.template_ref, m.template_kind,
                       m.mail_done, m.last_registration_id
                  FROM event.mails m JOIN claimed c ON c.id = m.id"#,
         )
@@ -181,7 +186,7 @@ impl SchedulerRepository {
     ) -> Result<Vec<DueReceipt>, EventError> {
         sqlx::query_as::<_, DueReceipt>(
             r#"SELECT mr.id AS receipt_id, mr.registration_id, r.name AS attendee_name,
-                      r.email AS attendee_email, r.barcode, mr.scheduled_date
+                      r.email AS attendee_email, r.phone AS attendee_phone, r.barcode, mr.scheduled_date
                  FROM event.mail_registrations mr
                  JOIN event.registrations r ON r.id = mr.registration_id
                 WHERE mr.scheduler_id = $1
@@ -322,11 +327,67 @@ impl SchedulerRepository {
         Ok(n)
     }
 
+    /// THE TEMPLATE CASCADE (EVM2-2 + ESM-1, collapsed into ONE verb):
+    /// a deleted template takes its dependent scheduler rows AND the
+    /// type-level template rows of the same (kind, ref) pair in one
+    /// set-based transaction. Covers BOTH channels — the pair is
+    /// (template_kind, template_ref) and the channel derives from the
+    /// kind, so mail and sms deps fall to the same verb (the declared
+    /// deviation from upstream's literal DB-level ON DELETE CASCADE is
+    /// recorded in docs/spec-overlay.md: the module holds no FK across
+    /// the template store boundary, so the sweep is a verb the template
+    /// side declares and calls, not a constraint that fires untyped).
+    /// Returns (scheduler rows deleted, type template rows deleted).
+    pub async fn cascade_delete_template_dependents(
+        &self,
+        template_kind: &str,
+        template_ref: Uuid,
+        actor: Option<Uuid>,
+    ) -> Result<(i64, i64), EventError> {
+        let mut tx = self.pool.begin().await?;
+        let mails = sqlx::query_scalar::<_, Uuid>(
+            r#"DELETE FROM event.mails
+                WHERE template_ref = $1 AND template_kind = $2
+               RETURNING id"#,
+        )
+        .bind(template_ref)
+        .bind(template_kind)
+        .fetch_all(&mut *tx)
+        .await?;
+        let type_mails = sqlx::query_scalar::<_, Uuid>(
+            r#"DELETE FROM event.type_mails
+                WHERE template_ref = $1 AND template_kind = $2
+               RETURNING id"#,
+        )
+        .bind(template_ref)
+        .bind(template_kind)
+        .fetch_all(&mut *tx)
+        .await?;
+        let counts = (mails.len() as i64, type_mails.len() as i64);
+        record_audit(
+            &self.pool,
+            "template_cascade",
+            actor,
+            "mail_scheduler",
+            template_ref,
+            serde_json::json!({
+                "template_kind": template_kind,
+                "mails_deleted": counts.0,
+                "type_mails_deleted": counts.1,
+            }),
+        )
+        .await;
+        tx.commit().await?;
+        Ok(counts)
+    }
+
     /// Officer read: one scheduler row.
     pub async fn find(&self, scheduler_id: Uuid) -> Result<SchedulerRow, EventError> {
         sqlx::query_as::<_, SchedulerRow>(
             r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
-                      interval_kind::text AS interval_kind, template_ref, template_kind,
+                      interval_kind::text AS interval_kind,
+                      notification_channel::text AS notification_channel,
+                      template_ref, template_kind,
                       mail_done, last_registration_id
                  FROM event.mails WHERE id = $1"#,
         )
@@ -347,7 +408,9 @@ impl SchedulerRepository {
     ) -> Result<Vec<SchedulerRow>, EventError> {
         sqlx::query_as::<_, SchedulerRow>(
             r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
-                      interval_kind::text AS interval_kind, template_ref, template_kind,
+                      interval_kind::text AS interval_kind,
+                      notification_channel::text AS notification_channel,
+                      template_ref, template_kind,
                       mail_done, last_registration_id
                  FROM event.mails WHERE event_id = $1 ORDER BY id"#,
         )

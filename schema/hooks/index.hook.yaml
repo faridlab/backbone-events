@@ -2,14 +2,16 @@
 # Version: 1
 #
 # Module-level configuration for hooks (lifecycle behaviors): the
-# registration bare-branch state machine, the ZERO-outbox-event declaration,
-# and the TWO declared scheduled jobs (ADR-0020 postures).
+# registration bare-branch + booth state machines, the ZERO-outbox-event
+# declaration (with the v0.2.0 inbound seam-verb declarations), and the
+# THREE declared scheduled jobs (ADR-0020 postures).
 
 module: event
 version: 1
 
 imports:
   - registration_state.hook.yaml
+  - booth_state.hook.yaml
 
 # =============================================================================
 # Module-level configuration
@@ -39,16 +41,39 @@ config:
 # (absence is the truthful posture — adding a producer requires a real
 # consumer + an outbox_schemas decision in the same change):
 #  - OUTBOUND communication rides backbone-mail's queue directly (the ONE
-#    sibling crate edge) through the host-installed EventTemplateRenderer
-#    port;
-#  - INBOUND, nothing subscribes at core: the sale seam (selling's
-#    SalesOrderConfirmed/Cancelled at selling.hook.yaml:135-140 — the
-#    verified mint/cancel carriers) lands with the event_sale arm; the
-#    mirror columns it feeds are declared NOW in registration.model.yaml.
+#    sibling crate edge) through the host-installed EventTemplateRenderer /
+#    EventMailQueue / EventSmsQueue ports;
+#  - INBOUND, the v0.2.0 overlay declares TWO consumed carriers + the
+#    paid-hook family — all consumed through TYPED SEAM VERBS the host
+#    bridges (the buying-consumers precedent: the host owns the envelope
+#    parse + the outbox inbox; the module owns the semantics). The verbs
+#    are idempotent per delivery through the event.seam_inbox table
+#    (INSERT .. ON CONFLICT DO NOTHING inside the verb transaction):
+#
+#    SalesOrderConfirmed  (selling.hook.yaml:135-140; payload order_id,
+#                         company_id, customer_id, grand_total, currency)
+#                         -> SaleSeamService::on_order_confirmed — mints
+#                         (single paid SO -> born draft held; free -> born
+#                         open + armed) or heals an already-linked group
+#                         (forward-only); the registration specs ride the
+#                         typed command (the host enriches from the order's
+#                         lines).
+#    SalesOrderCancelled  (same family; payload order_id, company_id,
+#                         customer_id) -> SaleSeamService::on_order_cancelled
+#                         — mirrors sale_order_state='cancel' (sale_status
+#                         KEPT) and cascades the whole linked registration
+#                         group to 'cancel'. Booths are NOT freed (register
+#                         row).
+#    PAID-HOOK FAMILY     (the billing seam: no carrier exists at this pin
+#                         — backbone-billing declares events: {}; the verb
+#                         lands NOW, the producer at compose)
+#                         -> SaleSeamService::on_order_paid — to_pay -> sold
+#                         + the ES-4 heal (draft/cancel -> open, armed) +
+#                         the booths is_paid one-way latch.
 events: {}
 
 # =============================================================================
-# Scheduled jobs (ADR-0020 postures) — exactly TWO
+# Scheduled jobs (ADR-0020 postures) — exactly THREE
 # =============================================================================
 # Nothing else owns a clock: the ticket sale window is READ-TIME LAZY (a
 # pure read predicate over stored instants — no cron flips anything,
@@ -58,7 +83,7 @@ events: {}
 # ASYNC MODE IS THE ONLY MODE: registration verbs ARM in-transaction (cheap
 # row updates) and NEVER execute the scheduler inline — the upstream inline
 # SUPERUSER execution path (EVM2-12) is banned; the verb never blocks on
-# mail.
+# mail or lead generation.
 
 scheduled_jobs:
 
@@ -82,3 +107,18 @@ scheduled_jobs:
     posture: pull                       # deviation, named: upstream _gc_mark_events_done rode @api.autovacuum (ADR-0020 autovacuum_ride); no shared backbone autovacuum host exists, so a daily pull on the host wall-clock scheduler is the truthful nearest posture (the website visitor-gc precedent)
     commit_policy: commit_per_batch     # bounded batches with commit-progress (upstream's unbounded search is not ported)
     pickup_lock: true                   # FOR UPDATE SKIP LOCKED event claims
+
+  event-lead-generation:
+    schedule: "*/15 * * * *"            # the FLOOR tick; exact dispatch is trigger-driven
+    handler: "event::run_due_lead_requests"
+    posture: self_arming
+    triggers:
+      - registration_created_or_confirmed_or_done   # the registration verbs arm the per-event queue row (on_create/on_confirm/on_done axes of an ACTIVE rule)
+      - lead_rule_created_or_activated              # a new/activated rule arms the events in its scope
+    commit_policy: commit_per_batch     # each claimed request commits its generated groups before the next claim (EVENT_LEAD_BATCH default 200, EVENT_LEAD_CRON_LIMIT default 1000 — upstream's 200 threshold as the batch posture); provenance UNIQUE(rule_id, group_key) makes the at-least-once re-run idempotent
+    pickup_lock: true                   # the request LEASE: one UPDATE stamps claimed_at (SKIP LOCKED inside the statement), and the lease column holds the exclusion for the walker's WHOLE per-event pass — a second pass or the officer run verb cannot claim a freshly-leased event; finish clears the lease, a dead walker's lease expires (900s) and the next tick re-runs at-least-once
+
+    # Upstream's SYNC arm on registration create (and every superuser
+    # execution site) is NOT ported — async-only, the §8.2 family posture.
+    # The lead sink is the host-installed EventLeadSink port; the refusing
+    # default parks the request loudly (error_detail) instead of skipping.

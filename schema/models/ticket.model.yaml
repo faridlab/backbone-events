@@ -2,8 +2,10 @@
 # event — the admission grain: Ticket.
 #
 # Upstream `event.event.ticket`: a named admission tier with its own optional
-# cap and sale window. NO price column at core — pricing is the event_product
-# arm (next increment, docs/spec.md §11.1).
+# cap and sale window. NO price column — pricing stays the selling domain's
+# truth; this module's sale linkage is the LOGICAL product ref (EP-2,
+# event_product arm landed at v0.2.0: tickets gain product_id; the price
+# NEVER copies here — the read model joins at compose, EP-8).
 #
 # The sale window is READ-TIME LAZY (docs/spec.md §2.3): a pure read
 # predicate evaluated against stored UTC instants in the event TZ; no cron
@@ -44,6 +46,10 @@ models:
       end_sale_datetime:
         type: datetime?
         description: "Sale window end (read-time lazy predicate — no cron; order CHECK in the hardening migration, EBG-10)."
+      product_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL catalog product ref (EP-2 — the events-owned sellable linkage). No cross-module FK, NO price copy (EP-8 — pricing is the selling domain's truth, joined in the read model at compose), and NO catalog-side enum mutation: the catalog seat ratifies product_kind/event-ness at compose through the event.event_linked_products view + the billing-policy default. Set only through the ticket verbs."
       metadata:
         type: Metadata
         attributes: ["@audit_metadata"]

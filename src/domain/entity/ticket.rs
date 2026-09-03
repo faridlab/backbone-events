@@ -54,6 +54,7 @@ pub struct Ticket {
     pub seats_max_per_order: i32,
     pub start_sale_datetime: Option<DateTime<Utc>>,
     pub end_sale_datetime: Option<DateTime<Utc>>,
+    pub product_id: Option<Uuid>,
     #[serde(default)]
     #[sqlx(json)]
     pub metadata: AuditMetadata,
@@ -75,6 +76,7 @@ impl Ticket {
             seats_max_per_order,
             start_sale_datetime: None,
             end_sale_datetime: None,
+            product_id: None,
             metadata: AuditMetadata::default(),
         }
     }
@@ -146,6 +148,12 @@ impl Ticket {
         self
     }
 
+    /// Set the product_id field (chainable)
+    pub fn with_product_id(mut self, value: Uuid) -> Self {
+        self.product_id = Some(value);
+        self
+    }
+
     // ==========================================================
     // Partial Update
     // ==========================================================
@@ -171,6 +179,9 @@ impl Ticket {
                 }
                 "end_sale_datetime" => {
                     if let Ok(v) = serde_json::from_value(value) { self.end_sale_datetime = v; }
+                }
+                "product_id" => {
+                    if let Ok(v) = serde_json::from_value(value) { self.product_id = v; }
                 }
                 _ => {} // ignore unknown fields
             }
@@ -227,6 +238,7 @@ impl backbone_orm::EntityRepoMeta for Ticket {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("event_id".to_string(), "uuid".to_string());
+        m.insert("product_id".to_string(), "uuid".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
@@ -249,6 +261,7 @@ pub struct TicketBuilder {
     seats_max_per_order: Option<i32>,
     start_sale_datetime: Option<DateTime<Utc>>,
     end_sale_datetime: Option<DateTime<Utc>>,
+    product_id: Option<Uuid>,
 }
 
 impl TicketBuilder {
@@ -288,6 +301,12 @@ impl TicketBuilder {
         self
     }
 
+    /// Set the product_id field (optional)
+    pub fn product_id(mut self, value: Uuid) -> Self {
+        self.product_id = Some(value);
+        self
+    }
+
     /// Build the Ticket entity
     ///
     /// Returns Err if any required field without a default is missing.
@@ -303,6 +322,7 @@ impl TicketBuilder {
             seats_max_per_order: self.seats_max_per_order.unwrap_or(0),
             start_sale_datetime: self.start_sale_datetime,
             end_sale_datetime: self.end_sale_datetime,
+            product_id: self.product_id,
             metadata: AuditMetadata::default(),
         })
     }

@@ -8,7 +8,7 @@
 //! ## Usage from other modules
 //!
 //! ```text
-//! use event::exports::{EventDto};
+//! use event::exports::{BoothCategoryDto};
 //! ```
 
 mod types;
@@ -27,6 +27,18 @@ pub use events::*;
 /// Summary of what this module exports
 ///
 /// ## Public Types
+/// - `BoothCategoryDto` - Data transfer object for BoothCategory
+/// - `BoothCategorySummary` - Summary view of BoothCategory
+/// - `BoothCategoryId` - Type-safe ID wrapper
+/// - `BoothDto` - Data transfer object for Booth
+/// - `BoothSummary` - Summary view of Booth
+/// - `BoothId` - Type-safe ID wrapper
+/// - `TypeBoothDto` - Data transfer object for TypeBooth
+/// - `TypeBoothSummary` - Summary view of TypeBooth
+/// - `TypeBoothId` - Type-safe ID wrapper
+/// - `BoothBookingDto` - Data transfer object for BoothBooking
+/// - `BoothBookingSummary` - Summary view of BoothBooking
+/// - `BoothBookingId` - Type-safe ID wrapper
 /// - `EventDto` - Data transfer object for Event
 /// - `EventSummary` - Summary view of Event
 /// - `EventId` - Type-safe ID wrapper
@@ -36,6 +48,21 @@ pub use events::*;
 /// - `EventTypeDto` - Data transfer object for EventType
 /// - `EventTypeSummary` - Summary view of EventType
 /// - `EventTypeId` - Type-safe ID wrapper
+/// - `LeadProvenanceDto` - Data transfer object for LeadProvenance
+/// - `LeadProvenanceSummary` - Summary view of LeadProvenance
+/// - `LeadProvenanceId` - Type-safe ID wrapper
+/// - `LeadProvenanceRegistrationDto` - Data transfer object for LeadProvenanceRegistration
+/// - `LeadProvenanceRegistrationSummary` - Summary view of LeadProvenanceRegistration
+/// - `LeadProvenanceRegistrationId` - Type-safe ID wrapper
+/// - `LeadRequestDto` - Data transfer object for LeadRequest
+/// - `LeadRequestSummary` - Summary view of LeadRequest
+/// - `LeadRequestId` - Type-safe ID wrapper
+/// - `LeadRuleDto` - Data transfer object for LeadRule
+/// - `LeadRuleSummary` - Summary view of LeadRule
+/// - `LeadRuleId` - Type-safe ID wrapper
+/// - `LeadRulePredicateDto` - Data transfer object for LeadRulePredicate
+/// - `LeadRulePredicateSummary` - Summary view of LeadRulePredicate
+/// - `LeadRulePredicateId` - Type-safe ID wrapper
 /// - `MailDto` - Data transfer object for Mail
 /// - `MailSummary` - Summary view of Mail
 /// - `MailId` - Type-safe ID wrapper
@@ -80,6 +107,18 @@ pub use events::*;
 /// - `TypeMailId` - Type-safe ID wrapper
 ///
 /// ## Public Events
+/// - `BoothCategoryCreatedEvent` - Published when BoothCategory is created
+/// - `BoothCategoryUpdatedEvent` - Published when BoothCategory is updated
+/// - `BoothCategoryDeletedEvent` - Published when BoothCategory is deleted
+/// - `BoothCreatedEvent` - Published when Booth is created
+/// - `BoothUpdatedEvent` - Published when Booth is updated
+/// - `BoothDeletedEvent` - Published when Booth is deleted
+/// - `TypeBoothCreatedEvent` - Published when TypeBooth is created
+/// - `TypeBoothUpdatedEvent` - Published when TypeBooth is updated
+/// - `TypeBoothDeletedEvent` - Published when TypeBooth is deleted
+/// - `BoothBookingCreatedEvent` - Published when BoothBooking is created
+/// - `BoothBookingUpdatedEvent` - Published when BoothBooking is updated
+/// - `BoothBookingDeletedEvent` - Published when BoothBooking is deleted
 /// - `EventCreatedEvent` - Published when Event is created
 /// - `EventUpdatedEvent` - Published when Event is updated
 /// - `EventDeletedEvent` - Published when Event is deleted
@@ -89,6 +128,21 @@ pub use events::*;
 /// - `EventTypeCreatedEvent` - Published when EventType is created
 /// - `EventTypeUpdatedEvent` - Published when EventType is updated
 /// - `EventTypeDeletedEvent` - Published when EventType is deleted
+/// - `LeadProvenanceCreatedEvent` - Published when LeadProvenance is created
+/// - `LeadProvenanceUpdatedEvent` - Published when LeadProvenance is updated
+/// - `LeadProvenanceDeletedEvent` - Published when LeadProvenance is deleted
+/// - `LeadProvenanceRegistrationCreatedEvent` - Published when LeadProvenanceRegistration is created
+/// - `LeadProvenanceRegistrationUpdatedEvent` - Published when LeadProvenanceRegistration is updated
+/// - `LeadProvenanceRegistrationDeletedEvent` - Published when LeadProvenanceRegistration is deleted
+/// - `LeadRequestCreatedEvent` - Published when LeadRequest is created
+/// - `LeadRequestUpdatedEvent` - Published when LeadRequest is updated
+/// - `LeadRequestDeletedEvent` - Published when LeadRequest is deleted
+/// - `LeadRuleCreatedEvent` - Published when LeadRule is created
+/// - `LeadRuleUpdatedEvent` - Published when LeadRule is updated
+/// - `LeadRuleDeletedEvent` - Published when LeadRule is deleted
+/// - `LeadRulePredicateCreatedEvent` - Published when LeadRulePredicate is created
+/// - `LeadRulePredicateUpdatedEvent` - Published when LeadRulePredicate is updated
+/// - `LeadRulePredicateDeletedEvent` - Published when LeadRulePredicate is deleted
 /// - `MailCreatedEvent` - Published when Mail is created
 /// - `MailUpdatedEvent` - Published when Mail is updated
 /// - `MailDeletedEvent` - Published when Mail is deleted

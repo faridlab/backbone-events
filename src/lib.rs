@@ -35,9 +35,18 @@ pub use domain::state_machine::*;
 pub use infrastructure::persistence::*;
 
 // Re-exports - Application services
+pub use application::service::BoothCategoryService;
+pub use application::service::BoothService;
+pub use application::service::TypeBoothService;
+pub use application::service::BoothBookingService;
 pub use application::service::EventService;
 pub use application::service::EventAuditLogService;
 pub use application::service::EventTypeService;
+pub use application::service::LeadProvenanceService;
+pub use application::service::LeadProvenanceRegistrationService;
+pub use application::service::LeadRequestService;
+pub use application::service::LeadRuleService;
+pub use application::service::LeadRulePredicateService;
 pub use application::service::MailService;
 pub use application::service::MailRegistrationService;
 pub use application::service::MailSlotService;
@@ -70,9 +79,18 @@ use sqlx::PgPool;
 /// let router = event.all_crud_routes();
 /// ```
 pub struct EventModule {
+    pub(crate) booth_category_service: Arc<BoothCategoryService>,
+    pub(crate) booth_service: Arc<BoothService>,
+    pub(crate) type_booth_service: Arc<TypeBoothService>,
+    pub(crate) booth_booking_service: Arc<BoothBookingService>,
     pub(crate) event_service: Arc<EventService>,
     pub(crate) event_audit_log_service: Arc<EventAuditLogService>,
     pub(crate) event_type_service: Arc<EventTypeService>,
+    pub(crate) lead_provenance_service: Arc<LeadProvenanceService>,
+    pub(crate) lead_provenance_registration_service: Arc<LeadProvenanceRegistrationService>,
+    pub(crate) lead_request_service: Arc<LeadRequestService>,
+    pub(crate) lead_rule_service: Arc<LeadRuleService>,
+    pub(crate) lead_rule_predicate_service: Arc<LeadRulePredicateService>,
     pub(crate) mail_service: Arc<MailService>,
     pub(crate) mail_registration_service: Arc<MailRegistrationService>,
     pub(crate) mail_slot_service: Arc<MailSlotService>,
@@ -104,9 +122,18 @@ impl EventModule {
     /// real deployment; use this only in trusted/admin/seeding contexts.
     pub fn all_crud_routes(&self) -> Router {
         use presentation::http::{
+            create_booth_category_routes,
+            create_booth_read_routes,
+            create_type_booth_routes,
+            create_booth_booking_read_routes,
             create_event_read_routes,
             create_event_audit_log_read_routes,
             create_event_type_routes,
+            create_lead_provenance_read_routes,
+            create_lead_provenance_registration_read_routes,
+            create_lead_request_read_routes,
+            create_lead_rule_read_routes,
+            create_lead_rule_predicate_read_routes,
             create_mail_read_routes,
             create_mail_registration_routes,
             create_mail_slot_routes,
@@ -124,9 +151,18 @@ impl EventModule {
         };
 
         Router::new()
+            .merge(create_booth_category_routes(self.booth_category_service.clone()))
+            .merge(create_booth_read_routes(self.booth_service.clone()))
+            .merge(create_type_booth_routes(self.type_booth_service.clone()))
+            .merge(create_booth_booking_read_routes(self.booth_booking_service.clone()))
             .merge(create_event_read_routes(self.event_service.clone()))
             .merge(create_event_audit_log_read_routes(self.event_audit_log_service.clone()))
             .merge(create_event_type_routes(self.event_type_service.clone()))
+            .merge(create_lead_provenance_read_routes(self.lead_provenance_service.clone()))
+            .merge(create_lead_provenance_registration_read_routes(self.lead_provenance_registration_service.clone()))
+            .merge(create_lead_request_read_routes(self.lead_request_service.clone()))
+            .merge(create_lead_rule_read_routes(self.lead_rule_service.clone()))
+            .merge(create_lead_rule_predicate_read_routes(self.lead_rule_predicate_service.clone()))
             .merge(create_mail_read_routes(self.mail_service.clone()))
             .merge(create_mail_registration_routes(self.mail_registration_service.clone()))
             .merge(create_mail_slot_routes(self.mail_slot_service.clone()))
@@ -160,9 +196,18 @@ impl EventModule {
     /// merge validated write routes (or a write service's HTTP layer) onto it.
     pub fn readonly_routes(&self) -> Router {
         use presentation::http::{
+            create_booth_category_read_routes,
+            create_booth_read_routes,
+            create_type_booth_read_routes,
+            create_booth_booking_read_routes,
             create_event_read_routes,
             create_event_audit_log_read_routes,
             create_event_type_read_routes,
+            create_lead_provenance_read_routes,
+            create_lead_provenance_registration_read_routes,
+            create_lead_request_read_routes,
+            create_lead_rule_read_routes,
+            create_lead_rule_predicate_read_routes,
             create_mail_read_routes,
             create_mail_registration_read_routes,
             create_mail_slot_read_routes,
@@ -180,9 +225,18 @@ impl EventModule {
         };
 
         Router::new()
+            .merge(create_booth_category_read_routes(self.booth_category_service.clone()))
+            .merge(create_booth_read_routes(self.booth_service.clone()))
+            .merge(create_type_booth_read_routes(self.type_booth_service.clone()))
+            .merge(create_booth_booking_read_routes(self.booth_booking_service.clone()))
             .merge(create_event_read_routes(self.event_service.clone()))
             .merge(create_event_audit_log_read_routes(self.event_audit_log_service.clone()))
             .merge(create_event_type_read_routes(self.event_type_service.clone()))
+            .merge(create_lead_provenance_read_routes(self.lead_provenance_service.clone()))
+            .merge(create_lead_provenance_registration_read_routes(self.lead_provenance_registration_service.clone()))
+            .merge(create_lead_request_read_routes(self.lead_request_service.clone()))
+            .merge(create_lead_rule_read_routes(self.lead_rule_service.clone()))
+            .merge(create_lead_rule_predicate_read_routes(self.lead_rule_predicate_service.clone()))
             .merge(create_mail_read_routes(self.mail_service.clone()))
             .merge(create_mail_registration_read_routes(self.mail_registration_service.clone()))
             .merge(create_mail_slot_read_routes(self.mail_slot_service.clone()))
@@ -230,6 +284,22 @@ impl EventModuleBuilder {
         let db_pool = self.db_pool
             .ok_or_else(|| anyhow::anyhow!("Database pool not configured"))?;
 
+        // BoothCategory service
+        let booth_category_repository = Arc::new(BoothCategoryRepository::new(db_pool.clone()));
+        let booth_category_service = Arc::new(BoothCategoryService::with_repository(booth_category_repository.clone()));
+
+        // Booth service
+        let booth_repository = Arc::new(BoothRepository::new(db_pool.clone()));
+        let booth_service = Arc::new(BoothService::with_repository(booth_repository.clone()));
+
+        // TypeBooth service
+        let type_booth_repository = Arc::new(TypeBoothRepository::new(db_pool.clone()));
+        let type_booth_service = Arc::new(TypeBoothService::with_repository(type_booth_repository.clone()));
+
+        // BoothBooking service
+        let booth_booking_repository = Arc::new(BoothBookingRepository::new(db_pool.clone()));
+        let booth_booking_service = Arc::new(BoothBookingService::with_repository(booth_booking_repository.clone()));
+
         // Event service
         let event_repository = Arc::new(EventRepository::new(db_pool.clone()));
         let event_service = Arc::new(EventService::with_repository(event_repository.clone()));
@@ -241,6 +311,26 @@ impl EventModuleBuilder {
         // EventType service
         let event_type_repository = Arc::new(EventTypeRepository::new(db_pool.clone()));
         let event_type_service = Arc::new(EventTypeService::with_repository(event_type_repository.clone()));
+
+        // LeadProvenance service
+        let lead_provenance_repository = Arc::new(LeadProvenanceRepository::new(db_pool.clone()));
+        let lead_provenance_service = Arc::new(LeadProvenanceService::with_repository(lead_provenance_repository.clone()));
+
+        // LeadProvenanceRegistration service
+        let lead_provenance_registration_repository = Arc::new(LeadProvenanceRegistrationRepository::new(db_pool.clone()));
+        let lead_provenance_registration_service = Arc::new(LeadProvenanceRegistrationService::with_repository(lead_provenance_registration_repository.clone()));
+
+        // LeadRequest service
+        let lead_request_repository = Arc::new(LeadRequestRepository::new(db_pool.clone()));
+        let lead_request_service = Arc::new(LeadRequestService::with_repository(lead_request_repository.clone()));
+
+        // LeadRule service
+        let lead_rule_repository = Arc::new(LeadRuleRepository::new(db_pool.clone()));
+        let lead_rule_service = Arc::new(LeadRuleService::with_repository(lead_rule_repository.clone()));
+
+        // LeadRulePredicate service
+        let lead_rule_predicate_repository = Arc::new(LeadRulePredicateRepository::new(db_pool.clone()));
+        let lead_rule_predicate_service = Arc::new(LeadRulePredicateService::with_repository(lead_rule_predicate_repository.clone()));
 
         // Mail service
         let mail_repository = Arc::new(MailRepository::new(db_pool.clone()));
@@ -302,9 +392,18 @@ impl EventModuleBuilder {
         // END CUSTOM
 
         Ok(EventModule {
+            booth_category_service,
+            booth_service,
+            type_booth_service,
+            booth_booking_service,
             event_service,
             event_audit_log_service,
             event_type_service,
+            lead_provenance_service,
+            lead_provenance_registration_service,
+            lead_request_service,
+            lead_rule_service,
+            lead_rule_predicate_service,
             mail_service,
             mail_registration_service,
             mail_slot_service,

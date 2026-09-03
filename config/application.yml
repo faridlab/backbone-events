@@ -139,6 +139,69 @@ entities:
     pagination:
       default_limit: 20
       max_limit: 100
+  booth_category:
+    collection: booth_categories
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  booth:
+    collection: booths
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  type_booth:
+    collection: type_booths
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  booth_booking:
+    collection: booth_bookings
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  lead_provenance:
+    collection: lead_provenances
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  lead_provenance_registration:
+    collection: lead_provenance_registrations
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  lead_request:
+    collection: lead_requests
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  lead_rule:
+    collection: lead_rules
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
+  lead_rule_predicate:
+    collection: lead_rule_predicates
+    enabled: true
+    cache_ttl: 300
+    pagination:
+      default_limit: 20
+      max_limit: 100
 tracing:
   enabled: true
   exporter: otlp

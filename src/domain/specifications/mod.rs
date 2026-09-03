@@ -6,9 +6,18 @@
 
 pub use backbone_core::{Specification, AndSpecification, OrSpecification, NotSpecification};
 
+pub mod booth_category_specification;
+pub mod booth_specification;
+pub mod type_booth_specification;
+pub mod booth_booking_specification;
 pub mod event_specification;
 pub mod event_audit_log_specification;
 pub mod event_type_specification;
+pub mod lead_provenance_specification;
+pub mod lead_provenance_registration_specification;
+pub mod lead_request_specification;
+pub mod lead_rule_specification;
+pub mod lead_rule_predicate_specification;
 pub mod mail_specification;
 pub mod mail_registration_specification;
 pub mod mail_slot_specification;

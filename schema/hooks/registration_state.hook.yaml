@@ -35,7 +35,7 @@ states:
       initial: true
       description: "Seat-holding default (hand-set; no auto_confirm exists)"
     done:
-      final: true   # the machine's resting outcome (the lint floor demands one); NOT irreversibility — set_draft/cancel re-enter from it by the any->any edges below. The only AUTO-advancing path to done is the barcode desk verb (next increment).
+      final: true   # the machine's resting outcome (the lint floor demands one); NOT irreversibility — set_draft/cancel re-enter from it by the any->any edges below. The only AUTO-advancing path to done is the barcode desk verb (v0.2.0, FROZEN branch order).
       description: "Attended/used — stamps date_closed if empty"
     cancel:
       description: "Cancelled — leaves the seat domain; heals forward (-> open) when the linked order confirms"

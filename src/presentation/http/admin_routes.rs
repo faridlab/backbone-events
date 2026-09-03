@@ -28,6 +28,22 @@
 //! - POST /admin/mails/:id/run                   run one scheduler now
 //! - POST /admin/scheduler/run                   run the pass now
 //! - POST /admin/sweep/mark-done                 the done sweep
+//! - POST /admin/desk/register-attendee          the desk scan (frozen branch order)
+//! - GET/POST /admin/booths                      list (?event_id=) / create
+//! - GET/PATCH/DELETE /admin/booths/:id          read / patch (fill-if-empty) / fenced delete
+//! - POST /admin/booths/:id/release              the human release verb
+//! - POST /admin/booths/mark-paid                the one-way paid latch ({line_ids})
+//! - GET/POST /admin/booths/:id/bookings         booking intents
+//! - GET/DELETE /admin/booth-bookings/:id        read / withdraw a pending intent
+//! - POST /admin/booth-bookings/:id/confirm      the explicit confirm (the DB exclusivity wall)
+//! - GET/POST /admin/lead-rules                  list / create (closed vocabulary)
+//! - GET/PATCH /admin/lead-rules/:id             the rule read model / patch
+//! - POST /admin/lead-rules/from-answer          the answer-to-rule bridge
+//! - POST /admin/lead-rules/relink               the merge-relink verb
+//! - GET  /admin/lead-requests?event_id=         the queue row read
+//! - POST /admin/lead-requests/run               the generation pass now
+//! - POST /admin/template-cascade/on-template-deleted  the one cascade verb (both channels)
+//! - GET  /admin/catalog/event-linked-products   EP-2's exclusion predicate read
 
 use std::sync::Arc;
 
@@ -42,15 +58,25 @@ use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
+use crate::application::service::booth_command_service::BoothCommandService;
+use crate::application::service::desk_service::DeskService;
 use crate::application::service::event_error::{EventError, EventResult};
 use crate::application::service::event_service::{EventCommandService, PUBLISH_FENCED_FIELDS};
+use crate::application::service::lead_command_service::{
+    CreateRuleInput, FromAnswerInput, LeadRuleCommandService, PatchRuleInput, RelinkInput,
+};
+use crate::application::service::lead_generation_service::LeadGenerationService;
+use crate::application::service::lead_sink::EventLeadSink;
 use crate::application::service::registration_service::RegistrationCommandService;
 use crate::application::service::scheduler_service::SchedulerService;
 use crate::application::service::seat_service::SeatService;
+use crate::application::service::sms_port::EventSmsQueue;
 use crate::application::service::template_port::{EventMailQueue, EventTemplateRenderer};
+use crate::infrastructure::persistence::booth_command_repository::BoothCommandRepository;
 use crate::infrastructure::persistence::event_command_repository::{
     CreateEventInput, EventCommandRepository, PatchEventInput,
 };
+use crate::infrastructure::persistence::lead_command_repository::LeadCommandRepository;
 use crate::infrastructure::persistence::seat_repository::{RegisterCommand, SeatRepository};
 use crate::infrastructure::persistence::scheduler_repository::SchedulerRepository;
 
@@ -70,13 +96,22 @@ pub struct EventAdminState {
     pub seats: Arc<SeatService>,
     pub registrations: Arc<RegistrationCommandService>,
     pub scheduler: Arc<SchedulerService>,
+    pub booths: Arc<BoothCommandService>,
+    pub lead_rules: Arc<LeadRuleCommandService>,
+    pub leads: Arc<LeadGenerationService>,
+    pub desk: Arc<DeskService>,
 }
 
 impl EventAdminState {
+    /// Compose with the host-installed ports (renderer, mail queue,
+    /// sms queue, lead sink — each has a refusing default so an
+    /// unwired host gets typed failures, never silent skips).
     pub fn new(
         pool: sqlx::PgPool,
         renderer: Arc<dyn EventTemplateRenderer>,
         queue: Arc<dyn EventMailQueue>,
+        sms_queue: Arc<dyn EventSmsQueue>,
+        lead_sink: Arc<dyn EventLeadSink>,
     ) -> Self {
         let seat_repo = SeatRepository::new(pool.clone());
         let event_repo = EventCommandRepository::new(pool.clone());
@@ -95,6 +130,21 @@ impl EventAdminState {
                 event_repo,
                 renderer,
                 queue,
+                sms_queue,
+            )),
+            booths: Arc::new(BoothCommandService::new(BoothCommandRepository::new(
+                pool.clone(),
+            ))),
+            lead_rules: Arc::new(LeadRuleCommandService::new(LeadCommandRepository::new(
+                pool.clone(),
+            ))),
+            leads: Arc::new(LeadGenerationService::new(
+                LeadCommandRepository::new(pool.clone()),
+                lead_sink,
+            )),
+            desk: Arc::new(DeskService::new(
+                SeatRepository::new(pool.clone()),
+                EventCommandRepository::new(pool.clone()),
             )),
         }
     }
@@ -126,6 +176,34 @@ pub fn event_admin_routes(state: EventAdminState) -> Router {
         .route("/admin/mails/:id/run", post(run_mail))
         .route("/admin/scheduler/run", post(run_scheduler))
         .route("/admin/sweep/mark-done", post(run_sweep))
+        .route("/admin/desk/register-attendee", post(desk_register_attendee))
+        .route("/admin/booths", get(list_booths).post(create_booth))
+        .route(
+            "/admin/booths/:id",
+            get(get_booth).patch(patch_booth).delete(delete_booth),
+        )
+        .route("/admin/booths/:id/release", post(release_booth))
+        .route("/admin/booths/mark-paid", post(mark_booths_paid))
+        .route(
+            "/admin/booths/:id/bookings",
+            get(list_booth_bookings).post(create_booth_booking),
+        )
+        .route(
+            "/admin/booth-bookings/:id",
+            get(get_booth_booking).delete(delete_booth_booking),
+        )
+        .route("/admin/booth-bookings/:id/confirm", post(confirm_booth_booking))
+        .route("/admin/lead-rules", get(list_lead_rules).post(create_lead_rule))
+        .route("/admin/lead-rules/from-answer", post(lead_rule_from_answer))
+        .route("/admin/lead-rules/relink", post(lead_rule_relink))
+        .route("/admin/lead-rules/:id", get(get_lead_rule).patch(patch_lead_rule))
+        .route("/admin/lead-requests", get(get_lead_request))
+        .route("/admin/lead-requests/run", post(run_lead_requests))
+        .route(
+            "/admin/template-cascade/on-template-deleted",
+            post(on_template_deleted),
+        )
+        .route("/admin/catalog/event-linked-products", get(event_linked_products))
         .with_state(state)
 }
 
@@ -302,6 +380,9 @@ async fn register_registration(
         company_name: opt_string_of(&body, "company_name"),
         partner_id: uuid_of(&body, "partner_id"),
         actor: actor_of(&extensions),
+        // Officer-created registrations arm the lead queue (only the
+        // bulkops import path skips the arm).
+        lead_rule_skip: false,
     };
     reply(
         state
@@ -504,6 +585,407 @@ async fn run_sweep(State(state): State<EventAdminState>) -> Response {
     )
 }
 
+// ── the desk verb ─────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct DeskScanBody {
+    barcode: String,
+    event_id: Uuid,
+}
+
+async fn desk_register_attendee(
+    State(state): State<EventAdminState>,
+    extensions: Extensions,
+    Json(body): Json<DeskScanBody>,
+) -> Response {
+    if body.barcode.trim().is_empty() {
+        return EventError::Validation("barcode is required".into()).into_response();
+    }
+    reply(
+        state
+            .desk
+            .register_attendee(body.barcode.trim(), body.event_id, actor_of(&extensions))
+            .await
+            .map(|(row, before, after)| {
+                Json(json!({ "registration": row, "before_state": before, "after_state": after }))
+            }),
+    )
+}
+
+// ── booths + bookings ─────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct ListBoothsQuery {
+    event_id: Option<Uuid>,
+    limit: Option<i64>,
+}
+
+async fn list_booths(
+    State(state): State<EventAdminState>,
+    Query(q): Query<ListBoothsQuery>,
+) -> Response {
+    match q.event_id {
+        Some(event_id) => reply(
+            state
+                .booths
+                .list_booths_of_event(event_id, q.limit.unwrap_or(50).clamp(1, 500))
+                .await
+                .map(Json),
+        ),
+        None => EventError::Validation("event_id is required".into()).into_response(),
+    }
+}
+
+async fn create_booth(
+    State(state): State<EventAdminState>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let (event_id, booth_category_id, name) = match (
+        uuid_of(&body, "event_id"),
+        uuid_of(&body, "booth_category_id"),
+        string_of(&body, "name"),
+    ) {
+        (Some(e), Some(c), Ok(n)) => (e, c, n),
+        (.., Err(e)) => return e.into_response(),
+        _ => {
+            return EventError::Validation(
+                "event_id and booth_category_id are required".into(),
+            )
+            .into_response()
+        }
+    };
+    reply(
+        state
+            .booths
+            .create_booth(event_id, booth_category_id, &name, actor_of(&extensions))
+            .await
+            .map(|row| (axum::http::StatusCode::CREATED, Json(row))),
+    )
+}
+
+async fn get_booth(State(state): State<EventAdminState>, Path(id): Path<Uuid>) -> Response {
+    reply(state.booths.find_booth(id).await.map(Json))
+}
+
+async fn patch_booth(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    // Writable surface: name/category set; partner + contacts
+    // fill-if-empty. The lifecycle axis and the sale mirrors are NOT
+    // patchable (confirm/release/mark-paid are the only writers).
+    if let Some(obj) = body.as_object() {
+        const REFUSED: [&str; 5] = ["state", "sale_order_line_id", "is_paid", "event_id", "id"];
+        let hits: Vec<&str> = REFUSED.iter().filter(|f| obj.contains_key(**f)).copied().collect();
+        if !hits.is_empty() {
+            return EventError::Validation(format!(
+                "booth patch refuses non-writable fields: {}",
+                hits.join(", ")
+            ))
+            .into_response();
+        }
+    }
+    reply(
+        state
+            .booths
+            .patch_booth(
+                id,
+                opt_string_of(&body, "name").as_deref(),
+                uuid_of(&body, "booth_category_id"),
+                uuid_of(&body, "partner_id"),
+                opt_string_of(&body, "contact_name").as_deref(),
+                opt_string_of(&body, "contact_email").as_deref(),
+                opt_string_of(&body, "contact_phone").as_deref(),
+                actor_of(&extensions),
+            )
+            .await
+            .map(Json),
+    )
+}
+
+async fn delete_booth(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+    extensions: Extensions,
+) -> Response {
+    reply(
+        state
+            .booths
+            .delete_booth(id, actor_of(&extensions))
+            .await
+            .map(|_| Json(json!({ "deleted": id }))),
+    )
+}
+
+async fn release_booth(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+    extensions: Extensions,
+) -> Response {
+    reply(
+        state
+            .booths
+            .release_booth(id, actor_of(&extensions))
+            .await
+            .map(Json),
+    )
+}
+
+async fn mark_booths_paid(
+    State(state): State<EventAdminState>,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let line_ids = match uuid_vec_of(&body, "line_ids") {
+        Some(ids) if !ids.is_empty() => ids,
+        _ => {
+            return EventError::Validation(
+                "line_ids must be a non-empty array of uuids".into(),
+            )
+            .into_response()
+        }
+    };
+    reply(
+        state
+            .booths
+            .mark_booths_paid(&line_ids)
+            .await
+            .map(|n| Json(json!({ "booths_latched": n }))),
+    )
+}
+
+async fn create_booth_booking(
+    State(state): State<EventAdminState>,
+    Path(booth_id): Path<Uuid>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    reply(
+        state
+            .booths
+            .create_booking(
+                booth_id,
+                uuid_of(&body, "sale_order_line_id"),
+                uuid_of(&body, "partner_id"),
+                opt_string_of(&body, "contact_name").as_deref(),
+                opt_string_of(&body, "contact_email").as_deref(),
+                opt_string_of(&body, "contact_phone").as_deref(),
+                actor_of(&extensions),
+            )
+            .await
+            .map(|row| (axum::http::StatusCode::CREATED, Json(row))),
+    )
+}
+
+async fn list_booth_bookings(
+    State(state): State<EventAdminState>,
+    Path(booth_id): Path<Uuid>,
+) -> Response {
+    reply(state.booths.list_bookings_of_booth(booth_id).await.map(Json))
+}
+
+async fn get_booth_booking(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+) -> Response {
+    reply(state.booths.find_booking(id).await.map(Json))
+}
+
+async fn confirm_booth_booking(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+    extensions: Extensions,
+) -> Response {
+    reply(
+        state
+            .booths
+            .confirm_booking(id, actor_of(&extensions))
+            .await
+            .map(|(booking, booth)| Json(json!({ "booking": booking, "booth": booth }))),
+    )
+}
+
+async fn delete_booth_booking(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+    extensions: Extensions,
+) -> Response {
+    reply(
+        state
+            .booths
+            .delete_booking(id, actor_of(&extensions))
+            .await
+            .map(|_| Json(json!({ "deleted": id }))),
+    )
+}
+
+// ── lead rules + the generation queue ─────────────────────────────────────
+
+/// Typed parse for the deny_unknown_fields DTOs (a shape drift is a
+/// typed refusal, never a silently-ignored field).
+fn parse_typed<T: serde::de::DeserializeOwned>(body: serde_json::Value) -> EventResult<T> {
+    serde_json::from_value(body)
+        .map_err(|e| EventError::Validation(format!("body parse refused: {e}")))
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct ListRulesQuery {
+    limit: Option<i64>,
+}
+
+async fn list_lead_rules(
+    State(state): State<EventAdminState>,
+    Query(q): Query<ListRulesQuery>,
+) -> Response {
+    reply(
+        state
+            .lead_rules
+            .list_rules(q.limit.unwrap_or(50).clamp(1, 500))
+            .await
+            .map(Json),
+    )
+}
+
+async fn create_lead_rule(
+    State(state): State<EventAdminState>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let input: CreateRuleInput = match parse_typed(body) {
+        Ok(i) => i,
+        Err(e) => return e.into_response(),
+    };
+    reply(
+        state
+            .lead_rules
+            .create_rule(input, actor_of(&extensions))
+            .await
+            .map(|row| (axum::http::StatusCode::CREATED, Json(row))),
+    )
+}
+
+async fn get_lead_rule(State(state): State<EventAdminState>, Path(id): Path<Uuid>) -> Response {
+    reply(state.lead_rules.rule_read_model(id).await.map(Json))
+}
+
+async fn patch_lead_rule(
+    State(state): State<EventAdminState>,
+    Path(id): Path<Uuid>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let input: PatchRuleInput = match parse_typed(body) {
+        Ok(i) => i,
+        Err(e) => return e.into_response(),
+    };
+    reply(
+        state
+            .lead_rules
+            .patch_rule(id, input, actor_of(&extensions))
+            .await
+            .map(Json),
+    )
+}
+
+async fn lead_rule_from_answer(
+    State(state): State<EventAdminState>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let input: FromAnswerInput = match parse_typed(body) {
+        Ok(i) => i,
+        Err(e) => return e.into_response(),
+    };
+    reply(
+        state
+            .lead_rules
+            .from_answer(input, actor_of(&extensions))
+            .await
+            .map(|row| (axum::http::StatusCode::CREATED, Json(row))),
+    )
+}
+
+async fn lead_rule_relink(
+    State(state): State<EventAdminState>,
+    extensions: Extensions,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let input: RelinkInput = match parse_typed(body) {
+        Ok(i) => i,
+        Err(e) => return e.into_response(),
+    };
+    reply(
+        state
+            .lead_rules
+            .relink_lead(input, actor_of(&extensions))
+            .await
+            .map(|n| Json(json!({ "provenance_rows_moved": n }))),
+    )
+}
+
+#[derive(Debug, Deserialize)]
+struct LeadRequestQuery {
+    event_id: Uuid,
+}
+
+async fn get_lead_request(
+    State(state): State<EventAdminState>,
+    Query(q): Query<LeadRequestQuery>,
+) -> Response {
+    reply(
+        state
+            .leads
+            .request_of_event(q.event_id)
+            .await
+            .map(|row| Json(json!({ "request": row }))),
+    )
+}
+
+async fn run_lead_requests(State(state): State<EventAdminState>) -> Response {
+    reply(state.leads.run_due_lead_requests().await.map(Json))
+}
+
+// ── the template cascade + the catalog read ───────────────────────────────
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TemplateDeletedBody {
+    template_kind: String,
+    template_ref: Uuid,
+}
+
+async fn on_template_deleted(
+    State(state): State<EventAdminState>,
+    extensions: Extensions,
+    Json(body): Json<TemplateDeletedBody>,
+) -> Response {
+    reply(
+        state
+            .scheduler
+            .on_template_deleted(
+                body.template_kind.trim(),
+                body.template_ref,
+                actor_of(&extensions),
+            )
+            .await
+            .map(|(mails, type_mails)| {
+                Json(json!({ "mails_deleted": mails, "type_mails_deleted": type_mails }))
+            }),
+    )
+}
+
+async fn event_linked_products(State(state): State<EventAdminState>) -> Response {
+    reply(
+        state
+            .events
+            .linked_products()
+            .await
+            .map(|ids| Json(json!({ "product_ids": ids }))),
+    )
+}
+
 // ── tiny JSON arms (the typed parse layer) ────────────────────────────────
 
 fn string_of(body: &serde_json::Value, key: &str) -> EventResult<String> {
@@ -540,6 +1022,14 @@ fn uuid_of(body: &serde_json::Value, key: &str) -> Option<Uuid> {
     body.get(key)
         .and_then(|v| v.as_str())
         .and_then(|s| Uuid::parse_str(s).ok())
+}
+
+fn uuid_vec_of(body: &serde_json::Value, key: &str) -> Option<Vec<Uuid>> {
+    body.get(key)?
+        .as_array()?
+        .iter()
+        .map(|v| v.as_str().and_then(|s| Uuid::parse_str(s).ok()))
+        .collect()
 }
 
 fn parse_ts(value: Option<&serde_json::Value>, key: &str) -> EventResult<chrono::DateTime<chrono::Utc>> {

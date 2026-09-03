@@ -135,6 +135,7 @@ impl DefaultEventSurface {
         secret: String,
         renderer: std::sync::Arc<dyn super::template_port::EventTemplateRenderer>,
         queue: std::sync::Arc<dyn super::template_port::EventMailQueue>,
+        sms_queue: std::sync::Arc<dyn super::sms_port::EventSmsQueue>,
     ) -> Self {
         let registrations = RegistrationCommandService::new(SeatRepository::new(pool.clone()));
         let intake = IntakeService::new(
@@ -160,6 +161,7 @@ impl DefaultEventSurface {
                 EventCommandRepository::new(pool.clone()),
                 renderer,
                 queue,
+                sms_queue,
             ),
         )
     }

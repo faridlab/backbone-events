@@ -24,7 +24,10 @@ use backbone_events::application::service::template_port::{
 use backbone_events::infrastructure::persistence::event_command_repository::EventCommandRepository;
 use backbone_events::infrastructure::persistence::scheduler_repository::SchedulerRepository;
 
-use super::common::{make_event, make_type_with_mail, register_cmd, registrations, scheduler, RecordingQueue, RefusingQueue, StubRenderer, TestDb};
+use super::common::{
+    make_event, make_type_with_mail, register_cmd, registrations, scheduler, RecordingQueue,
+    RefusingQueue, RefusingSmsQueue, StubRenderer, TestDb,
+};
 use async_trait::async_trait;
 
 async fn scheduler_row(db: &TestDb, event_id: uuid::Uuid) -> (uuid::Uuid, bool) {
@@ -75,6 +78,7 @@ async fn arming_receipt_truth_and_late_reopen() {
         EventCommandRepository::new(db.pool.clone()),
         Arc::new(StubRenderer),
         queue.clone(),
+        Arc::new(RefusingSmsQueue),
     )
     .run_due_schedulers()
     .await
@@ -130,6 +134,7 @@ async fn arming_receipt_truth_and_late_reopen() {
         EventCommandRepository::new(db.pool.clone()),
         Arc::new(StubRenderer),
         Arc::new(RefusingQueue),
+        Arc::new(RefusingSmsQueue),
     )
     .run_due_schedulers()
     .await
@@ -195,6 +200,7 @@ async fn typed_failures_recorded_and_continued() {
         EventCommandRepository::new(db.pool.clone()),
         Arc::new(NoRenderer),
         Arc::new(RecordingQueue::default()),
+        Arc::new(RefusingSmsQueue),
     )
     .run_due_schedulers()
     .await

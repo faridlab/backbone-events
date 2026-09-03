@@ -45,13 +45,26 @@ description: "event — the events core: registrations under one authoritative s
 #                      company-less events are first-class "visible to all")
 #   registrations   -> shared_blank (nullable company_id derived from its
 #                      event at write; same policy)
+#   registration_answers -> NO column of its own — rides the parent
+#                      registration's posture (parent-derived; the answers
+#                      never widen past their registration)
 #   everything else (stages, types, tags, tag_categories, tickets, slots,
 #   questions, question_answers, registration_questions,
 #   registration_answers, the whole scheduler family: mails,
-#   mail_registrations, mail_slots, type_mails, event_audit_log)
+#   mail_registrations, mail_slots, type_mails, event_audit_log, and the
+#   v0.2.0 overlay families: booth_categories, booths, type_booths,
+#   booth_bookings, lead_rules, lead_rule_predicates, lead_requests,
+#   lead_provenances, lead_provenance_registrations)
 #                   -> NO company column, no policy — company-shared global
 #                      master data, exactly upstream (ADR-0014 names "event
 #                      stages" as a shared_blank exemplar).
+#
+#                      (Owner-decision row, docs/spec-overlay.md §R: the
+#                      overlay council text lists Ticket under shared_blank;
+#                      the landed core contract keeps tickets company-less
+#                      global. Adding tickets.company_id is a one-migration
+#                      additive change awaiting the council's RLS-vs-declared
+#                      resolution — NOT taken unilaterally here.)
 #
 # Making tenancy hard is a recorded additive decision for a future owner, not
 # a default this module may take unilaterally.
@@ -127,10 +140,16 @@ imports:
   - mail_slot.model.yaml            # MailSlot (slot-grain scheduler child)
   - type_mail.model.yaml            # TypeMail (template mail line)
   - event_audit_log.model.yaml      # EventAuditLog
+  - booth.model.yaml                # BoothCategory, Booth, TypeBooth (v0.2.0)
+  - booth_booking.model.yaml        # BoothBooking (the reified booking, v0.2.0)
+  - lead_rule.model.yaml            # LeadRule, LeadRulePredicate (v0.2.0)
+  - lead_request.model.yaml         # LeadRequest (the generation queue, v0.2.0)
+  - lead_provenance.model.yaml      # LeadProvenance, LeadProvenanceRegistration (v0.2.0)
 
 # =============================================================================
 # FLAG-ID COVERAGE — the register floor rows this increment owns
-# (docs/spec.md §13 is the normative table; this index carries the pointer):
+# (docs/spec.md §13 is the normative table; this index carries the pointer;
+# the v0.2.0 overlay rows are normative in docs/spec-overlay.md §R):
 #   EBB-1  → ONE seat aggregation service + SELECT ... FOR UPDATE inside the
 #            registration verb (count-then-insert, one transaction).
 #   EBB-2  → completion from per-recipient receipts; late registrants
@@ -144,4 +163,35 @@ imports:
 #            state IN ('open','done') AND active.
 #   EVM-15 → shared_blank declared with the per-model posture map (above).
 #   DRAFT-HEAL → any transition INTO 'open' arms the after_sub engines.
+#   --- v0.2.0 overlay (docs/spec-overlay.md §R is normative) ---
+#   ES-3   → sale-seam mint: single paid SO -> born draft; free -> born open
+#            (idempotent via the seam inbox; THE seat head guards the mint).
+#   ES-4   → draft -> open heals ONLY on the paid fact (paid-hook family);
+#            forward-only (open/done never demoted); manual verbs preserved.
+#   EVM-2  → template-apply stays create-once-only with PER-OVERLAY
+#            whitelists (type_mails -> mails; type_booths -> booths
+#            [name, booth_category_id]); no destructive re-unlink path.
+#   EP-2   → tickets.product_id + booth_categories.product_id logical refs;
+#            event.event_linked_products view + billing-policy default const;
+#            NO catalog enum mutation (the catalog seat ratifies at compose).
+#   EBT-3  → booth confirm is an EXPLICIT verb (no auto-confirm hook).
+#   EBS-1  → real exclusivity = partial unique on the confirmed booking;
+#            the availability pre-check is demoted to a nice-error pre-check.
+#   EBS-2  → UNIQUE(sale_order_line_id, event_booth_id) at the booking grain.
+#   EBS-3  → collateral competitor-order-cancel NOT ported (deliberate,
+#            registered): first-confirm-wins + LOUD typed loser.
+#   ECR-2  → UNIQUE(event_id) on the generation queue (one request per event
+#            at a time; a trigger re-opens a done row).
+#   ECR-4  → stored domains BANNED — typed predicate rows over the closed
+#            event/types/company/question-answer vocabulary; the
+#            answer-to-rule bridge is a typed verb.
+#   ESM-1  → ONE template cascade for mail+sms (the collapsed
+#            on_template_deleted verb — deviation from literal DB-level
+#            cascade registered: cross-module FK impossible).
+#   ESM-2  → unconfigured sms gateway parks scheduler rows LOUDLY
+#            (sms_enqueue_refused; parked is not silently queued).
+#   EBG-1  → barcode stays globally unique; the desk verb is EXACT-match +
+#            authenticated (EVM2-6).
+#   NOMENCLATURE → the badge/nomenclature codec machinery is FENCED
+#            (register row; no codec until a rendering consumer exists).
 # =============================================================================

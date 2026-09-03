@@ -84,6 +84,55 @@ user_owned:
   # capability minting, the scheduler run verb) — the W8 seam contract.
   - "src/application/service/event_surface.rs"
 
+  # The sale-order intake seam: exactly-once delivery claims through the
+  # seam inbox (consumer, external_id), the mint fork (zero grand total
+  # -> born open + armed; non-zero -> born draft held (sale, to_pay)),
+  # the forward-only paid heal (draft/cancel + to_pay -> open + sold +
+  # armed; sale_status KEPT on the cancel mirror), the one-way booth
+  # paid latch. The producer side (sale outbox) is host-owned.
+  - "src/application/service/sale_seam_service.rs"
+
+  # Booth verbs: create/patch (state, sale link, is_paid, event refused
+  # at patch), the confirm/release pair (release is the ONLY path back
+  # to available and stays human — SO-cancel never frees a booth), the
+  # typed delete fences (booking rows -> release first; sale link ->
+  # refused outright), booking lifecycle with the EBS-1 partial-unique
+  # wall surfaced as a typed 409 with the losing intent kept pending.
+  - "src/application/service/booth_command_service.rs"
+
+  # The typed lead-rule surface: the CLOSED predicate vocabulary
+  # (event / event_type / company / question_answer — stored domains
+  # banned; deny_unknown_fields DTOs), the answer-to-rule bridge, the
+  # rule read model (both grouping grains), and the merge-relink verb
+  # the host lead side calls.
+  - "src/application/service/lead_command_service.rs"
+
+  # The self-arming lead queue pass: claim with FOR UPDATE SKIP LOCKED,
+  # set-based eligible-registration walks (provenance anti-join, batch
+  # caps), grouping as STRATEGY (per_order for sale-linked,
+  # per_event_day for walk-ins), group create-vs-grow through the host
+  # sink, LOUD park on sink refusal (done stays false).
+  - "src/application/service/lead_generation_service.rs"
+
+  # The host lead sink port (create-lead / update-lead per group) + the
+  # refusing default (unwired host = typed park reason, never a silent
+  # skip). Provenance rows live here; the host lead schema is untouched.
+  - "src/application/service/lead_sink.rs"
+
+  # The host SMS queue port + the refusing default (unconfigured
+  # gateway = sms_enqueue_refused recorded, receipt unsent, row parked
+  # loudly — ESM-2). Rides the scheduler's channel branch, never the
+  # mail queue.
+  - "src/application/service/sms_port.rs"
+
+  # The desk scan verb (EBT-3): the FROZEN branch order — invalid ->
+  # canceled -> unconfirmed (no write) -> not-ongoing -> cross-event
+  # manual confirmation (no write) -> already-registered -> the ONE
+  # write (done through the transition verb). Barcode is EXACT-MATCH
+  # over the globally-unique column; the nomenclature machinery stays
+  # fenced out (register row).
+  - "src/application/service/desk_service.rs"
+
   # Hand repositories carrying the transactional SQL the services compose
   # (services hold no raw sqlx — the DDD boundary): the seat-lock
   # registration transaction (lock -> count -> insert -> arm), the
@@ -94,6 +143,19 @@ user_owned:
   - "src/infrastructure/persistence/seat_repository.rs"
   - "src/infrastructure/persistence/event_command_repository.rs"
   - "src/infrastructure/persistence/scheduler_repository.rs"
+
+  # Overlay hand repositories (same DDD boundary): the seam inbox
+  # claims + mint/heal/cancel-mirror SQL + booth paid latch; the booth
+  # verb SQL (confirm five-write, release, delete fences, the EBS-1
+  # pre-check demoted to nice-error under the real partial unique
+  # index); the lead-rule/predicate CRUD (typed rows, no stored
+  # domains), the self-arming request queue (SKIP LOCKED), the
+  # eligible-registration conjunctive SQL composed from typed
+  # predicates, provenance upsert/junction (idempotent), relink, and
+  # the events-owned catalog exclusion read.
+  - "src/infrastructure/persistence/sale_seam_repository.rs"
+  - "src/infrastructure/persistence/booth_command_repository.rs"
+  - "src/infrastructure/persistence/lead_command_repository.rs"
 
   # The declared public capability tree (ics + my-tickets; the intake
   # verb's router rides here too — mounted by the host only when the W8
@@ -125,9 +187,32 @@ user_owned:
 
   # Hand-written DDL hardening: the EBG CHECK family (belonging, XOR,
   # date orders, slot hours, default-question-reusable, per-order cap),
-  # the shared_blank RLS policies on events + registrations, and the
-  # EVM2-3/EBG-1 constraint polish.
+  # the shared_blank RLS policies on events + registrations, the
+  # EVM2-3/EBG-1 constraint polish, and the overlay hardening (the
+  # EBS-1 partial unique exclusivity wall, the lead-rule/request
+  # uniques, the seam inbox PK).
   - "migrations/*hardening*"
+
+  # GENERATOR-DEFECT FREEZE, second arm (same pattern as 20005/20017
+  # above): the pinned generator numbers migration files alphabetically
+  # by table name, which strands four FK constraints AHEAD of the
+  # tables they reference (the referenced table's own migration file
+  # sorts later). In each frozen file the stranded FK is hand-removed
+  # and moved to the overlay hardening migration (20260426220040),
+  # which runs after every overlay table exists. Unlist ONLY after the
+  # generator learns dependency-ordered FK placement:
+  #  - booth_bookings -> booths (table file sorts later at 20033)
+  #  - lead_provenance_registrations -> lead_provenances (20035)
+  #  - lead_provenances -> lead_rules (20038)
+  #  - lead_rule_predicates -> lead_rules (20038)
+  - "migrations/20260426220031_create_booth_booking_table.up.sql"
+  - "migrations/20260426220031_create_booth_booking_table.down.sql"
+  - "migrations/20260426220034_create_lead_provenance_registration_table.up.sql"
+  - "migrations/20260426220034_create_lead_provenance_registration_table.down.sql"
+  - "migrations/20260426220035_create_lead_provenance_table.up.sql"
+  - "migrations/20260426220035_create_lead_provenance_table.down.sql"
+  - "migrations/20260426220037_create_lead_rule_predicate_table.up.sql"
+  - "migrations/20260426220037_create_lead_rule_predicate_table.down.sql"
 
   # Hand-authored module documentation (root docs + the frozen build
   # contract).
@@ -139,5 +224,8 @@ user_owned:
   # EVENT_TEST_ADMIN_URL override; a missing scratch Postgres panics the
   # suite) — the concurrent-registration zero-oversell DoD probe, the
   # /ics refusal family, the receipt re-open probe, the arm-rule probe,
-  # the EVM2-4 pair probe, the fence probes, mount introspection.
+  # the EVM2-4 pair probe, the fence probes, mount introspection, the
+  # overlay families (booth exclusivity, desk branches, the sale seam,
+  # scheduler arming, sms overlay, transition-at-cap, CRM typed rules,
+  # lead-pass exclusivity).
   - "tests/**"

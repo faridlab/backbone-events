@@ -5,9 +5,18 @@
 //! This module provides DTOs for the presentation layer,
 //! with validation and OpenAPI schema support.
 
+pub mod booth_category_dto;
+pub mod booth_dto;
+pub mod type_booth_dto;
+pub mod booth_booking_dto;
 pub mod event_dto;
 pub mod event_audit_log_dto;
 pub mod event_type_dto;
+pub mod lead_provenance_dto;
+pub mod lead_provenance_registration_dto;
+pub mod lead_request_dto;
+pub mod lead_rule_dto;
+pub mod lead_rule_predicate_dto;
 pub mod mail_dto;
 pub mod mail_registration_dto;
 pub mod mail_slot_dto;
@@ -24,6 +33,38 @@ pub mod ticket_dto;
 pub mod type_mail_dto;
 
 // Re-exports
+pub use booth_category_dto::{
+    CreateBoothCategoryDto,
+    UpdateBoothCategoryDto,
+    PatchBoothCategoryDto,
+    BoothCategoryResponseDto,
+    BoothCategoryListResponseDto,
+    BoothCategorySummaryDto,
+};
+pub use booth_dto::{
+    CreateBoothDto,
+    UpdateBoothDto,
+    PatchBoothDto,
+    BoothResponseDto,
+    BoothListResponseDto,
+    BoothSummaryDto,
+};
+pub use type_booth_dto::{
+    CreateTypeBoothDto,
+    UpdateTypeBoothDto,
+    PatchTypeBoothDto,
+    TypeBoothResponseDto,
+    TypeBoothListResponseDto,
+    TypeBoothSummaryDto,
+};
+pub use booth_booking_dto::{
+    CreateBoothBookingDto,
+    UpdateBoothBookingDto,
+    PatchBoothBookingDto,
+    BoothBookingResponseDto,
+    BoothBookingListResponseDto,
+    BoothBookingSummaryDto,
+};
 pub use event_dto::{
     CreateEventDto,
     UpdateEventDto,
@@ -47,6 +88,46 @@ pub use event_type_dto::{
     EventTypeResponseDto,
     EventTypeListResponseDto,
     EventTypeSummaryDto,
+};
+pub use lead_provenance_dto::{
+    CreateLeadProvenanceDto,
+    UpdateLeadProvenanceDto,
+    PatchLeadProvenanceDto,
+    LeadProvenanceResponseDto,
+    LeadProvenanceListResponseDto,
+    LeadProvenanceSummaryDto,
+};
+pub use lead_provenance_registration_dto::{
+    CreateLeadProvenanceRegistrationDto,
+    UpdateLeadProvenanceRegistrationDto,
+    PatchLeadProvenanceRegistrationDto,
+    LeadProvenanceRegistrationResponseDto,
+    LeadProvenanceRegistrationListResponseDto,
+    LeadProvenanceRegistrationSummaryDto,
+};
+pub use lead_request_dto::{
+    CreateLeadRequestDto,
+    UpdateLeadRequestDto,
+    PatchLeadRequestDto,
+    LeadRequestResponseDto,
+    LeadRequestListResponseDto,
+    LeadRequestSummaryDto,
+};
+pub use lead_rule_dto::{
+    CreateLeadRuleDto,
+    UpdateLeadRuleDto,
+    PatchLeadRuleDto,
+    LeadRuleResponseDto,
+    LeadRuleListResponseDto,
+    LeadRuleSummaryDto,
+};
+pub use lead_rule_predicate_dto::{
+    CreateLeadRulePredicateDto,
+    UpdateLeadRulePredicateDto,
+    PatchLeadRulePredicateDto,
+    LeadRulePredicateResponseDto,
+    LeadRulePredicateListResponseDto,
+    LeadRulePredicateSummaryDto,
 };
 pub use mail_dto::{
     CreateMailDto,

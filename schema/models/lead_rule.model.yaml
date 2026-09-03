@@ -1,0 +1,165 @@
+# =============================================================================
+# event — the CRM arm's typed rules: LeadRule + LeadRulePredicate (ECR-4).
+#
+# STORED DOMAINS ARE BANNED (ECR-4, banned shape #4): upstream stored an
+# eval-able `filter_domain` TEXT (char domain, eval'd with sudo). The port
+# replaces the whole mechanism with TYPED PREDICATE ROWS over a CLOSED
+# VOCABULARY:
+#
+#   axis = event          -> value_ids lists event uuids
+#   axis = event_type     -> value_ids lists event-type uuids
+#   axis = company        -> value_ids lists company uuids
+#   axis = question_answer-> question_id names ONE registration question,
+#                            value_ids lists the question's answer uuids
+#
+# The vocabulary is CLOSED in Rust (a deny_unknown_fields input struct +
+# validated uuids) and in SQL (a CHECK tying question_id to the
+# question_answer axis — hand hardening migration). NOTHING is ever
+# eval'd; rule evaluation is plain typed SQL joins. An axis outside the
+# four is a parse refusal, never a runtime eval.
+#
+# The answer-to-rule bridge (upstream's editor button that built an
+# answered-question domain) becomes a TYPED VERB: from_answer(question,
+# answer) emits a predicate row (question_id + value_ids=[answer]) —
+# the same bytes, produced by typed code instead of eval'd text.
+#
+# TRIGGER AXES: on_create / on_confirm / on_done booleans (at least one
+# true — the create verb's guard); the trigger ARMS the per-event
+# generation queue (event.lead_requests), it never generates inline.
+#
+# CONTACT MATCHING (ECR-3) CONSCIOUSLY DROPPED (register row,
+# docs/spec-overlay.md §R): upstream merged leads by attendee email
+# through the party module with sudo. No party edge exists here; the sink
+# adapter owns contact identity.
+#
+# LEAD TYPE SPLIT DROPPED (register row): upstream's lead_type
+# (lead/opp) split is a sales-pipeline concern; the sink adapter owns
+# typing.
+# =============================================================================
+
+models:
+
+  - name: LeadRule
+    collection: lead_rules
+    read_only: true
+    description: "LeadRule — one typed lead-generation rule: a closed-vocabulary predicate set, a trigger axis (create/confirm/done), an optional single-event scope, and a grouping basis. Read-only over HTTP: created/edited through the typed verbs (closed vocabulary enforced at parse)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(120)"]
+        description: "Rule label."
+      event_id:
+        type: uuid?
+        attributes: ["@foreign_key(Event.events)", "@indexed"]
+        description: "Optional scope: the rule applies to THIS event only. NULL = every event (the global rules family)."
+      basis:
+        type: EventLeadBasis
+        attributes: ["@required", "@default(registration)"]
+        description: "The grouping basis (ECS-1 as STRATEGY — no stored column upstream, surfaced here): 'registration' groups walk-in registrations per (rule, event, day); 'attendee' says the same registration row IS the attendee (one registration = one attendee upstream 'each attendee') — the realized grouping still rides the per-order / per-day strategies, and the rule read model surfaces BOTH grains (ECS-2)."
+      on_create:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Arms generation when a registration is created."
+      on_confirm:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Arms generation when a registration enters 'open' (confirm/heal)."
+      on_done:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "Arms generation when a registration enters 'done' (the desk verb / hand verb)."
+      active:
+        type: bool
+        attributes: ["@required", "@default(true)"]
+        description: "Inactive rules never arm the queue."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event?
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The optional single-event scope"
+      predicates:
+        type: LeadRulePredicate[]
+        attributes: ["@one_to_many", "@foreign_key(rule_id)", "@cascade"]
+        description: "The typed predicate rows (closed vocabulary, conjunctive)"
+
+    indexes:
+      - type: index
+        fields: [event_id, active]
+        description: "The arm-time active-rule read"
+
+  - name: LeadRulePredicate
+    collection: lead_rule_predicates
+    read_only: true
+    description: "LeadRulePredicate — ONE typed predicate of a rule: a closed-vocabulary axis, an optional question ref (question_answer axis only, CHECK-enforced), and the matched value uuids as a JSON array. Never eval'd — evaluation is plain typed SQL."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      rule_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(LeadRule.lead_rules)", "@indexed"]
+        description: "The owning rule (real intra-schema FK, CASCADE — dropping a rule drops its predicates)."
+      axis:
+        type: EventLeadPredicateAxis
+        attributes: ["@required"]
+        description: "The closed vocabulary: event | event_type | company | question_answer. The create verb refuses anything else at parse (deny_unknown_fields input struct)."
+      question_id:
+        type: uuid?
+        attributes: ["@foreign_key(Question.questions)"]
+        description: "The registration question (question_answer axis ONLY — the hardening migration's CHECK ties the pair; NULL on the other axes)."
+      value_ids:
+        type: json
+        attributes: ["@required"]
+        description: "The matched value uuids as a JSON string array (e.g. [\"<uuid>\", ...]) — typed and validated at the verb boundary; never a stored domain, never eval'd."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      rule:
+        type: LeadRule
+        attributes: ["@one", "@foreign_key(rule_id)", "@cascade"]
+        description: "The owning rule"
+      question:
+        type: Question?
+        attributes: ["@one", "@foreign_key(question_id)", "@restrict"]
+        description: "The registration question (question_answer axis)"
+
+    indexes:
+      - type: index
+        fields: [rule_id]
+        description: "The rule's predicate set read"
+
+enums:
+  - name: EventLeadBasis
+    description: "The rule's grouping basis (ECS-1 as strategy — the realized grouping is per-order for sale-linked registrations and per-day for walk-ins, surfaced jointly in the rule read model, ECS-2)"
+    variants:
+      - name: registration
+        description: "One registration row = one attendee record (the default)"
+        default: true
+      - name: attendee
+        description: "Treat the registration as the attendee itself (upstream 'each attendee' arm) — the sink adapter may fan out; grouping strategies unchanged"
+
+  - name: EventLeadPredicateAxis
+    description: "The CLOSED predicate vocabulary (ECR-4) — stored domains are banned; an axis outside this set is a parse refusal, never a runtime eval"
+    variants:
+      - name: event
+        description: "value_ids lists event uuids"
+        default: true
+      - name: event_type
+        description: "value_ids lists event-type uuids"
+      - name: company
+        description: "value_ids lists company uuids"
+      - name: question_answer
+        description: "question_id names one registration question; value_ids lists that question's answer uuids"

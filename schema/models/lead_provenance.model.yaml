@@ -1,0 +1,135 @@
+# =============================================================================
+# event — the CRM arm's events-owned provenance: LeadProvenance +
+# LeadProvenanceRegistration.
+#
+# INVERSION OF UPSTREAM (register row, docs/spec-overlay.md §R): upstream
+# wrote lead_id / registration_ids onto ITS OWN event.lead scheduler row
+# under sudo and reached into the lead module to merge/duplicate. The port
+# puts the linkage on THIS side:
+#
+#   - lead_id is a LOGICAL uuid ref (no cross-module FK, no lead schema
+#     mutation — backbone-lead declares no events edge at this pin);
+#   - merge/relink is a DECLARED VERB here (relink_lead): when the host's
+#     lead side merges two leads, it calls the verb and every provenance
+#     row moves to the surviving lead in one UPDATE;
+#   - the (rule, registration-set) grain is a DB UNIQUE — re-runs of the
+#     at-least-once generation job are idempotent by construction.
+#
+# GROUPING (ECS-1 strategy, ECS-2 surfaced): one provenance row per
+# GENERATED GROUP —
+#   grouping=per_order      group_key = the sale order uuid (sale-linked
+#                           registrations of one order share one lead)
+#   grouping=per_event_day  group_key = the event uuid + the walk-in
+#                           registration's creation DATE (walk-ins of one
+#                           day share one lead)
+# The dual granularity is surfaced in the rule read model (both counters
+# per rule), never guessed from a stored domain.
+#
+# THE SINK IS A PORT: lead creation goes through the host-installed
+# EventLeadSink trait (RefusingLeadSink default — an unwired host gets a
+# typed refusal, never a silent skip). Upstream's SIX sudo call sites
+# into crm.lead collapse into this ONE declared seam; the mapping table
+# (what the host adapter does per call) lives in docs/spec-overlay.md §C.
+# =============================================================================
+
+models:
+
+  - name: LeadProvenance
+    collection: lead_provenances
+    read_only: true
+    description: "LeadProvenance — the events-owned record that one rule generated one lead for one registration group: the logical lead ref, the grouping key (UNIQUE with the rule — the idempotence grain), and the junction to the exact registrations. Read-only over HTTP (system rows; relink is the one verb)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      rule_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(LeadRule.lead_rules)", "@indexed"]
+        description: "The rule that generated this group (real intra-schema FK, CASCADE)."
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@indexed"]
+        description: "The event the generated-from registrations belong to (real intra-schema FK)."
+      lead_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL lead ref — assigned when the sink creates the lead (the refusing default leaves it NULL and the pass parks). The relink verb moves it on host-side merges."
+      group_key:
+        type: string
+        attributes: ["@required", "@max(160)"]
+        description: "The group's identity under its rule: the order uuid (per_order) or event+day (per_event_day). UNIQUE(rule_id, group_key) — the (rule, registration-set) grain, the job's idempotence wall (hand hardening migration)."
+      grouping:
+        type: EventLeadGrouping
+        attributes: ["@required"]
+        description: "Which strategy produced this group (ECS-1) — the read model surfaces both counters per rule (ECS-2)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      rule:
+        type: LeadRule
+        attributes: ["@one", "@foreign_key(rule_id)", "@cascade"]
+        description: "The generating rule"
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@restrict"]
+        description: "The event"
+      registrations:
+        type: LeadProvenanceRegistration[]
+        attributes: ["@one_to_many", "@foreign_key(provenance_id)", "@cascade"]
+        description: "The exact registrations this group was generated from (the junction)"
+
+    indexes:
+      - type: index
+        fields: [rule_id, group_key]
+        description: "The idempotence upsert read"
+
+  - name: LeadProvenanceRegistration
+    collection: lead_provenance_registrations
+    read_only: true
+    description: "LeadProvenanceRegistration — one (provenance, registration) junction row: the exact registration set a generated lead came from. UNIQUE(provenance_id, registration_id) in the hardening migration."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      provenance_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(LeadProvenance.lead_provenances)", "@indexed"]
+        description: "The provenance group (real intra-schema FK, CASCADE)."
+      registration_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Registration.registrations)", "@indexed"]
+        description: "The registration the group was generated from (real intra-schema FK, RESTRICT)."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      provenance:
+        type: LeadProvenance
+        attributes: ["@one", "@foreign_key(provenance_id)", "@cascade"]
+        description: "The provenance group"
+      registration:
+        type: Registration
+        attributes: ["@one", "@foreign_key(registration_id)", "@restrict"]
+        description: "The registration"
+
+    indexes:
+      - type: index
+        fields: [registration_id]
+        description: "The reverse read (which groups a registration fed)"
+
+enums:
+  - name: EventLeadGrouping
+    description: "The realized grouping strategy of one provenance row (ECS-1 as strategy; both counters surfaced per rule — ECS-2)"
+    variants:
+      - name: per_order
+        description: "Sale-linked registrations of one order share one lead (group_key = the order uuid)"
+        default: true
+      - name: per_event_day
+        description: "Walk-in registrations of one event created the same day share one lead (group_key = event uuid + day)"

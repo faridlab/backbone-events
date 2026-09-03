@@ -83,6 +83,87 @@ pub enum EventError {
     #[error("recipient invalid: {0}")]
     RecipientInvalid(String),
 
+    // ── the booth family (v0.2.0) ──────────────────────────────────────────
+
+    /// The booth id does not resolve.
+    #[error("booth not found")]
+    BoothNotFound { booth_id: uuid::Uuid },
+
+    /// The booking id does not resolve.
+    #[error("booth booking not found")]
+    BoothBookingNotFound { booking_id: uuid::Uuid },
+
+    /// THE EBS-1 LOUD LOSER: another confirmed booking holds the booth
+    /// (the partial unique index is the wall; this refusal is how a
+    /// concurrent loser learns it lost — first-confirm-wins, the
+    /// collateral competitor-cancel is deliberately not ported).
+    #[error("booth already confirmed")]
+    BoothAlreadyConfirmed { event_booth_id: uuid::Uuid },
+
+    /// EBS-5c: a sale-linked booth (sale_order_line_id set) is not
+    /// deleted — the delete verb refuses.
+    #[error("booth delete refused: sale-linked")]
+    BoothDeleteRefusedSaleLinked { booth_id: uuid::Uuid },
+
+    /// EBS-4: one order line may book booths of ONE event only.
+    #[error("booth booking line crosses events")]
+    BoothBookingLineCrossEvent { sale_order_line_id: uuid::Uuid },
+
+    // ── the CRM family (v0.2.0) ────────────────────────────────────────────
+
+    /// The lead rule id does not resolve.
+    #[error("lead rule not found")]
+    LeadRuleNotFound { rule_id: uuid::Uuid },
+
+    /// The lead sink port refused (unwired host or downstream
+    /// refusal): the generation request parks loudly with error_detail
+    /// and is retried — never a silent skip.
+    #[error("lead sink refused: {0}")]
+    LeadSinkRefused(String),
+
+    /// The event's queue row is freshly LEASED — another walker (the
+    /// cron pass or another officer run) is generating its leads right
+    /// now. One walker per event at a time is the queue's contract;
+    /// retry after the walk finishes or the lease expires.
+    #[error("lead request busy: another generation walk holds the lease")]
+    LeadRequestBusy { event_id: uuid::Uuid },
+
+    /// The event has no queue row: no trigger (registration verb, rule
+    /// create/activate) has ever armed it — there is nothing to run.
+    #[error("lead request not found: nothing armed for the event")]
+    LeadRequestNotFound { event_id: uuid::Uuid },
+
+    // ── the scanner desk family (v0.2.0 — the FROZEN branch order) ─────────
+
+    /// Branch 1: the barcode resolves to no registration (invalid
+    /// ticket).
+    #[error("desk: invalid ticket")]
+    DeskInvalidTicket,
+
+    /// Branch 2: the registration is cancelled.
+    #[error("desk: canceled registration")]
+    DeskCanceledRegistration,
+
+    /// Branch 3: the registration is draft (unconfirmed — no write).
+    #[error("desk: unconfirmed registration")]
+    DeskUnconfirmedRegistration,
+
+    /// Branch 4: the event is finished (takes precedence over done —
+    /// a done badge at a finished event reports the event, not the
+    /// attendee).
+    #[error("desk: not ongoing event")]
+    DeskNotOngoingEvent,
+
+    /// Branch 5: the barcode belongs to a registration of ANOTHER
+    /// event (manual confirmation territory — no write).
+    #[error("desk: need manual confirmation")]
+    DeskNeedManualConfirmation,
+
+    /// Branch 7: already registered (done) — idempotent-ish, but the
+    /// desk hears it loudly rather than re-stamping.
+    #[error("desk: already registered")]
+    DeskAlreadyRegistered,
+
     /// Request-shape refusal (allowlist parse failures etc).
     #[error("validation: {0}")]
     Validation(String),
@@ -115,6 +196,21 @@ impl EventError {
             Self::RenderFailed(_) => "render_failed",
             Self::EnqueueRefused(_) => "enqueue_refused",
             Self::RecipientInvalid(_) => "recipient_invalid",
+            Self::BoothNotFound { .. } => "booth_not_found",
+            Self::BoothBookingNotFound { .. } => "booth_booking_not_found",
+            Self::BoothAlreadyConfirmed { .. } => "booth_already_confirmed",
+            Self::BoothDeleteRefusedSaleLinked { .. } => "booth_delete_refused_sale_linked",
+            Self::BoothBookingLineCrossEvent { .. } => "booth_booking_line_cross_event",
+            Self::LeadRuleNotFound { .. } => "lead_rule_not_found",
+            Self::LeadSinkRefused(_) => "lead_sink_refused",
+            Self::LeadRequestBusy { .. } => "lead_request_busy",
+            Self::LeadRequestNotFound { .. } => "lead_request_not_found",
+            Self::DeskInvalidTicket => "desk_invalid_ticket",
+            Self::DeskCanceledRegistration => "desk_canceled_registration",
+            Self::DeskUnconfirmedRegistration => "desk_unconfirmed_registration",
+            Self::DeskNotOngoingEvent => "desk_not_ongoing_event",
+            Self::DeskNeedManualConfirmation => "desk_need_manual_confirmation",
+            Self::DeskAlreadyRegistered => "desk_already_registered",
             Self::Validation(_) => "event_validation_failed",
             Self::Database(_) => "event_database_error",
             Self::Internal(_) => "event_internal_error",
@@ -125,13 +221,25 @@ impl EventError {
         match self {
             Self::EventNotFound
             | Self::RegistrationNotFound
-            | Self::EventNotPublished => StatusCode::NOT_FOUND,
+            | Self::EventNotPublished
+            | Self::BoothNotFound { .. }
+            | Self::BoothBookingNotFound { .. }
+            | Self::LeadRuleNotFound { .. }
+            | Self::LeadRequestNotFound { .. } => StatusCode::NOT_FOUND,
             Self::EventSeatsExhausted { .. }
             | Self::EventSaleWindowClosed { .. }
             | Self::EventSlotRequired { .. }
             | Self::EventSlotNotOfEvent { .. }
             | Self::EventTicketNotOfEvent { .. }
             | Self::PublishRefused { .. }
+            | Self::BoothDeleteRefusedSaleLinked { .. }
+            | Self::BoothBookingLineCrossEvent { .. }
+            | Self::DeskInvalidTicket
+            | Self::DeskCanceledRegistration
+            | Self::DeskUnconfirmedRegistration
+            | Self::DeskNotOngoingEvent
+            | Self::DeskNeedManualConfirmation
+            | Self::DeskAlreadyRegistered
             | Self::Validation(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::EventThrottled { .. } => StatusCode::TOO_MANY_REQUESTS,
             Self::EventCapabilitySecretNotConfigured => StatusCode::SERVICE_UNAVAILABLE,
@@ -139,7 +247,10 @@ impl EventError {
             | Self::TemplateRendererNotComposed
             | Self::RenderFailed(_)
             | Self::EnqueueRefused(_)
-            | Self::RecipientInvalid(_) => StatusCode::CONFLICT,
+            | Self::RecipientInvalid(_)
+            | Self::BoothAlreadyConfirmed { .. }
+            | Self::LeadSinkRefused(_)
+            | Self::LeadRequestBusy { .. } => StatusCode::CONFLICT,
             Self::Database(_) | Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

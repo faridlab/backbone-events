@@ -21,7 +21,7 @@ use backbone_events::presentation::http::{event_admin_routes, EventAdminState};
 
 use super::common::{
     make_event, make_multi_slot_event, make_type_with_mail, register_cmd, registrations,
-    PROBE_SECRET, RecordingQueue, StubRenderer, TestDb,
+    RefusingLeadSink, RefusingSmsQueue, PROBE_SECRET, RecordingQueue, StubRenderer, TestDb,
 };
 
 #[tokio::test]
@@ -32,7 +32,13 @@ async fn publish_fence_and_verb_writers() {
 
     // The fence: the repository structurally has no patch arm for the
     // pair; the ROUTE refuses the typed body keys. Route-level:
-    let state = EventAdminState::new(db.pool.clone(), Arc::new(StubRenderer), Arc::new(RecordingQueue::default()));
+    let state = EventAdminState::new(
+        db.pool.clone(),
+        Arc::new(StubRenderer),
+        Arc::new(RecordingQueue::default()),
+        Arc::new(RefusingSmsQueue),
+        Arc::new(RefusingLeadSink),
+    );
     let app = event_admin_routes(state);
     let patch = r#"{"name": "renamed", "is_published": true}"#.to_string();
     let response = app
@@ -155,8 +161,10 @@ async fn my_tickets_pins_the_registration_set() {
     let report = tickets.report(PROBE_SECRET, &forged).await.unwrap();
     assert!(report.tickets.is_empty(), "foreign rows are never returned");
 
-    // Tampered token: the uniform 404.
-    let tampered = format!("{}x", &token[..token.len() - 1]);
+    // Tampered token: the uniform 404. The replacement char sits
+    // OUTSIDE the token alphabet — an in-alphabet char can leave the
+    // token valid (a flaky pass).
+    let tampered = format!("{}~", &token[..token.len() - 1]);
     let err = tickets.report(PROBE_SECRET, &tampered).await.unwrap_err();
     assert_eq!(err.code(), "event_not_published");
 

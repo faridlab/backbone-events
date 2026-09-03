@@ -9,9 +9,18 @@
 use std::sync::Arc;
 
 // Import all services
+use crate::application::service::BoothCategoryService;
+use crate::application::service::BoothService;
+use crate::application::service::TypeBoothService;
+use crate::application::service::BoothBookingService;
 use crate::application::service::EventService;
 use crate::application::service::EventAuditLogService;
 use crate::application::service::EventTypeService;
+use crate::application::service::LeadProvenanceService;
+use crate::application::service::LeadProvenanceRegistrationService;
+use crate::application::service::LeadRequestService;
+use crate::application::service::LeadRuleService;
+use crate::application::service::LeadRulePredicateService;
 use crate::application::service::MailService;
 use crate::application::service::MailRegistrationService;
 use crate::application::service::MailSlotService;
@@ -45,12 +54,30 @@ use crate::application::service::TypeMailService;
 /// ```
 #[derive(Clone)]
 pub struct AppState {
+    /// BoothCategory service
+    pub booth_category_service: Arc<BoothCategoryService>,
+    /// Booth service
+    pub booth_service: Arc<BoothService>,
+    /// TypeBooth service
+    pub type_booth_service: Arc<TypeBoothService>,
+    /// BoothBooking service
+    pub booth_booking_service: Arc<BoothBookingService>,
     /// Event service
     pub event_service: Arc<EventService>,
     /// EventAuditLog service
     pub event_audit_log_service: Arc<EventAuditLogService>,
     /// EventType service
     pub event_type_service: Arc<EventTypeService>,
+    /// LeadProvenance service
+    pub lead_provenance_service: Arc<LeadProvenanceService>,
+    /// LeadProvenanceRegistration service
+    pub lead_provenance_registration_service: Arc<LeadProvenanceRegistrationService>,
+    /// LeadRequest service
+    pub lead_request_service: Arc<LeadRequestService>,
+    /// LeadRule service
+    pub lead_rule_service: Arc<LeadRuleService>,
+    /// LeadRulePredicate service
+    pub lead_rule_predicate_service: Arc<LeadRulePredicateService>,
     /// Mail service
     pub mail_service: Arc<MailService>,
     /// MailRegistration service
@@ -84,9 +111,18 @@ pub struct AppState {
 impl AppState {
     /// Create a new AppState with all services.
     pub fn new(
+        booth_category_service: Arc<BoothCategoryService>,
+        booth_service: Arc<BoothService>,
+        type_booth_service: Arc<TypeBoothService>,
+        booth_booking_service: Arc<BoothBookingService>,
         event_service: Arc<EventService>,
         event_audit_log_service: Arc<EventAuditLogService>,
         event_type_service: Arc<EventTypeService>,
+        lead_provenance_service: Arc<LeadProvenanceService>,
+        lead_provenance_registration_service: Arc<LeadProvenanceRegistrationService>,
+        lead_request_service: Arc<LeadRequestService>,
+        lead_rule_service: Arc<LeadRuleService>,
+        lead_rule_predicate_service: Arc<LeadRulePredicateService>,
         mail_service: Arc<MailService>,
         mail_registration_service: Arc<MailRegistrationService>,
         mail_slot_service: Arc<MailSlotService>,
@@ -103,9 +139,18 @@ impl AppState {
         type_mail_service: Arc<TypeMailService>
     ) -> Self {
         Self {
+            booth_category_service,
+            booth_service,
+            type_booth_service,
+            booth_booking_service,
             event_service,
             event_audit_log_service,
             event_type_service,
+            lead_provenance_service,
+            lead_provenance_registration_service,
+            lead_request_service,
+            lead_rule_service,
+            lead_rule_predicate_service,
             mail_service,
             mail_registration_service,
             mail_slot_service,
@@ -126,9 +171,18 @@ impl AppState {
     /// Create AppState from module instance.
     pub fn from_module(module: &crate::EventModule) -> Self {
         Self {
+            booth_category_service: module.booth_category_service.clone(),
+            booth_service: module.booth_service.clone(),
+            type_booth_service: module.type_booth_service.clone(),
+            booth_booking_service: module.booth_booking_service.clone(),
             event_service: module.event_service.clone(),
             event_audit_log_service: module.event_audit_log_service.clone(),
             event_type_service: module.event_type_service.clone(),
+            lead_provenance_service: module.lead_provenance_service.clone(),
+            lead_provenance_registration_service: module.lead_provenance_registration_service.clone(),
+            lead_request_service: module.lead_request_service.clone(),
+            lead_rule_service: module.lead_rule_service.clone(),
+            lead_rule_predicate_service: module.lead_rule_predicate_service.clone(),
             mail_service: module.mail_service.clone(),
             mail_registration_service: module.mail_registration_service.clone(),
             mail_slot_service: module.mail_slot_service.clone(),
@@ -152,9 +206,18 @@ impl AppState {
 /// Allows incremental construction of AppState.
 #[derive(Default)]
 pub struct AppStateBuilder {
+    booth_category_service: Option<Arc<BoothCategoryService>>,
+    booth_service: Option<Arc<BoothService>>,
+    type_booth_service: Option<Arc<TypeBoothService>>,
+    booth_booking_service: Option<Arc<BoothBookingService>>,
     event_service: Option<Arc<EventService>>,
     event_audit_log_service: Option<Arc<EventAuditLogService>>,
     event_type_service: Option<Arc<EventTypeService>>,
+    lead_provenance_service: Option<Arc<LeadProvenanceService>>,
+    lead_provenance_registration_service: Option<Arc<LeadProvenanceRegistrationService>>,
+    lead_request_service: Option<Arc<LeadRequestService>>,
+    lead_rule_service: Option<Arc<LeadRuleService>>,
+    lead_rule_predicate_service: Option<Arc<LeadRulePredicateService>>,
     mail_service: Option<Arc<MailService>>,
     mail_registration_service: Option<Arc<MailRegistrationService>>,
     mail_slot_service: Option<Arc<MailSlotService>>,
@@ -177,6 +240,30 @@ impl AppStateBuilder {
         Self::default()
     }
 
+    /// Set the BoothCategory service.
+    pub fn with_booth_category_service(mut self, service: Arc<BoothCategoryService>) -> Self {
+        self.booth_category_service = Some(service);
+        self
+    }
+
+    /// Set the Booth service.
+    pub fn with_booth_service(mut self, service: Arc<BoothService>) -> Self {
+        self.booth_service = Some(service);
+        self
+    }
+
+    /// Set the TypeBooth service.
+    pub fn with_type_booth_service(mut self, service: Arc<TypeBoothService>) -> Self {
+        self.type_booth_service = Some(service);
+        self
+    }
+
+    /// Set the BoothBooking service.
+    pub fn with_booth_booking_service(mut self, service: Arc<BoothBookingService>) -> Self {
+        self.booth_booking_service = Some(service);
+        self
+    }
+
     /// Set the Event service.
     pub fn with_event_service(mut self, service: Arc<EventService>) -> Self {
         self.event_service = Some(service);
@@ -192,6 +279,36 @@ impl AppStateBuilder {
     /// Set the EventType service.
     pub fn with_event_type_service(mut self, service: Arc<EventTypeService>) -> Self {
         self.event_type_service = Some(service);
+        self
+    }
+
+    /// Set the LeadProvenance service.
+    pub fn with_lead_provenance_service(mut self, service: Arc<LeadProvenanceService>) -> Self {
+        self.lead_provenance_service = Some(service);
+        self
+    }
+
+    /// Set the LeadProvenanceRegistration service.
+    pub fn with_lead_provenance_registration_service(mut self, service: Arc<LeadProvenanceRegistrationService>) -> Self {
+        self.lead_provenance_registration_service = Some(service);
+        self
+    }
+
+    /// Set the LeadRequest service.
+    pub fn with_lead_request_service(mut self, service: Arc<LeadRequestService>) -> Self {
+        self.lead_request_service = Some(service);
+        self
+    }
+
+    /// Set the LeadRule service.
+    pub fn with_lead_rule_service(mut self, service: Arc<LeadRuleService>) -> Self {
+        self.lead_rule_service = Some(service);
+        self
+    }
+
+    /// Set the LeadRulePredicate service.
+    pub fn with_lead_rule_predicate_service(mut self, service: Arc<LeadRulePredicateService>) -> Self {
+        self.lead_rule_predicate_service = Some(service);
         self
     }
 
@@ -286,9 +403,18 @@ impl AppStateBuilder {
     /// Panics if any required service is not set.
     pub fn build(self) -> AppState {
         AppState {
+            booth_category_service: self.booth_category_service.expect("booth_category_service is required"),
+            booth_service: self.booth_service.expect("booth_service is required"),
+            type_booth_service: self.type_booth_service.expect("type_booth_service is required"),
+            booth_booking_service: self.booth_booking_service.expect("booth_booking_service is required"),
             event_service: self.event_service.expect("event_service is required"),
             event_audit_log_service: self.event_audit_log_service.expect("event_audit_log_service is required"),
             event_type_service: self.event_type_service.expect("event_type_service is required"),
+            lead_provenance_service: self.lead_provenance_service.expect("lead_provenance_service is required"),
+            lead_provenance_registration_service: self.lead_provenance_registration_service.expect("lead_provenance_registration_service is required"),
+            lead_request_service: self.lead_request_service.expect("lead_request_service is required"),
+            lead_rule_service: self.lead_rule_service.expect("lead_rule_service is required"),
+            lead_rule_predicate_service: self.lead_rule_predicate_service.expect("lead_rule_predicate_service is required"),
             mail_service: self.mail_service.expect("mail_service is required"),
             mail_registration_service: self.mail_registration_service.expect("mail_registration_service is required"),
             mail_slot_service: self.mail_slot_service.expect("mail_slot_service is required"),

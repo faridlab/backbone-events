@@ -1,0 +1,101 @@
+# =============================================================================
+# event — the REIFIED confirmed booking: BoothBooking (EBS-1's subject).
+#
+# Upstream had NO booking row: booth reservation was a transient Python
+# check (`is_already_reserved`) + fields written onto the booth. The port
+# REIFIES the booking so exclusivity can be a REAL database constraint
+# (docs/spec-overlay.md §B):
+#
+#   EBS-1  partial unique index (hand hardening migration):
+#          UNIQUE(event_booth_id) WHERE status = 'confirmed'
+#          — the REAL exclusivity wall. The Python-style availability
+#          pre-check is demoted to a nice-error PRE-CHECK; a concurrent
+#          loser gets the unique violation mapped to the typed
+#          booth_already_confirmed refusal.
+#   EBS-2  UNIQUE(sale_order_line_id, event_booth_id) — the booking grain
+#          of upstream's checked-in/out columns stays SQL at its own grain
+#          (same hand migration).
+#   EBS-3  collateral competitor-order-cancel NOT PORTED (deliberate
+#          semantic change, register row): first-confirm-wins + a LOUD
+#          typed loser. No authority over another domain's order lines.
+#   EBS-4  one event per order line — the create/confirm verb's service
+#          guard (a line booking into two events' booths is refused
+#          typed).
+#
+# A booking row is created PENDING (an operator drafts the reservation
+# intent, optionally before any order exists — sale_order_line_id stays
+# NULL until the confirm carries one) and flips to CONFIRMED only through
+# the confirm verb. Pending rows carry no exclusivity.
+#
+# SALES ARE LOGICAL REFS: sale_order_line_id is a uuid with no FK — the
+# selling module's internals stay out of reach, exactly like
+# Registration.sale_order_id.
+# =============================================================================
+
+models:
+
+  - name: BoothBooking
+    collection: booth_bookings
+    read_only: true
+    description: "BoothBooking — the reified reservation of one booth: pending until the confirm verb flips it, and the subject of the EBS-1 partial-unique exclusivity wall. Read-only over HTTP: created/flipped/deleted through the typed verbs only."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_booth_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Booth.booths)", "@indexed"]
+        description: "The booked booth (real intra-schema FK, RESTRICT)."
+      sale_order_line_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL selling order-line ref of the confirmed booking (NULL while pending/unpaid-quoted). Part of the EBS-2 composite unique."
+      status:
+        type: EventBoothBookingStatus
+        attributes: ["@required", "@default(pending)"]
+        description: "pending (a drafted reservation intent, no exclusivity) -> confirmed (the verb; the EBS-1 wall). Confirmed rows release only through the release verb."
+      partner_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Booked-by partner — logical party ref."
+      contact_name:
+        type: string?
+        attributes: ["@max(200)"]
+        description: "Contact carried onto the booth at confirm (fill-if-empty)."
+      contact_email:
+        type: email?
+        attributes: ["@max(254)"]
+        description: "Contact email carried onto the booth at confirm."
+      contact_phone:
+        type: string?
+        attributes: ["@max(40)"]
+        description: "Contact phone carried onto the booth at confirm."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event_booth:
+        type: Booth
+        attributes: ["@one", "@foreign_key(event_booth_id)", "@restrict"]
+        description: "The booked booth"
+
+    indexes:
+      - type: index
+        fields: [event_booth_id, status]
+        description: "The exclusivity pre-check + per-booth booking reads"
+      - type: index
+        fields: [sale_order_line_id]
+        description: "The paid-hook + per-line booking reads"
+
+enums:
+  - name: EventBoothBookingStatus
+    description: "Booking lifecycle: pending (intent, no exclusivity) -> confirmed (the EBS-1 partial-unique wall)"
+    variants:
+      - name: pending
+        description: "A drafted reservation — carries no exclusivity"
+        default: true
+      - name: confirmed
+        description: "Confirmed through the verb — the booth is taken; the partial unique index enforces one confirmed booking per booth"

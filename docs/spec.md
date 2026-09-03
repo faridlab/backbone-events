@@ -965,6 +965,14 @@ NOT consumed by design — recorded so no later change adds them casually:
 
 ## 11. Out of core scope — the named increments (nothing here is quietly built)
 
+> Items 1–3 below LANDED as the overlay increment (v0.2.0): the
+> consumption verbs, tables, and probes are in-tree and their contract
+> + register rows live in `docs/spec-overlay.md` (§§1–7 there extend
+> §§4/§8 here; the register table there is this file's §13 pattern
+> carried forward). The HOST-side wiring of those arms — the sale
+> outbox producer, the sms gateway queue, the lead sink compose — is
+> still compose work (spec-overlay §8).
+
 1. **event_product + the event_sale composition** — the sellable-ticket arm
    and the seam WIRING: the host subscribes selling's
    `SalesOrderConfirmed`/`SalesOrderCancelled` (the verified carriers) and

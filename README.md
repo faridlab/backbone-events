@@ -1,179 +1,79 @@
-# Backbone Module Skeleton
+# backbone-events
 
-A minimal, copy-ready starting point for new Backbone Framework modules.
-It ships with exactly **one** reference entity (`Example`) wired end-to-end
-so you can rename it to your own domain concept and start generating.
+The events domain module: registration engine, communication
+schedulers, the sale-order seam, booths, typed CRM lead rules, the
+sms arm, and the attendance desk. Schema YAML is the single source of
+truth; the tree is generator-emitted with hand-owned verbs declared in
+`metaphor.codegen.yaml`.
 
-## What you get
+## Documentation map
 
-- A single schema model at `schema/models/example.model.yaml`
-- Two migrations (`001_create_enums.up.sql`, `002_create_example_table.up.sql`)
-- A complete DDD layer cake for `Example`:
-  - Domain entity + repository trait
-  - Application service (type alias over `GenericCrudService`)
-  - Application DTOs (Create / Update / Patch / Response)
-  - Infrastructure repository (thin newtype over `GenericCrudRepository`)
-  - Presentation HTTP handler
-  - Routes
-  - Seeder
-- A `Module` struct wiring the service into the framework
+| doc | what it holds |
+|---|---|
+| `docs/spec.md` | the core contract (v0.1.x): models, state machine, seat engine, scheduler, capabilities, /ics + my-tickets, banned shapes, register dispositions, gates |
+| `docs/spec-overlay.md` | the overlay contract (v0.2.0): sale seam, booths, lead rules, sms, desk, catalog read — and the register rows for every deliberate divergence |
+| `metaphor.codegen.yaml` | the regen-safety contract: every hand file, with the reason it is hand-owned |
 
-## Directory layout
+## Model inventory (19 schema models)
 
-The tree below shows the **complete canonical Backbone module structure**.
-This skeleton ships only the minimum viable subset (one `Example` entity,
-two migrations, the core DDD layers); every other folder is documented here
-so you know where to add the optional layers when you need them.
+Core (14): `event`, `event_type`, `stage`, `slot`, `ticket`,
+`registration`, `registration_answer`, `question`, `tag`, `mail`,
+`mail_registration`, `mail_slot`, `type_mail`, `event_audit_log`.
 
-```
-backbone-module/
-│
-├── schema/                              # SCHEMA DEFINITIONS — Single Source of Truth
-│   ├── models/                          # Entity schema definitions
-│   │   └── example.model.yaml           # The one reference entity (rename me)
-│   ├── hooks/                           # Lifecycle hooks and triggers
-│   ├── workflows/                       # Business workflow definitions
-│   └── openapi/                         # OpenAPI / Swagger specifications
-│
-├── migrations/                          # DATABASE MIGRATIONS (PostgreSQL)
-│   ├── 001_create_enums.up.sql          # Enum types (e.g. example_status)
-│   ├── 001_create_enums.down.sql
-│   ├── 002_create_example_table.up.sql  # CREATE TABLE for the example entity
-│   └── 002_create_example_table.down.sql
-│
-├── src/                                 # SOURCE CODE (generated + custom)
-│   │
-│   ├── lib.rs                           # Module entry point + re-exports
-│   ├── module.rs                        # `Module` struct — wires service into framework
-│   │
-│   ├── domain/                          # Domain Layer — pure business model
-│   │   ├── entity/                      # Entity structs + trait impls
-│   │   │   └── example.rs
-│   │   ├── repositories/                # Repository traits (ports)
-│   │   │   └── example_repository.rs
-│   │   ├── value_objects/               # Value objects
-│   │   ├── event/                       # Domain events
-│   │   ├── state_machine/               # State transition definitions
-│   │   ├── services/                    # Domain services
-│   │   ├── specifications/              # Specification pattern
-│   │   └── permission/                  # Permission rules
-│   │
-│   ├── application/                     # Application Layer — use cases & orchestration
-│   │   ├── dto/                         # Create / Update / Patch / Response DTOs
-│   │   │   └── example_dto.rs
-│   │   ├── service/                     # Application services
-│   │   │   ├── example_service.rs       # Type alias over GenericCrudService
-│   │   │   └── error.rs                 # Service-level error types
-│   │   ├── usecases/                    # Use case implementations
-│   │   ├── commands/                    # CQRS commands
-│   │   ├── queries/                     # CQRS queries
-│   │   ├── validator/                   # Input validation
-│   │   ├── workflows/                   # Workflow orchestration
-│   │   ├── triggers/                    # Database trigger handlers
-│   │   ├── bulk_operations/             # Bulk import/export
-│   │   ├── auth/                        # Module-specific auth
-│   │   ├── middleware/                  # Application middleware
-│   │   └── subscriptions/               # Event subscriptions
-│   │
-│   ├── infrastructure/                  # Infrastructure Layer — adapters
-│   │   ├── persistence/                 # Repository implementations
-│   │   │   └── example_repository_impl.rs   # Postgres repo via GenericCrudRepository
-│   │   ├── event_store/                 # Event sourcing storage
-│   │   ├── projections/                 # CQRS read-model projections
-│   │   ├── cache/                       # Caching adapters
-│   │   ├── rate_limiter/                # Rate limiting
-│   │   ├── jobs/                        # Background jobs
-│   │   ├── messaging/                   # Message bus adapters
-│   │   ├── external/                    # Third-party integrations
-│   │   ├── metrics/                     # Prometheus metrics
-│   │   └── health/                      # Health check endpoints
-│   │
-│   ├── presentation/                    # Presentation Layer — transport
-│   │   ├── http/                        # REST / Axum handlers
-│   │   │   └── example_handler.rs       # BackboneCrudHandler wiring
-│   │   ├── grpc/                        # gRPC services
-│   │   ├── graphql/                     # GraphQL resolvers
-│   │   ├── cli/                         # CLI subcommands
-│   │   ├── dto/                         # Wire-format DTOs
-│   │   ├── middleware/                  # Transport middleware
-│   │   └── versioning/                  # API versioning
-│   │
-│   ├── routes/                          # Route composition
-│   │   └── example_routes.rs
-│   │
-│   ├── seeders/                         # Sample data for `backbone seed run`
-│   │   └── example_seeder.rs
-│   │
-│   ├── handlers/                        # Custom handler entry points
-│   ├── integration/                     # Inter-module integration adapters
-│   └── exports/                         # Public API exports
-│
-├── proto/                               # PROTOBUF DEFINITIONS (generated from schema)
-│   ├── domain/
-│   │   └── entity/                      # Entity messages
-│   └── services/                        # Service definitions
-│
-├── tests/
-│   ├── integration_tests.rs             # Stub — replace with your own test suite
-│   └── integration/                     # Integration test fixtures
-│
-├── config/                              # MODULE CONFIGURATION
-│   ├── application.yml                  # Default runtime config (db, server, log)
-│   ├── application-dev.yml              # Development overrides
-│   └── application-prod.yml             # Production overrides
-│
-├── docs/                                # Module-specific documentation
-├── benches/                             # Criterion benchmarks
-│
-├── buf.yaml                             # Protobuf lint config
-├── Cargo.toml                           # Trimmed deps — update `path = "..."` after copying
-└── README.md                            # This file
-```
+Overlay (5): `booth`, `booth_booking`, `lead_rule`, `lead_request`,
+`lead_provenance`.
 
-> **What ships in this skeleton:** `schema/models/example.model.yaml`, the two
-> example migrations, `Cargo.toml`, `README.md`, `buf.yaml`, `config/application.yml`,
-> `tests/integration_tests.rs`, and the `src/` layers `domain/{entity,repositories}`,
-> `application/{dto,service}`, `infrastructure/persistence`, `presentation/http`,
-> `routes`, `seeders`, plus `lib.rs` and `module.rs`.
-> Everything else in the tree above is a **placeholder for layers you can add later**.
+Five child tables are declared inside their parent's model yaml (they
+carry migrations + entities, no model file of their own):
+`tag_category` (of tag), `booth_category` + `type_booth` (of the booth
+family), `lead_rule_predicate` (of lead_rule),
+`lead_provenance_registration` (of lead_provenance). Two hand DDL
+objects are NOT models: `event.seam_inbox` (exactly-once consumption)
+and `event.event_linked_products` (the catalog read view).
 
-## Getting started
+## The verb surface (hand services)
 
-1. **Copy** this directory to wherever your new module should live.
-2. **Name your crate** in `Cargo.toml` — set `[package].name`. The `backbone-*`
-   crates are **git dependencies** pinned to `branch = "main"`, so the skeleton
-   builds anywhere on disk with no path fix-up. For a release, pin them to a
-   tag or commit (`tag = "vX.Y.Z"` or `rev = "<sha>"`) for a reproducible build.
-3. **Rename** `example` to your entity name throughout:
-   - `schema/models/example.model.yaml` → `<your_entity>.model.yaml`
-   - Inside the YAML, change `Example`, `examples`, `ExampleStatus`
-   - The matching `src/` files and `migrations/*_example_*.sql`
-4. **Regenerate** with `metaphor`:
+| service | verbs |
+|---|---|
+| `seat_service` | the ONE seat aggregation |
+| `registration_service` | register (lock-first), state verbs, sync-from-partner, archive |
+| `event_service` | create (template-apply once), publish/unpublish, mark_done, done sweep, linked products |
+| `scheduler_service` | the self-arming pass (mail + sms channel branch), `on_template_deleted` (the one cascade verb) |
+| `desk_service` | `register_attendee` — the frozen branch order, exact-match barcode |
+| `sale_seam_service` | `on_order_confirmed` / `on_order_paid` / `on_order_cancelled` — exactly-once through the seam inbox |
+| `booth_command_service` | booth create/patch/delete fences, booking lifecycle, confirm/release |
+| `lead_command_service` | typed rules over the closed predicate vocabulary, answer bridge, read model, relink |
+| `lead_generation_service` | the self-arming lead pass (leased claims — one walker per event, batch caps, grouping strategy, host sink) |
+| `capability` / `ics_service` / `my_tickets_service` / `intake_service` | Tier A tokens, the /ics gate, attendee reads, the guarded funnel verb |
 
-   ```bash
-   metaphor schema schema generate <module_name> --target all --force
-   ```
+## Host ports (compose-time wiring)
 
-5. **Run migrations**:
+`EventTemplateRenderer` (template store), `EventMailQueue` (mail
+transport), `EventSmsQueue` (sms transport — mail's
+gateway-sms-http), `EventLeadSink` (lead create/update). Every port
+ships a refusing default that parks loudly — an unwired host is a
+typed failure, never a silent skip.
 
-   ```bash
-   DATABASE_URL="postgresql://..." metaphor migration run
-   ```
+## Probes
 
-## Custom code (regeneration safety)
+`tests/probes/` — fail-hard, one disposable scratch database each on
+127.0.0.1:5433 (`EVENT_TEST_ADMIN_URL` overrides), migrations applied
+by a raw filename-order runner. Families: seat races (zero oversell),
+/ics refusals, scheduler arming + re-open, state-machine fences,
+sale-seam mint/heal/cancel, booth exclusivity, typed CRM rules, the
+sms overlay, desk branch order.
 
-Anywhere you see a `// <<< CUSTOM` / `// END CUSTOM` marker, the content in
-between is preserved across regeneration. For code outside those markers, use
-the `_custom` suffix convention:
+## Config knobs
 
-- `order_photo_service_custom.rs` — never rewritten
-- Register in `mod.rs` beneath a `// <<< CUSTOM` marker
-- Wire custom HTTP endpoints via `custom_routes.rs`, not the generated handler
+`EVENT_CAPABILITY_SECRET` (fail-closed), `EVENT_MAIL_BATCH` /
+`EVENT_MAIL_CRON_LIMIT`, `EVENT_LEAD_BATCH` / `EVENT_LEAD_CRON_LIMIT`,
+`EVENT_TRUSTED_PROXY`. Declared in the host env templates; no silent
+defaults.
 
-## Going further
+## Regeneration safety
 
-This skeleton intentionally excludes the optional layers (event store, cache,
-gRPC, GraphQL, CLI, triggers, validators, workflows, state machines, ...).
-Add them back from the full framework docs as you need them. The directory
-structure mirrors what the generator expects, so adding a new layer is as
-simple as creating the corresponding `mod.rs` and pointing `lib.rs` at it.
+`metaphor schema generate --force` regenerates everything except the
+`user_owned` globs in `metaphor.codegen.yaml` and the `// <<< CUSTOM`
+marker blocks. Never hand-edit a generated file outside a marker —
+list the file instead. The manifest's comments state each hand file's
+reason (including the two frozen generator defects).

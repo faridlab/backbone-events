@@ -34,6 +34,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use super::event_error::EventResult;
+use super::sms_port::{EventSmsQueue, RenderedSms};
 use super::template_port::{EventMailQueue, EventTemplateRenderer, RenderContext};
 use crate::infrastructure::persistence::event_command_repository::EventCommandRepository;
 use crate::infrastructure::persistence::scheduler_repository::{SchedulerRepository, SchedulerRow};
@@ -57,6 +58,7 @@ pub struct SchedulerRunSummary {
     pub schedulers_claimed: i64,
     pub receipts_materialized: i64,
     pub receipts_queued: i64,
+    pub sms_queued: i64,
     pub receipts_dropped_window_closed: i64,
     pub typed_failures_recorded: i64,
     pub cancellation_receipts_deleted: i64,
@@ -70,24 +72,31 @@ pub struct SchedulerService {
     events: EventCommandRepository,
     renderer: Arc<dyn EventTemplateRenderer>,
     queue: Arc<dyn EventMailQueue>,
+    sms_queue: Arc<dyn EventSmsQueue>,
     batch: i64,
     cron_limit: i64,
 }
 
 impl SchedulerService {
     /// Compose with the host-installed ports (the refusing defaults
-    /// give the unwired-host typed failures, never silent skips).
+    /// give the unwired-host typed failures, never silent skips). The
+    /// sms queue is its own port: rows whose derived channel is `sms`
+    /// enqueue through it (recipient = the registration's phone); an
+    /// unconfigured gateway parks the row loudly as
+    /// `sms_enqueue_refused` — never silently queued.
     pub fn new(
         schedulers: SchedulerRepository,
         events: EventCommandRepository,
         renderer: Arc<dyn EventTemplateRenderer>,
         queue: Arc<dyn EventMailQueue>,
+        sms_queue: Arc<dyn EventSmsQueue>,
     ) -> Self {
         Self {
             schedulers,
             events,
             renderer,
             queue,
+            sms_queue,
             batch: DEFAULT_MAIL_BATCH,
             cron_limit: DEFAULT_CRON_LIMIT,
         }
@@ -159,7 +168,9 @@ impl SchedulerService {
                     summary.receipts_dropped_window_closed += 1;
                     continue;
                 }
-                // Render through the host port.
+                // Render through the host port (ONE renderer port for
+                // both channels — the renderer receives the row's
+                // template_kind and the context carries the phone arm).
                 let ctx = RenderContext {
                     event_id: event.id,
                     event_name: event.name.clone(),
@@ -169,6 +180,7 @@ impl SchedulerService {
                     registration_id: receipt.registration_id,
                     attendee_name: receipt.attendee_name.clone(),
                     attendee_email: receipt.attendee_email.clone(),
+                    attendee_phone: receipt.attendee_phone.clone(),
                     registration_barcode: receipt.barcode.clone(),
                 };
                 let rendered = match self
@@ -194,6 +206,44 @@ impl SchedulerService {
                         continue;
                     }
                 };
+                // THE CHANNEL BRANCH: the row's derived channel picks
+                // the port (mail -> email -> EventMailQueue; sms ->
+                // phone -> EventSmsQueue). 'sent' = queued on both.
+                if scheduler.notification_channel == "sms" {
+                    let phone = receipt
+                        .attendee_phone
+                        .as_deref()
+                        .map(str::trim)
+                        .unwrap_or("");
+                    if phone.is_empty() {
+                        self.schedulers
+                            .record_failure(scheduler.id, "recipient_invalid")
+                            .await?;
+                        summary.typed_failures_recorded += 1;
+                        continue;
+                    }
+                    let sms = RenderedSms {
+                        body_text: rendered.body_text,
+                    };
+                    match self.sms_queue.enqueue(phone, &sms).await {
+                        Ok(()) => {
+                            self.schedulers
+                                .mark_receipt_queued(receipt.receipt_id)
+                                .await?;
+                            summary.sms_queued += 1;
+                        }
+                        Err(_refusal) => {
+                            // An unconfigured gateway is a typed, LOUD
+                            // park: the receipt stays unsent, retried
+                            // next tick (ESM-2 — never silently queued).
+                            self.schedulers
+                                .record_failure(scheduler.id, "sms_enqueue_refused")
+                                .await?;
+                            summary.typed_failures_recorded += 1;
+                        }
+                    }
+                    continue;
+                }
                 if receipt.attendee_email.is_empty() || !receipt.attendee_email.contains('@') {
                     self.schedulers
                         .record_failure(scheduler.id, "recipient_invalid")
@@ -276,5 +326,27 @@ impl SchedulerService {
     /// the verb run as a sweep). Returns the swept event ids.
     pub async fn sweep_mark_done(&self, limit: i64) -> EventResult<Vec<Uuid>> {
         self.schedulers.sweep_mark_done(limit).await
+    }
+
+    /// THE TEMPLATE CASCADE (one verb, BOTH channels — EVM2-2 + ESM-1
+    /// collapsed): the template store's delete declares this seam and
+    /// calls it with the deleted (kind, ref) pair; dependent scheduler
+    /// rows and type-level template rows of that pair go in one
+    /// set-based transaction. Returns (scheduler rows deleted, type
+    /// template rows deleted).
+    pub async fn on_template_deleted(
+        &self,
+        template_kind: &str,
+        template_ref: Uuid,
+        actor: Option<Uuid>,
+    ) -> EventResult<(i64, i64)> {
+        if template_kind.trim().is_empty() {
+            return Err(super::event_error::EventError::Validation(
+                "template cascade requires a template_kind".into(),
+            ));
+        }
+        self.schedulers
+            .cascade_delete_template_dependents(template_kind, template_ref, actor)
+            .await
     }
 }

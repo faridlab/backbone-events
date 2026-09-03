@@ -112,4 +112,12 @@ impl EventCommandService {
     pub async fn list(&self, limit: i64) -> EventResult<Vec<EventRow>> {
         self.events.list(limit).await
     }
+
+    /// THE CATALOG READ (EP-2's exclusion predicate): every product id
+    /// an event family links to (tickets + booth categories). The
+    /// catalog seat reads THIS — events owns the linkage, the catalog
+    /// only ever consumes it (no catalog enum is mutated from here).
+    pub async fn linked_products(&self) -> EventResult<Vec<Uuid>> {
+        self.events.list_linked_products().await
+    }
 }

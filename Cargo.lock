@@ -923,7 +923,7 @@ dependencies = [
 
 [[package]]
 name = "backbone-events"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -940,6 +940,7 @@ dependencies = [
  "hmac 0.12.1",
  "pretty_assertions",
  "rand 0.8.8",
+ "rust_decimal",
  "serde",
  "serde_json",
  "serde_yaml",

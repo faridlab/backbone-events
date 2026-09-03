@@ -11,12 +11,30 @@ servers:
     description: Development server
 
 tags:
+  - name: BoothCategories
+    description: BoothCategory management endpoints
+  - name: Booths
+    description: Booth management endpoints
+  - name: TypeBooths
+    description: TypeBooth management endpoints
+  - name: BoothBookings
+    description: BoothBooking management endpoints
   - name: Events
     description: Event management endpoints
   - name: EventAuditLogs
     description: EventAuditLog management endpoints
   - name: EventTypes
     description: EventType management endpoints
+  - name: LeadProvenances
+    description: LeadProvenance management endpoints
+  - name: LeadProvenanceRegistrations
+    description: LeadProvenanceRegistration management endpoints
+  - name: LeadRequests
+    description: LeadRequest management endpoints
+  - name: LeadRules
+    description: LeadRule management endpoints
+  - name: LeadRulePredicates
+    description: LeadRulePredicate management endpoints
   - name: Mails
     description: Mail management endpoints
   - name: MailRegistrations
@@ -47,6 +65,1470 @@ tags:
     description: TypeMail management endpoints
 
 paths:
+  /api/v1/booth_categories:
+    get:
+      tags:
+        - BoothCategories
+      summary: List BoothCategories
+      description: Get a paginated list of BoothCategories with optional filtering and sorting
+      operationId: listBoothCategories
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategoryList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - BoothCategories
+      summary: Create BoothCategory
+      description: Create a new BoothCategory
+      operationId: createBoothCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoothCategoryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/booth_categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - BoothCategories
+      summary: Get BoothCategory by ID
+      operationId: getBoothCategory
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - BoothCategories
+      summary: Update BoothCategory (full)
+      operationId: updateBoothCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoothCategoryRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - BoothCategories
+      summary: Update BoothCategory (partial)
+      operationId: patchBoothCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchBoothCategoryRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - BoothCategories
+      summary: Delete BoothCategory (soft)
+      operationId: deleteBoothCategory
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/booth_categories/bulk:
+    post:
+      tags:
+        - BoothCategories
+      summary: Bulk create BoothCategories
+      operationId: bulkCreateBoothCategories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateBoothCategoryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BoothCategory'
+    put:
+      tags:
+        - BoothCategories
+      summary: Bulk update BoothCategories (full, atomic)
+      operationId: bulkUpdateBoothCategories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateBoothCategoryRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategoryBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - BoothCategories
+      summary: Bulk partial-update BoothCategories (atomic)
+      operationId: bulkPatchBoothCategories
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategoryBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_categories/upsert:
+    post:
+      tags:
+        - BoothCategories
+      summary: Upsert BoothCategory
+      operationId: upsertBoothCategory
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoothCategoryRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategory'
+
+  /api/v1/booth_categories/trash:
+    get:
+      tags:
+        - BoothCategories
+      summary: List deleted BoothCategories
+      operationId: listDeletedBoothCategories
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategoryList'
+
+  /api/v1/booth_categories/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - BoothCategories
+      summary: Restore deleted BoothCategory
+      operationId: restoreBoothCategory
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/booth_categories/empty:
+    delete:
+      tags:
+        - BoothCategories
+      summary: Empty trash for BoothCategories
+      operationId: emptyTrashBoothCategories
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/booth_categories/delete/bulk:
+    post:
+      tags:
+        - BoothCategories
+      summary: Bulk soft-delete BoothCategories by ids (atomic)
+      operationId: bulkDeleteBoothCategories
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_categories/restore/bulk:
+    post:
+      tags:
+        - BoothCategories
+      summary: Bulk restore BoothCategories by ids (atomic)
+      operationId: bulkRestoreBoothCategories
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothCategoryBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_categories/restore/all:
+    post:
+      tags:
+        - BoothCategories
+      summary: Restore all soft-deleted BoothCategories
+      operationId: restoreAllBoothCategories
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/booth_categories/trash/bulk:
+    delete:
+      tags:
+        - BoothCategories
+      summary: Bulk permanently-delete BoothCategories from trash by ids (atomic)
+      operationId: bulkPermanentDeleteBoothCategories
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booths:
+    get:
+      tags:
+        - Booths
+      summary: List Booths
+      description: Get a paginated list of Booths with optional filtering and sorting
+      operationId: listBooths
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Booths
+      summary: Create Booth
+      description: Create a new Booth
+      operationId: createBooth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoothRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booth'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/booths/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - Booths
+      summary: Get Booth by ID
+      operationId: getBooth
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Booths
+      summary: Update Booth (full)
+      operationId: updateBooth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoothRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Booths
+      summary: Update Booth (partial)
+      operationId: patchBooth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchBoothRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Booths
+      summary: Delete Booth (soft)
+      operationId: deleteBooth
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/booths/bulk:
+    post:
+      tags:
+        - Booths
+      summary: Bulk create Booths
+      operationId: bulkCreateBooths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateBoothRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booth'
+    put:
+      tags:
+        - Booths
+      summary: Bulk update Booths (full, atomic)
+      operationId: bulkUpdateBooths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateBoothRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - Booths
+      summary: Bulk partial-update Booths (atomic)
+      operationId: bulkPatchBooths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booths/upsert:
+    post:
+      tags:
+        - Booths
+      summary: Upsert Booth
+      operationId: upsertBooth
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoothRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booth'
+
+  /api/v1/booths/trash:
+    get:
+      tags:
+        - Booths
+      summary: List deleted Booths
+      operationId: listDeletedBooths
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothList'
+
+  /api/v1/booths/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - Booths
+      summary: Restore deleted Booth
+      operationId: restoreBooth
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/booths/empty:
+    delete:
+      tags:
+        - Booths
+      summary: Empty trash for Booths
+      operationId: emptyTrashBooths
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/booths/delete/bulk:
+    post:
+      tags:
+        - Booths
+      summary: Bulk soft-delete Booths by ids (atomic)
+      operationId: bulkDeleteBooths
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booths/restore/bulk:
+    post:
+      tags:
+        - Booths
+      summary: Bulk restore Booths by ids (atomic)
+      operationId: bulkRestoreBooths
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booths/restore/all:
+    post:
+      tags:
+        - Booths
+      summary: Restore all soft-deleted Booths
+      operationId: restoreAllBooths
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/booths/trash/bulk:
+    delete:
+      tags:
+        - Booths
+      summary: Bulk permanently-delete Booths from trash by ids (atomic)
+      operationId: bulkPermanentDeleteBooths
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/type_booths:
+    get:
+      tags:
+        - TypeBooths
+      summary: List TypeBooths
+      description: Get a paginated list of TypeBooths with optional filtering and sorting
+      operationId: listTypeBooths
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBoothList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - TypeBooths
+      summary: Create TypeBooth
+      description: Create a new TypeBooth
+      operationId: createTypeBooth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTypeBoothRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBooth'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/type_booths/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - TypeBooths
+      summary: Get TypeBooth by ID
+      operationId: getTypeBooth
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBooth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - TypeBooths
+      summary: Update TypeBooth (full)
+      operationId: updateTypeBooth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTypeBoothRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBooth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - TypeBooths
+      summary: Update TypeBooth (partial)
+      operationId: patchTypeBooth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchTypeBoothRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBooth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - TypeBooths
+      summary: Delete TypeBooth (soft)
+      operationId: deleteTypeBooth
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/type_booths/bulk:
+    post:
+      tags:
+        - TypeBooths
+      summary: Bulk create TypeBooths
+      operationId: bulkCreateTypeBooths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateTypeBoothRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TypeBooth'
+    put:
+      tags:
+        - TypeBooths
+      summary: Bulk update TypeBooths (full, atomic)
+      operationId: bulkUpdateTypeBooths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateTypeBoothRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBoothBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - TypeBooths
+      summary: Bulk partial-update TypeBooths (atomic)
+      operationId: bulkPatchTypeBooths
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBoothBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/type_booths/upsert:
+    post:
+      tags:
+        - TypeBooths
+      summary: Upsert TypeBooth
+      operationId: upsertTypeBooth
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTypeBoothRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBooth'
+
+  /api/v1/type_booths/trash:
+    get:
+      tags:
+        - TypeBooths
+      summary: List deleted TypeBooths
+      operationId: listDeletedTypeBooths
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBoothList'
+
+  /api/v1/type_booths/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - TypeBooths
+      summary: Restore deleted TypeBooth
+      operationId: restoreTypeBooth
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBooth'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/type_booths/empty:
+    delete:
+      tags:
+        - TypeBooths
+      summary: Empty trash for TypeBooths
+      operationId: emptyTrashTypeBooths
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/type_booths/delete/bulk:
+    post:
+      tags:
+        - TypeBooths
+      summary: Bulk soft-delete TypeBooths by ids (atomic)
+      operationId: bulkDeleteTypeBooths
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/type_booths/restore/bulk:
+    post:
+      tags:
+        - TypeBooths
+      summary: Bulk restore TypeBooths by ids (atomic)
+      operationId: bulkRestoreTypeBooths
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeBoothBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/type_booths/restore/all:
+    post:
+      tags:
+        - TypeBooths
+      summary: Restore all soft-deleted TypeBooths
+      operationId: restoreAllTypeBooths
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/type_booths/trash/bulk:
+    delete:
+      tags:
+        - TypeBooths
+      summary: Bulk permanently-delete TypeBooths from trash by ids (atomic)
+      operationId: bulkPermanentDeleteTypeBooths
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_bookings:
+    get:
+      tags:
+        - BoothBookings
+      summary: List BoothBookings
+      description: Get a paginated list of BoothBookings with optional filtering and sorting
+      operationId: listBoothBookings
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBookingList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - BoothBookings
+      summary: Create BoothBooking
+      description: Create a new BoothBooking
+      operationId: createBoothBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoothBookingRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBooking'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/booth_bookings/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - BoothBookings
+      summary: Get BoothBooking by ID
+      operationId: getBoothBooking
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBooking'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - BoothBookings
+      summary: Update BoothBooking (full)
+      operationId: updateBoothBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoothBookingRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBooking'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - BoothBookings
+      summary: Update BoothBooking (partial)
+      operationId: patchBoothBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchBoothBookingRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBooking'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - BoothBookings
+      summary: Delete BoothBooking (soft)
+      operationId: deleteBoothBooking
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/booth_bookings/bulk:
+    post:
+      tags:
+        - BoothBookings
+      summary: Bulk create BoothBookings
+      operationId: bulkCreateBoothBookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateBoothBookingRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BoothBooking'
+    put:
+      tags:
+        - BoothBookings
+      summary: Bulk update BoothBookings (full, atomic)
+      operationId: bulkUpdateBoothBookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateBoothBookingRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBookingBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - BoothBookings
+      summary: Bulk partial-update BoothBookings (atomic)
+      operationId: bulkPatchBoothBookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBookingBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_bookings/upsert:
+    post:
+      tags:
+        - BoothBookings
+      summary: Upsert BoothBooking
+      operationId: upsertBoothBooking
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoothBookingRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBooking'
+
+  /api/v1/booth_bookings/trash:
+    get:
+      tags:
+        - BoothBookings
+      summary: List deleted BoothBookings
+      operationId: listDeletedBoothBookings
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBookingList'
+
+  /api/v1/booth_bookings/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - BoothBookings
+      summary: Restore deleted BoothBooking
+      operationId: restoreBoothBooking
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBooking'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/booth_bookings/empty:
+    delete:
+      tags:
+        - BoothBookings
+      summary: Empty trash for BoothBookings
+      operationId: emptyTrashBoothBookings
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/booth_bookings/delete/bulk:
+    post:
+      tags:
+        - BoothBookings
+      summary: Bulk soft-delete BoothBookings by ids (atomic)
+      operationId: bulkDeleteBoothBookings
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_bookings/restore/bulk:
+    post:
+      tags:
+        - BoothBookings
+      summary: Bulk restore BoothBookings by ids (atomic)
+      operationId: bulkRestoreBoothBookings
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoothBookingBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/booth_bookings/restore/all:
+    post:
+      tags:
+        - BoothBookings
+      summary: Restore all soft-deleted BoothBookings
+      operationId: restoreAllBoothBookings
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/booth_bookings/trash/bulk:
+    delete:
+      tags:
+        - BoothBookings
+      summary: Bulk permanently-delete BoothBookings from trash by ids (atomic)
+      operationId: bulkPermanentDeleteBoothBookings
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/events:
     get:
       tags:
@@ -1131,6 +2613,1836 @@ paths:
         - EventTypes
       summary: Bulk permanently-delete EventTypes from trash by ids (atomic)
       operationId: bulkPermanentDeleteEventTypes
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenances:
+    get:
+      tags:
+        - LeadProvenances
+      summary: List LeadProvenances
+      description: Get a paginated list of LeadProvenances with optional filtering and sorting
+      operationId: listLeadProvenances
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - LeadProvenances
+      summary: Create LeadProvenance
+      description: Create a new LeadProvenance
+      operationId: createLeadProvenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeadProvenanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/lead_provenances/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - LeadProvenances
+      summary: Get LeadProvenance by ID
+      operationId: getLeadProvenance
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - LeadProvenances
+      summary: Update LeadProvenance (full)
+      operationId: updateLeadProvenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadProvenanceRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - LeadProvenances
+      summary: Update LeadProvenance (partial)
+      operationId: patchLeadProvenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchLeadProvenanceRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - LeadProvenances
+      summary: Delete LeadProvenance (soft)
+      operationId: deleteLeadProvenance
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_provenances/bulk:
+    post:
+      tags:
+        - LeadProvenances
+      summary: Bulk create LeadProvenances
+      operationId: bulkCreateLeadProvenances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateLeadProvenanceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeadProvenance'
+    put:
+      tags:
+        - LeadProvenances
+      summary: Bulk update LeadProvenances (full, atomic)
+      operationId: bulkUpdateLeadProvenances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateLeadProvenanceRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - LeadProvenances
+      summary: Bulk partial-update LeadProvenances (atomic)
+      operationId: bulkPatchLeadProvenances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenances/upsert:
+    post:
+      tags:
+        - LeadProvenances
+      summary: Upsert LeadProvenance
+      operationId: upsertLeadProvenance
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadProvenanceRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenance'
+
+  /api/v1/lead_provenances/trash:
+    get:
+      tags:
+        - LeadProvenances
+      summary: List deleted LeadProvenances
+      operationId: listDeletedLeadProvenances
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceList'
+
+  /api/v1/lead_provenances/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - LeadProvenances
+      summary: Restore deleted LeadProvenance
+      operationId: restoreLeadProvenance
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_provenances/empty:
+    delete:
+      tags:
+        - LeadProvenances
+      summary: Empty trash for LeadProvenances
+      operationId: emptyTrashLeadProvenances
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/lead_provenances/delete/bulk:
+    post:
+      tags:
+        - LeadProvenances
+      summary: Bulk soft-delete LeadProvenances by ids (atomic)
+      operationId: bulkDeleteLeadProvenances
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenances/restore/bulk:
+    post:
+      tags:
+        - LeadProvenances
+      summary: Bulk restore LeadProvenances by ids (atomic)
+      operationId: bulkRestoreLeadProvenances
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenances/restore/all:
+    post:
+      tags:
+        - LeadProvenances
+      summary: Restore all soft-deleted LeadProvenances
+      operationId: restoreAllLeadProvenances
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/lead_provenances/trash/bulk:
+    delete:
+      tags:
+        - LeadProvenances
+      summary: Bulk permanently-delete LeadProvenances from trash by ids (atomic)
+      operationId: bulkPermanentDeleteLeadProvenances
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenance_registrations:
+    get:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: List LeadProvenanceRegistrations
+      description: Get a paginated list of LeadProvenanceRegistrations with optional filtering and sorting
+      operationId: listLeadProvenanceRegistrations
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistrationList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Create LeadProvenanceRegistration
+      description: Create a new LeadProvenanceRegistration
+      operationId: createLeadProvenanceRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeadProvenanceRegistrationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/lead_provenance_registrations/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Get LeadProvenanceRegistration by ID
+      operationId: getLeadProvenanceRegistration
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistration'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Update LeadProvenanceRegistration (full)
+      operationId: updateLeadProvenanceRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadProvenanceRegistrationRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistration'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Update LeadProvenanceRegistration (partial)
+      operationId: patchLeadProvenanceRegistration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchLeadProvenanceRegistrationRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistration'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Delete LeadProvenanceRegistration (soft)
+      operationId: deleteLeadProvenanceRegistration
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_provenance_registrations/bulk:
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Bulk create LeadProvenanceRegistrations
+      operationId: bulkCreateLeadProvenanceRegistrations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateLeadProvenanceRegistrationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeadProvenanceRegistration'
+    put:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Bulk update LeadProvenanceRegistrations (full, atomic)
+      operationId: bulkUpdateLeadProvenanceRegistrations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateLeadProvenanceRegistrationRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistrationBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Bulk partial-update LeadProvenanceRegistrations (atomic)
+      operationId: bulkPatchLeadProvenanceRegistrations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistrationBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenance_registrations/upsert:
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Upsert LeadProvenanceRegistration
+      operationId: upsertLeadProvenanceRegistration
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadProvenanceRegistrationRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistration'
+
+  /api/v1/lead_provenance_registrations/trash:
+    get:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: List deleted LeadProvenanceRegistrations
+      operationId: listDeletedLeadProvenanceRegistrations
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistrationList'
+
+  /api/v1/lead_provenance_registrations/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Restore deleted LeadProvenanceRegistration
+      operationId: restoreLeadProvenanceRegistration
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistration'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_provenance_registrations/empty:
+    delete:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Empty trash for LeadProvenanceRegistrations
+      operationId: emptyTrashLeadProvenanceRegistrations
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/lead_provenance_registrations/delete/bulk:
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Bulk soft-delete LeadProvenanceRegistrations by ids (atomic)
+      operationId: bulkDeleteLeadProvenanceRegistrations
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenance_registrations/restore/bulk:
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Bulk restore LeadProvenanceRegistrations by ids (atomic)
+      operationId: bulkRestoreLeadProvenanceRegistrations
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadProvenanceRegistrationBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_provenance_registrations/restore/all:
+    post:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Restore all soft-deleted LeadProvenanceRegistrations
+      operationId: restoreAllLeadProvenanceRegistrations
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/lead_provenance_registrations/trash/bulk:
+    delete:
+      tags:
+        - LeadProvenanceRegistrations
+      summary: Bulk permanently-delete LeadProvenanceRegistrations from trash by ids (atomic)
+      operationId: bulkPermanentDeleteLeadProvenanceRegistrations
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_requests:
+    get:
+      tags:
+        - LeadRequests
+      summary: List LeadRequests
+      description: Get a paginated list of LeadRequests with optional filtering and sorting
+      operationId: listLeadRequests
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequestList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - LeadRequests
+      summary: Create LeadRequest
+      description: Create a new LeadRequest
+      operationId: createLeadRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeadRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/lead_requests/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - LeadRequests
+      summary: Get LeadRequest by ID
+      operationId: getLeadRequest
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - LeadRequests
+      summary: Update LeadRequest (full)
+      operationId: updateLeadRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRequestRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - LeadRequests
+      summary: Update LeadRequest (partial)
+      operationId: patchLeadRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchLeadRequestRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - LeadRequests
+      summary: Delete LeadRequest (soft)
+      operationId: deleteLeadRequest
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_requests/bulk:
+    post:
+      tags:
+        - LeadRequests
+      summary: Bulk create LeadRequests
+      operationId: bulkCreateLeadRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateLeadRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeadRequest'
+    put:
+      tags:
+        - LeadRequests
+      summary: Bulk update LeadRequests (full, atomic)
+      operationId: bulkUpdateLeadRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateLeadRequestRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequestBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - LeadRequests
+      summary: Bulk partial-update LeadRequests (atomic)
+      operationId: bulkPatchLeadRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequestBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_requests/upsert:
+    post:
+      tags:
+        - LeadRequests
+      summary: Upsert LeadRequest
+      operationId: upsertLeadRequest
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRequestRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequest'
+
+  /api/v1/lead_requests/trash:
+    get:
+      tags:
+        - LeadRequests
+      summary: List deleted LeadRequests
+      operationId: listDeletedLeadRequests
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequestList'
+
+  /api/v1/lead_requests/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - LeadRequests
+      summary: Restore deleted LeadRequest
+      operationId: restoreLeadRequest
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_requests/empty:
+    delete:
+      tags:
+        - LeadRequests
+      summary: Empty trash for LeadRequests
+      operationId: emptyTrashLeadRequests
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/lead_requests/delete/bulk:
+    post:
+      tags:
+        - LeadRequests
+      summary: Bulk soft-delete LeadRequests by ids (atomic)
+      operationId: bulkDeleteLeadRequests
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_requests/restore/bulk:
+    post:
+      tags:
+        - LeadRequests
+      summary: Bulk restore LeadRequests by ids (atomic)
+      operationId: bulkRestoreLeadRequests
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRequestBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_requests/restore/all:
+    post:
+      tags:
+        - LeadRequests
+      summary: Restore all soft-deleted LeadRequests
+      operationId: restoreAllLeadRequests
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/lead_requests/trash/bulk:
+    delete:
+      tags:
+        - LeadRequests
+      summary: Bulk permanently-delete LeadRequests from trash by ids (atomic)
+      operationId: bulkPermanentDeleteLeadRequests
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rules:
+    get:
+      tags:
+        - LeadRules
+      summary: List LeadRules
+      description: Get a paginated list of LeadRules with optional filtering and sorting
+      operationId: listLeadRules
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRuleList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - LeadRules
+      summary: Create LeadRule
+      description: Create a new LeadRule
+      operationId: createLeadRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeadRuleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/lead_rules/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - LeadRules
+      summary: Get LeadRule by ID
+      operationId: getLeadRule
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - LeadRules
+      summary: Update LeadRule (full)
+      operationId: updateLeadRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRuleRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - LeadRules
+      summary: Update LeadRule (partial)
+      operationId: patchLeadRule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchLeadRuleRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - LeadRules
+      summary: Delete LeadRule (soft)
+      operationId: deleteLeadRule
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_rules/bulk:
+    post:
+      tags:
+        - LeadRules
+      summary: Bulk create LeadRules
+      operationId: bulkCreateLeadRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateLeadRuleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeadRule'
+    put:
+      tags:
+        - LeadRules
+      summary: Bulk update LeadRules (full, atomic)
+      operationId: bulkUpdateLeadRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateLeadRuleRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRuleBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - LeadRules
+      summary: Bulk partial-update LeadRules (atomic)
+      operationId: bulkPatchLeadRules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRuleBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rules/upsert:
+    post:
+      tags:
+        - LeadRules
+      summary: Upsert LeadRule
+      operationId: upsertLeadRule
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRuleRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRule'
+
+  /api/v1/lead_rules/trash:
+    get:
+      tags:
+        - LeadRules
+      summary: List deleted LeadRules
+      operationId: listDeletedLeadRules
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRuleList'
+
+  /api/v1/lead_rules/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - LeadRules
+      summary: Restore deleted LeadRule
+      operationId: restoreLeadRule
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_rules/empty:
+    delete:
+      tags:
+        - LeadRules
+      summary: Empty trash for LeadRules
+      operationId: emptyTrashLeadRules
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/lead_rules/delete/bulk:
+    post:
+      tags:
+        - LeadRules
+      summary: Bulk soft-delete LeadRules by ids (atomic)
+      operationId: bulkDeleteLeadRules
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rules/restore/bulk:
+    post:
+      tags:
+        - LeadRules
+      summary: Bulk restore LeadRules by ids (atomic)
+      operationId: bulkRestoreLeadRules
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRuleBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rules/restore/all:
+    post:
+      tags:
+        - LeadRules
+      summary: Restore all soft-deleted LeadRules
+      operationId: restoreAllLeadRules
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/lead_rules/trash/bulk:
+    delete:
+      tags:
+        - LeadRules
+      summary: Bulk permanently-delete LeadRules from trash by ids (atomic)
+      operationId: bulkPermanentDeleteLeadRules
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rule_predicates:
+    get:
+      tags:
+        - LeadRulePredicates
+      summary: List LeadRulePredicates
+      description: Get a paginated list of LeadRulePredicates with optional filtering and sorting
+      operationId: listLeadRulePredicates
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicateList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Create LeadRulePredicate
+      description: Create a new LeadRulePredicate
+      operationId: createLeadRulePredicate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeadRulePredicateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/lead_rule_predicates/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - LeadRulePredicates
+      summary: Get LeadRulePredicate by ID
+      operationId: getLeadRulePredicate
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - LeadRulePredicates
+      summary: Update LeadRulePredicate (full)
+      operationId: updateLeadRulePredicate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRulePredicateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - LeadRulePredicates
+      summary: Update LeadRulePredicate (partial)
+      operationId: patchLeadRulePredicate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchLeadRulePredicateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - LeadRulePredicates
+      summary: Delete LeadRulePredicate (soft)
+      operationId: deleteLeadRulePredicate
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_rule_predicates/bulk:
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Bulk create LeadRulePredicates
+      operationId: bulkCreateLeadRulePredicates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateLeadRulePredicateRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeadRulePredicate'
+    put:
+      tags:
+        - LeadRulePredicates
+      summary: Bulk update LeadRulePredicates (full, atomic)
+      operationId: bulkUpdateLeadRulePredicates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateLeadRulePredicateRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicateBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - LeadRulePredicates
+      summary: Bulk partial-update LeadRulePredicates (atomic)
+      operationId: bulkPatchLeadRulePredicates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicateBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rule_predicates/upsert:
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Upsert LeadRulePredicate
+      operationId: upsertLeadRulePredicate
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRulePredicateRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicate'
+
+  /api/v1/lead_rule_predicates/trash:
+    get:
+      tags:
+        - LeadRulePredicates
+      summary: List deleted LeadRulePredicates
+      operationId: listDeletedLeadRulePredicates
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicateList'
+
+  /api/v1/lead_rule_predicates/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Restore deleted LeadRulePredicate
+      operationId: restoreLeadRulePredicate
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/lead_rule_predicates/empty:
+    delete:
+      tags:
+        - LeadRulePredicates
+      summary: Empty trash for LeadRulePredicates
+      operationId: emptyTrashLeadRulePredicates
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/lead_rule_predicates/delete/bulk:
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Bulk soft-delete LeadRulePredicates by ids (atomic)
+      operationId: bulkDeleteLeadRulePredicates
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rule_predicates/restore/bulk:
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Bulk restore LeadRulePredicates by ids (atomic)
+      operationId: bulkRestoreLeadRulePredicates
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadRulePredicateBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/lead_rule_predicates/restore/all:
+    post:
+      tags:
+        - LeadRulePredicates
+      summary: Restore all soft-deleted LeadRulePredicates
+      operationId: restoreAllLeadRulePredicates
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/lead_rule_predicates/trash/bulk:
+    delete:
+      tags:
+        - LeadRulePredicates
+      summary: Bulk permanently-delete LeadRulePredicates from trash by ids (atomic)
+      operationId: bulkPermanentDeleteLeadRulePredicates
       requestBody:
         $ref: '#/components/requestBodies/BatchIds'
       responses:
@@ -6271,6 +9583,599 @@ paths:
 
 components:
   schemas:
+    BoothCategory:
+      type: object
+      required:
+        - id
+        - name
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 120
+        description:
+          nullable: true
+          type: string
+          maxLength: 20000
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
+        price:
+          nullable: true
+          type: string
+        metadata:
+          type: object
+
+    BoothCategoryBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoothCategory'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateBoothCategoryRequest:
+      type: object
+      required:
+        - name
+        - metadata
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        description:
+          nullable: true
+          type: string
+          maxLength: 20000
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
+        price:
+          nullable: true
+          type: string
+        metadata:
+          type: object
+
+    UpdateBoothCategoryRequest:
+      type: object
+      required:
+        - name
+        - metadata
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        description:
+          nullable: true
+          type: string
+          maxLength: 20000
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
+        price:
+          nullable: true
+          type: string
+        metadata:
+          type: object
+
+    PatchBoothCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        description:
+          nullable: true
+          type: string
+          maxLength: 20000
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
+        price:
+          nullable: true
+          type: string
+        metadata:
+          type: object
+
+    BoothCategoryList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoothCategory'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    Booth:
+      type: object
+      required:
+        - id
+        - event_id
+        - booth_category_id
+        - name
+        - state
+        - is_paid
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        state:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        is_paid:
+          type: boolean
+        metadata:
+          type: object
+
+    BoothBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booth'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateBoothRequest:
+      type: object
+      required:
+        - event_id
+        - booth_category_id
+        - name
+        - state
+        - is_paid
+        - metadata
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        state:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        is_paid:
+          type: boolean
+        metadata:
+          type: object
+
+    UpdateBoothRequest:
+      type: object
+      required:
+        - event_id
+        - booth_category_id
+        - name
+        - state
+        - is_paid
+        - metadata
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        state:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        is_paid:
+          type: boolean
+        metadata:
+          type: object
+
+    PatchBoothRequest:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        state:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        is_paid:
+          type: boolean
+        metadata:
+          type: object
+
+    BoothList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booth'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    TypeBooth:
+      type: object
+      required:
+        - id
+        - event_type_id
+        - booth_category_id
+        - name
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    TypeBoothBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeBooth'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateTypeBoothRequest:
+      type: object
+      required:
+        - event_type_id
+        - booth_category_id
+        - name
+        - metadata
+      properties:
+        event_type_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    UpdateTypeBoothRequest:
+      type: object
+      required:
+        - event_type_id
+        - booth_category_id
+        - name
+        - metadata
+      properties:
+        event_type_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    PatchTypeBoothRequest:
+      type: object
+      properties:
+        event_type_id:
+          type: string
+          format: uuid
+        booth_category_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+        metadata:
+          type: object
+
+    TypeBoothList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeBooth'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    BoothBooking:
+      type: object
+      required:
+        - id
+        - event_booth_id
+        - status
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_booth_id:
+          type: string
+          format: uuid
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        status:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        metadata:
+          type: object
+
+    BoothBookingBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoothBooking'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateBoothBookingRequest:
+      type: object
+      required:
+        - event_booth_id
+        - status
+        - metadata
+      properties:
+        event_booth_id:
+          type: string
+          format: uuid
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        status:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        metadata:
+          type: object
+
+    UpdateBoothBookingRequest:
+      type: object
+      required:
+        - event_booth_id
+        - status
+        - metadata
+      properties:
+        event_booth_id:
+          type: string
+          format: uuid
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        status:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        metadata:
+          type: object
+
+    PatchBoothBookingRequest:
+      type: object
+      properties:
+        event_booth_id:
+          type: string
+          format: uuid
+        sale_order_line_id:
+          nullable: true
+          type: string
+          format: uuid
+        status:
+          type: string
+        partner_id:
+          nullable: true
+          type: string
+          format: uuid
+        contact_name:
+          nullable: true
+          type: string
+          maxLength: 200
+        contact_email:
+          nullable: true
+          type: string
+          format: email
+          maxLength: 254
+        contact_phone:
+          nullable: true
+          type: string
+          maxLength: 40
+        metadata:
+          type: object
+
+    BoothBookingList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoothBooking'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
     Event:
       type: object
       required:
@@ -6869,6 +10774,590 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EventType'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    LeadProvenance:
+      type: object
+      required:
+        - id
+        - rule_id
+        - event_id
+        - group_key
+        - grouping
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        lead_id:
+          nullable: true
+          type: string
+          format: uuid
+        group_key:
+          type: string
+          maxLength: 160
+        grouping:
+          type: string
+        metadata:
+          type: object
+
+    LeadProvenanceBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadProvenance'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateLeadProvenanceRequest:
+      type: object
+      required:
+        - rule_id
+        - event_id
+        - group_key
+        - grouping
+        - metadata
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        lead_id:
+          nullable: true
+          type: string
+          format: uuid
+        group_key:
+          type: string
+          maxLength: 160
+        grouping:
+          type: string
+        metadata:
+          type: object
+
+    UpdateLeadProvenanceRequest:
+      type: object
+      required:
+        - rule_id
+        - event_id
+        - group_key
+        - grouping
+        - metadata
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        lead_id:
+          nullable: true
+          type: string
+          format: uuid
+        group_key:
+          type: string
+          maxLength: 160
+        grouping:
+          type: string
+        metadata:
+          type: object
+
+    PatchLeadProvenanceRequest:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        lead_id:
+          nullable: true
+          type: string
+          format: uuid
+        group_key:
+          type: string
+          maxLength: 160
+        grouping:
+          type: string
+        metadata:
+          type: object
+
+    LeadProvenanceList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadProvenance'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    LeadProvenanceRegistration:
+      type: object
+      required:
+        - id
+        - provenance_id
+        - registration_id
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        provenance_id:
+          type: string
+          format: uuid
+        registration_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    LeadProvenanceRegistrationBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadProvenanceRegistration'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateLeadProvenanceRegistrationRequest:
+      type: object
+      required:
+        - provenance_id
+        - registration_id
+        - metadata
+      properties:
+        provenance_id:
+          type: string
+          format: uuid
+        registration_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    UpdateLeadProvenanceRegistrationRequest:
+      type: object
+      required:
+        - provenance_id
+        - registration_id
+        - metadata
+      properties:
+        provenance_id:
+          type: string
+          format: uuid
+        registration_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    PatchLeadProvenanceRegistrationRequest:
+      type: object
+      properties:
+        provenance_id:
+          type: string
+          format: uuid
+        registration_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    LeadProvenanceRegistrationList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadProvenanceRegistration'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    LeadRequest:
+      type: object
+      required:
+        - id
+        - event_id
+        - done
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        done:
+          type: boolean
+        error_detail:
+          nullable: true
+          type: string
+          maxLength: 500
+        claimed_at:
+          nullable: true
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    LeadRequestBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadRequest'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateLeadRequestRequest:
+      type: object
+      required:
+        - event_id
+        - done
+        - metadata
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        done:
+          type: boolean
+        error_detail:
+          nullable: true
+          type: string
+          maxLength: 500
+        claimed_at:
+          nullable: true
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    UpdateLeadRequestRequest:
+      type: object
+      required:
+        - event_id
+        - done
+        - metadata
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        done:
+          type: boolean
+        error_detail:
+          nullable: true
+          type: string
+          maxLength: 500
+        claimed_at:
+          nullable: true
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    PatchLeadRequestRequest:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        done:
+          type: boolean
+        error_detail:
+          nullable: true
+          type: string
+          maxLength: 500
+        claimed_at:
+          nullable: true
+          type: string
+          format: date-time
+        metadata:
+          type: object
+
+    LeadRequestList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadRequest'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    LeadRule:
+      type: object
+      required:
+        - id
+        - name
+        - basis
+        - on_create
+        - on_confirm
+        - on_done
+        - active
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 120
+        event_id:
+          nullable: true
+          type: string
+          format: uuid
+        basis:
+          type: string
+        on_create:
+          type: boolean
+        on_confirm:
+          type: boolean
+        on_done:
+          type: boolean
+        active:
+          type: boolean
+        metadata:
+          type: object
+
+    LeadRuleBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadRule'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateLeadRuleRequest:
+      type: object
+      required:
+        - name
+        - basis
+        - on_create
+        - on_confirm
+        - on_done
+        - active
+        - metadata
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        event_id:
+          nullable: true
+          type: string
+          format: uuid
+        basis:
+          type: string
+        on_create:
+          type: boolean
+        on_confirm:
+          type: boolean
+        on_done:
+          type: boolean
+        active:
+          type: boolean
+        metadata:
+          type: object
+
+    UpdateLeadRuleRequest:
+      type: object
+      required:
+        - name
+        - basis
+        - on_create
+        - on_confirm
+        - on_done
+        - active
+        - metadata
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        event_id:
+          nullable: true
+          type: string
+          format: uuid
+        basis:
+          type: string
+        on_create:
+          type: boolean
+        on_confirm:
+          type: boolean
+        on_done:
+          type: boolean
+        active:
+          type: boolean
+        metadata:
+          type: object
+
+    PatchLeadRuleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        event_id:
+          nullable: true
+          type: string
+          format: uuid
+        basis:
+          type: string
+        on_create:
+          type: boolean
+        on_confirm:
+          type: boolean
+        on_done:
+          type: boolean
+        active:
+          type: boolean
+        metadata:
+          type: object
+
+    LeadRuleList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadRule'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    LeadRulePredicate:
+      type: object
+      required:
+        - id
+        - rule_id
+        - axis
+        - value_ids
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+          format: uuid
+        axis:
+          type: string
+        question_id:
+          nullable: true
+          type: string
+          format: uuid
+        value_ids:
+          type: object
+        metadata:
+          type: object
+
+    LeadRulePredicateBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadRulePredicate'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateLeadRulePredicateRequest:
+      type: object
+      required:
+        - rule_id
+        - axis
+        - value_ids
+        - metadata
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        axis:
+          type: string
+        question_id:
+          nullable: true
+          type: string
+          format: uuid
+        value_ids:
+          type: object
+        metadata:
+          type: object
+
+    UpdateLeadRulePredicateRequest:
+      type: object
+      required:
+        - rule_id
+        - axis
+        - value_ids
+        - metadata
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        axis:
+          type: string
+        question_id:
+          nullable: true
+          type: string
+          format: uuid
+        value_ids:
+          type: object
+        metadata:
+          type: object
+
+    PatchLeadRulePredicateRequest:
+      type: object
+      properties:
+        rule_id:
+          type: string
+          format: uuid
+        axis:
+          type: string
+        question_id:
+          nullable: true
+          type: string
+          format: uuid
+        value_ids:
+          type: object
+        metadata:
+          type: object
+
+    LeadRulePredicateList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeadRulePredicate'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
 
@@ -8542,6 +13031,10 @@ components:
           nullable: true
           type: string
           format: date-time
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
         metadata:
           type: object
 
@@ -8587,6 +13080,10 @@ components:
           nullable: true
           type: string
           format: date-time
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
         metadata:
           type: object
 
@@ -8619,6 +13116,10 @@ components:
           nullable: true
           type: string
           format: date-time
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
         metadata:
           type: object
 
@@ -8645,6 +13146,10 @@ components:
           nullable: true
           type: string
           format: date-time
+        product_id:
+          nullable: true
+          type: string
+          format: uuid
         metadata:
           type: object
 

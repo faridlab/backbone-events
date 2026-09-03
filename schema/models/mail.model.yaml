@@ -60,7 +60,7 @@ models:
       notification_channel:
         type: EventNotificationChannel
         attributes: ["@required", "@default(mail)"]
-        description: "The CHANNEL SEAM — single-value 'mail' at core; the sms overlay widens it later (derived from template_kind when it does — never hand-set). The 'sent'=queued contract (docs/spec.md §8.6) is documented NOW for both arms."
+        description: "The CHANNEL SEAM — mail|sms since the v0.2.0 overlay; DERIVED from template_kind at template-apply time (never hand-set). mail rows enqueue through the EventMailQueue port (recipient = email); sms rows through the EventSmsQueue port (recipient = phone). The 'sent'=queued contract (docs/spec.md §8.6) holds on BOTH arms."
       scheduled_date:
         type: datetime?
         attributes: ["@indexed"]
@@ -81,7 +81,7 @@ models:
       template_kind:
         type: string?
         attributes: ["@max(40)"]
-        description: "The template store discriminator ('mail' at core; the future sms arm widens it — the channel derives from it, never hand-set)."
+        description: "The template store discriminator ('mail' | 'sms' since v0.2.0) — the channel DERIVES from it at template-apply time (never hand-set). One template-cascade verb covers BOTH kinds (EVM2-2 + ESM-1 collapsed: on_template_deleted deletes dependent mails + type_mails of the given (kind, ref) in one set-based pass)."
       # --- typed failures (EBB-4) ------------------------------------------
       error_datetime:
         type: datetime?
@@ -148,14 +148,16 @@ enums:
         description: "Event-based: due at event end - interval"
 
   - name: EventNotificationChannel
-    description: "The channel seam — single-value at core by design; the sms overlay widens the set and derives the value from template_kind (never hand-set)"
+    description: "The channel seam — mail at core; the sms overlay (v0.2.0) widens the set. The channel DERIVES from template_kind at template-apply time — never hand-set. Existing databases take the widening through the hand ALTER TYPE migration; fresh replays get it here."
     variants:
       - name: mail
-        description: "The mail queue arm (the only channel at core)"
+        description: "The mail queue arm (recipient = registration email; enqueue through the EventMailQueue port)"
         default: true
+      - name: sms
+        description: "The sms arm (v0.2.0): recipient = registration phone; enqueue through the EventSmsQueue port — an unconfigured gateway REFUSES, the receipt stays unsent and the scheduler parks it loudly as sms_enqueue_refused (ESM-2: parked is NOT silently queued)"
 
   - name: EventMailErrorKind
-    description: "Typed per-scheduler failures (EBB-4) — recorded on the row, cleared on the next successful pass; every distinct failure recorded, no throttle"
+    description: "Typed per-scheduler failures (EBB-4) — recorded on the row, cleared on the next successful pass; every distinct failure recorded, no throttle. The sms arm adds its own enqueue-refusal class; existing databases take it through the hand ALTER TYPE migration."
     variants:
       - name: template_unresolved
         description: "The template validity sweep found a dead/missing template ref"
@@ -168,3 +170,5 @@ enums:
         description: "The mail queue refused the enqueue"
       - name: recipient_invalid
         description: "A recipient row failed eligibility/address shape"
+      - name: sms_enqueue_refused
+        description: "The sms port refused the enqueue (unconfigured gateway or transport refusal) — the receipt stays unsent and is retried; parked loudly, never silently queued (ESM-2)"

@@ -36,7 +36,7 @@ impl Seeder for SeedEventAuditLogSeeder {
     }
 
     fn order(&self) -> i32 {
-        2
+        6
     }
 
     async fn should_run(&self, pool: &PgPool) -> Result<bool> {

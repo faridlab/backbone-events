@@ -57,6 +57,25 @@ pub struct RegisterCommand {
     pub company_name: Option<String>,
     pub partner_id: Option<Uuid>,
     pub actor: Option<Uuid>,
+    /// The bulkops import exemption: the registration verbs normally ARM
+    /// the per-event lead-generation queue (a cheap row write, never an
+    /// inline run); a bulk import sets this to skip the arm (the queue
+    /// still catches up on the next non-import trigger or rule change).
+    pub lead_rule_skip: bool,
+}
+
+/// The sale linkage a minted registration is BORN with (ES-3 — the
+/// sale seam's mint rides the SAME register head; this is not a second
+/// seat-taking path, it is the one path carrying its birth linkage).
+#[derive(Debug, Clone)]
+pub struct SaleLink {
+    pub sale_order_id: Uuid,
+    /// The mirrored order state at mint: 'sale' (confirmed) today.
+    pub sale_order_state: String,
+    /// The payability pair member: 'free' (zero amount) | 'to_pay'.
+    pub sale_status: String,
+    /// The birth state: 'open' when free, 'draft' when held for payment.
+    pub initial_state: String,
 }
 
 /// The row shape the register verb returns (hand-owned projection —
@@ -165,6 +184,38 @@ impl SeatRepository {
     /// transaction. See the module doc for the full sequence.
     pub async fn register(&self, cmd: &RegisterCommand) -> Result<RegistrationRow, EventError> {
         let mut tx = self.pool.begin().await?;
+        let row = Self::register_core(&mut tx, cmd, None).await?;
+        tx.commit().await?;
+        Ok(row)
+    }
+
+    /// The sale seam's mint (ES-3): the SAME register head carrying its
+    /// birth linkage. NOT a second seat-taking path — the locks, the
+    /// count, the refusal and the insert are the one path's; only the
+    /// born state and the mirror columns differ (free -> born open +
+    /// armed; paid -> born draft, held, NOT armed).
+    pub async fn register_sale_linked(
+        &self,
+        cmd: &RegisterCommand,
+        link: &SaleLink,
+    ) -> Result<RegistrationRow, EventError> {
+        let mut tx = self.pool.begin().await?;
+        let row = Self::register_core(&mut tx, cmd, Some(link)).await?;
+        tx.commit().await?;
+        Ok(row)
+    }
+
+    /// The one register head over a CALLER-OWNED connection — this is
+    /// how the sale seam keeps delivery-claim + mint + mirrors + audit
+    /// in ONE transaction (its `on_order_confirmed` opens the
+    /// transaction and runs every spec through this core before the
+    /// single commit). An `Err` return rolls back everything the caller
+    /// staged, inbox claim included.
+    pub async fn register_core(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        cmd: &RegisterCommand,
+        link: Option<&SaleLink>,
+    ) -> Result<RegistrationRow, EventError> {
 
         // Lock 1: the event row.
         let event = sqlx::query_as::<_, LockedEvent>(
@@ -172,7 +223,7 @@ impl SeatRepository {
                  FROM event.events WHERE id = $1 FOR UPDATE"#,
         )
         .bind(cmd.event_id)
-        .fetch_optional(&mut *tx)
+        .fetch_optional(&mut **tx)
         .await?
         .ok_or(EventError::EventNotFound)?;
 
@@ -196,7 +247,7 @@ impl SeatRepository {
             )
             .bind(slot)
             .bind(cmd.event_id)
-            .fetch_optional(&mut *tx)
+            .fetch_optional(&mut **tx)
             .await?;
             if belongs.is_none() {
                 return Err(EventError::EventSlotNotOfEvent { event_slot_id: slot });
@@ -213,7 +264,7 @@ impl SeatRepository {
             )
             .bind(ticket)
             .bind(cmd.event_id)
-            .fetch_optional(&mut *tx)
+            .fetch_optional(&mut **tx)
             .await?
             .ok_or(EventError::EventTicketNotOfEvent { event_ticket_id: ticket })?;
             let (start, end) = window;
@@ -237,7 +288,7 @@ impl SeatRepository {
                 )
                 .bind(cmd.event_id)
                 .bind(slot)
-                .fetch_one(&mut *tx)
+                .fetch_one(&mut **tx)
                 .await?
             }
             None => {
@@ -247,7 +298,7 @@ impl SeatRepository {
                           AND state IN ('open','done') AND active"#,
                 )
                 .bind(cmd.event_id)
-                .fetch_one(&mut *tx)
+                .fetch_one(&mut **tx)
                 .await?
             }
         };
@@ -260,14 +311,18 @@ impl SeatRepository {
             });
         }
 
-        // Then insert (default open — there is NO auto_confirm path).
+        // Then insert (default open — there is NO auto_confirm path;
+        // a paid sale mint is born DRAFT and held, never auto-confirmed).
+        let born_state = link.map(|l| l.initial_state.as_str()).unwrap_or("open");
         let id = Uuid::new_v4();
         let barcode = mint_barcode();
         let row = sqlx::query_as::<_, RegistrationRow>(
             r#"INSERT INTO event.registrations
                    (id, event_id, event_slot_id, event_ticket_id, name, email, phone,
-                    company_name, partner_id, state, active, barcode, company_id)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'open', true, $10, $11)
+                    company_name, partner_id, state, active, barcode, company_id,
+                    sale_order_id, sale_order_state, sale_status)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $12::event_registration_state,
+                       true, $10, $11, $13, $14::event_sale_order_state, $15::event_sale_status)
                RETURNING id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                          company_name, partner_id, state::text AS state, date_closed,
                          sale_order_id, sale_order_state::text AS sale_order_state,
@@ -284,21 +339,47 @@ impl SeatRepository {
         .bind(cmd.partner_id)
         .bind(&barcode)
         .bind(event.company_id)
-        .fetch_one(&mut *tx)
+        .bind(born_state)
+        .bind(link.map(|l| l.sale_order_id))
+        .bind(link.map(|l| l.sale_order_state.as_str()))
+        .bind(link.map(|l| l.sale_status.as_str()))
+        .fetch_one(&mut **tx)
         .await?;
 
-        // ARM the after_sub engines: cheap in-transaction row updates
-        // only — the scheduler pass NEVER runs inline here. A row
-        // entering the eligible set also RE-OPENS any completed
-        // scheduler (the receipt-truth recompute inside the pass is
-        // what closes it again).
-        sqlx::query(
-            r#"UPDATE event.mails SET scheduled_date = now(), mail_done = false
-                WHERE event_id = $1 AND interval_kind = 'after_sub'"#,
-        )
-        .bind(cmd.event_id)
-        .execute(&mut *tx)
-        .await?;
+        // ARM the after_sub engines — ONLY for a row born INTO the
+        // eligible set (born open). A held mint (born draft) does NOT
+        // arm: its engines arm at the paid-fact heal, exactly once.
+        // Cheap in-transaction row updates only — the scheduler pass
+        // NEVER runs inline here. A row entering the eligible set also
+        // RE-OPENS any completed scheduler (the receipt-truth recompute
+        // inside the pass is what closes it again).
+        if born_state == "open" {
+            sqlx::query(
+                r#"UPDATE event.mails SET scheduled_date = now(), mail_done = false
+                    WHERE event_id = $1 AND interval_kind = 'after_sub'"#,
+            )
+            .bind(cmd.event_id)
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        // ARM the lead-generation queue (the on_create/on_confirm
+        // axes): cheap row write, never an inline run; the bulkops
+        // import exemption skips it.
+        if !cmd.lead_rule_skip {
+            sqlx::query(
+                r#"INSERT INTO event.lead_requests (event_id)
+                   SELECT $1 WHERE EXISTS (
+                       SELECT 1 FROM event.lead_rules lr
+                        WHERE lr.active
+                          AND (lr.event_id IS NULL OR lr.event_id = $1)
+                          AND (lr.on_create OR lr.on_confirm))
+                   ON CONFLICT (event_id) DO UPDATE SET done = false WHERE lead_requests.done"#,
+            )
+            .bind(cmd.event_id)
+            .execute(&mut **tx)
+            .await?;
+        }
 
         // The durable creation fact.
         sqlx::query(
@@ -310,12 +391,15 @@ impl SeatRepository {
         .bind(serde_json::json!({
             "event_id": cmd.event_id,
             "email": cmd.email,
-            "state": "open",
+            "state": born_state,
+            "sale_minted": link.is_some(),
         }))
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
 
-        tx.commit().await?;
+        // NOTE: no commit here — the CALLER owns the transaction (the
+        // public wrappers commit their own; the sale seam commits its
+        // delivery transaction with every staged mint inside it).
         Ok(row)
     }
 
@@ -480,6 +564,29 @@ impl SeatRepository {
             .execute(&mut *tx)
             .await?;
         }
+
+        // The lead-generation queue arms the same way (on_confirm /
+        // on_done axes): entering open from draft/cancel is the
+        // confirm arm; entering done is the done arm. Cheap row write
+        // only — generation NEVER runs inline.
+        if *active && (after == "open" || after == "done") && before != after {
+            let axis = if after == "done" { "on_done" } else { "on_confirm" };
+            sqlx::query(
+                r#"INSERT INTO event.lead_requests (event_id)
+                   SELECT r.event_id FROM event.registrations r
+                    WHERE r.id = $1
+                      AND EXISTS (
+                          SELECT 1 FROM event.lead_rules lr
+                           WHERE lr.active
+                             AND (lr.event_id IS NULL OR lr.event_id = r.event_id)
+                             AND (CASE WHEN $2 = 'on_done' THEN lr.on_done ELSE lr.on_confirm END))
+                   ON CONFLICT (event_id) DO UPDATE SET done = false WHERE lead_requests.done"#,
+            )
+            .bind(registration_id)
+            .bind(axis)
+            .execute(&mut *tx)
+            .await?;
+        }
         if before != after {
             sqlx::query(
                 r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
@@ -536,6 +643,26 @@ impl SeatRepository {
         )
         .await;
         Ok(row)
+    }
+
+    /// EXACT-match barcode lookup (the desk verb's branch 1 read —
+    /// EBG-1: the barcode is globally unique, so one row or none; no
+    /// LIKE, no prefix, no event scope).
+    pub async fn find_by_barcode(
+        &self,
+        barcode: &str,
+    ) -> Result<Option<RegistrationRow>, EventError> {
+        sqlx::query_as::<_, RegistrationRow>(
+            r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+                      company_name, partner_id, state::text AS state, date_closed,
+                      sale_order_id, sale_order_state::text AS sale_order_state,
+                      sale_status::text AS sale_status, active, barcode, company_id
+                 FROM event.registrations WHERE barcode = $1"#,
+        )
+        .bind(barcode)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(EventError::from)
     }
 
     /// Fetch one registration row (officer reads).

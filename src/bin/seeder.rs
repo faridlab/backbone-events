@@ -12,9 +12,18 @@ use sqlx::postgres::PgPoolOptions;
 use std::env;
 
 // Import seeders
+use backbone_events::seeders::SeedBoothCategorySeeder;
+use backbone_events::seeders::SeedBoothSeeder;
+use backbone_events::seeders::SeedTypeBoothSeeder;
+use backbone_events::seeders::SeedBoothBookingSeeder;
 use backbone_events::seeders::SeedEventSeeder;
 use backbone_events::seeders::SeedEventAuditLogSeeder;
 use backbone_events::seeders::SeedEventTypeSeeder;
+use backbone_events::seeders::SeedLeadProvenanceSeeder;
+use backbone_events::seeders::SeedLeadProvenanceRegistrationSeeder;
+use backbone_events::seeders::SeedLeadRequestSeeder;
+use backbone_events::seeders::SeedLeadRuleSeeder;
+use backbone_events::seeders::SeedLeadRulePredicateSeeder;
 use backbone_events::seeders::SeedMailSeeder;
 use backbone_events::seeders::SeedMailRegistrationSeeder;
 use backbone_events::seeders::SeedMailSlotSeeder;
@@ -57,9 +66,18 @@ async fn main() -> Result<()> {
 
     // Register seeders in order
     let mut seeders: Vec<Box<dyn Seeder + Send + Sync>> = Vec::new();
+    seeders.push(Box::new(SeedBoothCategorySeeder::new()));
+    seeders.push(Box::new(SeedBoothSeeder::new()));
+    seeders.push(Box::new(SeedTypeBoothSeeder::new()));
+    seeders.push(Box::new(SeedBoothBookingSeeder::new()));
     seeders.push(Box::new(SeedEventSeeder::new()));
     seeders.push(Box::new(SeedEventAuditLogSeeder::new()));
     seeders.push(Box::new(SeedEventTypeSeeder::new()));
+    seeders.push(Box::new(SeedLeadProvenanceSeeder::new()));
+    seeders.push(Box::new(SeedLeadProvenanceRegistrationSeeder::new()));
+    seeders.push(Box::new(SeedLeadRequestSeeder::new()));
+    seeders.push(Box::new(SeedLeadRuleSeeder::new()));
+    seeders.push(Box::new(SeedLeadRulePredicateSeeder::new()));
     seeders.push(Box::new(SeedMailSeeder::new()));
     seeders.push(Box::new(SeedMailRegistrationSeeder::new()));
     seeders.push(Box::new(SeedMailSlotSeeder::new()));

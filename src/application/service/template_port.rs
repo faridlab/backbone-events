@@ -27,7 +27,9 @@ use uuid::Uuid;
 use super::event_error::EventError;
 
 /// What a scheduler render needs (the registration-side arms of the
-/// upstream template context, flattened).
+/// upstream template context, flattened). The phone arm carries the
+/// sms channel's recipient (mail renderers ignore it; sms renderers
+/// may interpolate it into the body).
 #[derive(Debug, Clone)]
 pub struct RenderContext {
     pub event_id: Uuid,
@@ -38,6 +40,7 @@ pub struct RenderContext {
     pub registration_id: Uuid,
     pub attendee_name: String,
     pub attendee_email: String,
+    pub attendee_phone: Option<String>,
     pub registration_barcode: String,
 }
 

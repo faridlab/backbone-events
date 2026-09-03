@@ -177,8 +177,10 @@ async fn ics_refusal_family_and_publication_gate() {
     assert!(feed.body.contains("BEGIN:VCALENDAR"));
     assert!(feed.body.contains("probe event A"));
 
-    // TAMPERED signature -> uniform 404.
-    let tampered = format!("{}x", &token_ok[..token_ok.len() - 1]);
+    // TAMPERED signature -> uniform 404. The replacement char sits
+    // OUTSIDE the token alphabet — replacing with an in-alphabet char
+    // can leave a valid token untouched (a flaky 1-in-64 pass).
+    let tampered = format!("{}~", &token_ok[..token_ok.len() - 1]);
     let err = ics.feed(PROBE_SECRET, &tampered).await.unwrap_err();
     assert_eq!(err.code(), "event_not_published");
 

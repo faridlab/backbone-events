@@ -24,3 +24,14 @@
 - tag_seed
 - ticket_seed
 - type_mail_seed
+
+# Newly added seeds (preserve manual order above):
+- lead_rule_seed
+- booth_booking_seed
+- lead_request_seed
+- booth_category_seed
+- type_booth_seed
+- lead_provenance_registration_seed
+- booth_seed
+- lead_provenance_seed
+- lead_rule_predicate_seed

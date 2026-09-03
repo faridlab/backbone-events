@@ -5,9 +5,18 @@
 pub mod shared_types;
 pub use shared_types::{ValidationError, ValidationErrors, ValidationResult, EntityValidator};
 
+pub mod booth_category_validator;
+pub mod booth_validator;
+pub mod type_booth_validator;
+pub mod booth_booking_validator;
 pub mod event_validator;
 pub mod event_audit_log_validator;
 pub mod event_type_validator;
+pub mod lead_provenance_validator;
+pub mod lead_provenance_registration_validator;
+pub mod lead_request_validator;
+pub mod lead_rule_validator;
+pub mod lead_rule_predicate_validator;
 pub mod mail_validator;
 pub mod mail_registration_validator;
 pub mod mail_slot_validator;
@@ -23,9 +32,18 @@ pub mod tag_validator;
 pub mod ticket_validator;
 pub mod type_mail_validator;
 
+pub use booth_category_validator::{BoothCategoryValidator, booth_category_validator};
+pub use booth_validator::{BoothValidator, booth_validator};
+pub use type_booth_validator::{TypeBoothValidator, type_booth_validator};
+pub use booth_booking_validator::{BoothBookingValidator, booth_booking_validator};
 pub use event_validator::{EventValidator, event_validator};
 pub use event_audit_log_validator::{EventAuditLogValidator, event_audit_log_validator};
 pub use event_type_validator::{EventTypeValidator, event_type_validator};
+pub use lead_provenance_validator::{LeadProvenanceValidator, lead_provenance_validator};
+pub use lead_provenance_registration_validator::{LeadProvenanceRegistrationValidator, lead_provenance_registration_validator};
+pub use lead_request_validator::{LeadRequestValidator, lead_request_validator};
+pub use lead_rule_validator::{LeadRuleValidator, lead_rule_validator};
+pub use lead_rule_predicate_validator::{LeadRulePredicateValidator, lead_rule_predicate_validator};
 pub use mail_validator::{MailValidator, mail_validator};
 pub use mail_registration_validator::{MailRegistrationValidator, mail_registration_validator};
 pub use mail_slot_validator::{MailSlotValidator, mail_slot_validator};

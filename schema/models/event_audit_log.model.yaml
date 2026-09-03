@@ -83,3 +83,34 @@ enums:
         description: "A before-event receipt was visibly dropped (the event was already over)"
       - name: capability_refused
         description: "A capability route refused a token (bad/expired/secret-unset) — the enumeration gate held"
+      # ── the overlay verbs (v0.2.0) ──────────────────────────────
+      - name: registration_updated
+        description: "The sync-from-partner verb filled identity columns on a registration"
+      - name: sale_seam_confirmed
+        description: "A SalesOrderConfirmed delivery minted registrations (mint) or healed them (heal) — ES-3"
+      - name: sale_seam_cancelled
+        description: "A SalesOrderCancelled delivery cascaded the linked group to cancel (sale_status kept)"
+      - name: sale_seam_paid
+        description: "A paid delivery healed held rows forward and latched booth is_paid — ES-4"
+      - name: booth_created
+        description: "The booth create verb (or a type's template-apply) landed a booth row"
+      - name: booth_updated
+        description: "The booth patch verb landed a whitelisted edit"
+      - name: booth_deleted
+        description: "The booth delete verb removed a fenced-clean booth row"
+      - name: booth_confirmed
+        description: "A booth booking confirmed (the five-write verb; the exclusivity winner)"
+      - name: booth_released
+        description: "The release verb reopened a booth (booking rows deleted — the human path)"
+      - name: booth_booking_created
+        description: "A booking intent row was created (pending — never a winner by itself)"
+      - name: booth_booking_deleted
+        description: "A booking intent row was deleted"
+      - name: lead_rule_created
+        description: "A typed lead rule was created (predicate rows written; queue armed)"
+      - name: lead_rule_updated
+        description: "A lead rule was patched (activation re-arms the queue)"
+      - name: lead_relinked
+        description: "The host's lead merge moved provenance rows to the surviving lead"
+      - name: template_cascade
+        description: "The one template-cascade verb removed a deleted template's scheduler rows (both channels)"

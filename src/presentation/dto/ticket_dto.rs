@@ -48,6 +48,8 @@ pub struct CreateTicketDto {
     pub start_sale_datetime: Option<DateTime<Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "end_sale_datetime")]
     pub end_sale_datetime: Option<DateTime<Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "product_id")]
+    pub product_id: Option<Uuid>,
 }
 
 // =============================================================================
@@ -79,6 +81,8 @@ pub struct UpdateTicketDto {
     pub start_sale_datetime: Option<DateTime<Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "end_sale_datetime")]
     pub end_sale_datetime: Option<DateTime<Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "product_id")]
+    pub product_id: Option<Uuid>,
 }
 
 // =============================================================================
@@ -111,12 +115,14 @@ pub struct PatchTicketDto {
     pub start_sale_datetime: Option<DateTime<Utc>>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "end_sale_datetime")]
     pub end_sale_datetime: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none", alias = "product_id")]
+    pub product_id: Option<Uuid>,
 }
 
 impl PatchTicketDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.event_id.is_some() || self.name.is_some() || self.seats_max.is_some() || self.seats_max_per_order.is_some() || self.start_sale_datetime.is_some() || self.end_sale_datetime.is_some()
+        self.event_id.is_some() || self.name.is_some() || self.seats_max.is_some() || self.seats_max_per_order.is_some() || self.start_sale_datetime.is_some() || self.end_sale_datetime.is_some() || self.product_id.is_some()
     }
 }
 
@@ -144,6 +150,7 @@ pub struct TicketResponseDto {
     pub seats_max_per_order: i32,
     pub start_sale_datetime: Option<DateTime<Utc>>,
     pub end_sale_datetime: Option<DateTime<Utc>>,
+    pub product_id: Option<Uuid>,
     pub metadata: AuditMetadata,
 }
 
@@ -221,6 +228,7 @@ impl From<Ticket> for TicketResponseDto {
             seats_max_per_order: entity.seats_max_per_order,
             start_sale_datetime: entity.start_sale_datetime,
             end_sale_datetime: entity.end_sale_datetime,
+            product_id: entity.product_id,
             metadata: entity.metadata,
         }
     }
@@ -249,6 +257,7 @@ impl From<CreateTicketDto> for Ticket {
             seats_max_per_order: dto.seats_max_per_order,
             start_sale_datetime: dto.start_sale_datetime,
             end_sale_datetime: dto.end_sale_datetime,
+            product_id: dto.product_id,
             metadata: AuditMetadata::default(),
         }
     }
@@ -264,6 +273,7 @@ impl From<&Ticket> for TicketResponseDto {
             seats_max_per_order: entity.seats_max_per_order.clone(),
             start_sale_datetime: entity.start_sale_datetime.clone(),
             end_sale_datetime: entity.end_sale_datetime.clone(),
+            product_id: entity.product_id.clone(),
             metadata: entity.metadata.clone(),
         }
     }
@@ -283,6 +293,7 @@ impl backbone_core::ApplyUpdateDto<UpdateTicketDto> for Ticket {
         self.seats_max_per_order = dto.seats_max_per_order;
         self.start_sale_datetime = dto.start_sale_datetime;
         self.end_sale_datetime = dto.end_sale_datetime;
+        self.product_id = dto.product_id;
         Ok(self)
     }
 }

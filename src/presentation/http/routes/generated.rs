@@ -9,9 +9,18 @@ use axum::Router;
 use std::sync::Arc;
 
 use super::{
+    booth_category_handler::create_booth_category_routes,
+    booth_handler::create_booth_read_routes,
+    type_booth_handler::create_type_booth_routes,
+    booth_booking_handler::create_booth_booking_read_routes,
     event_handler::create_event_read_routes,
     event_audit_log_handler::create_event_audit_log_read_routes,
     event_type_handler::create_event_type_routes,
+    lead_provenance_handler::create_lead_provenance_read_routes,
+    lead_provenance_registration_handler::create_lead_provenance_registration_read_routes,
+    lead_request_handler::create_lead_request_read_routes,
+    lead_rule_handler::create_lead_rule_read_routes,
+    lead_rule_predicate_handler::create_lead_rule_predicate_read_routes,
     mail_handler::create_mail_read_routes,
     mail_registration_handler::create_mail_registration_routes,
     mail_slot_handler::create_mail_slot_routes,
@@ -29,9 +38,18 @@ use super::{
 };
 
 use crate::application::service::{
+    BoothCategoryService,
+    BoothService,
+    TypeBoothService,
+    BoothBookingService,
     EventService,
     EventAuditLogService,
     EventTypeService,
+    LeadProvenanceService,
+    LeadProvenanceRegistrationService,
+    LeadRequestService,
+    LeadRuleService,
+    LeadRulePredicateService,
     MailService,
     MailRegistrationService,
     MailSlotService,
@@ -50,9 +68,18 @@ use crate::application::service::{
 
 /// Services collection for all CRUD endpoints
 pub struct HttpServices {
+    pub booth_category: Arc<BoothCategoryService>,
+    pub booth: Arc<BoothService>,
+    pub type_booth: Arc<TypeBoothService>,
+    pub booth_booking: Arc<BoothBookingService>,
     pub event: Arc<EventService>,
     pub event_audit_log: Arc<EventAuditLogService>,
     pub event_type: Arc<EventTypeService>,
+    pub lead_provenance: Arc<LeadProvenanceService>,
+    pub lead_provenance_registration: Arc<LeadProvenanceRegistrationService>,
+    pub lead_request: Arc<LeadRequestService>,
+    pub lead_rule: Arc<LeadRuleService>,
+    pub lead_rule_predicate: Arc<LeadRulePredicateService>,
     pub mail: Arc<MailService>,
     pub mail_registration: Arc<MailRegistrationService>,
     pub mail_slot: Arc<MailSlotService>,
@@ -86,12 +113,30 @@ pub struct HttpServices {
 /// 12. GET /api/v1/{collection}/:id/deleted - Get deleted by ID
 pub fn configure_routes(services: HttpServices) -> Router {
     Router::new()
+        // BoothCategory routes (12 Backbone endpoints)
+        .merge(create_booth_category_routes(services.booth_category))
+        // Booth routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_booth_read_routes(services.booth))
+        // TypeBooth routes (12 Backbone endpoints)
+        .merge(create_type_booth_routes(services.type_booth))
+        // BoothBooking routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_booth_booking_read_routes(services.booth_booking))
         // Event routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
         .merge(create_event_read_routes(services.event))
         // EventAuditLog routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
         .merge(create_event_audit_log_read_routes(services.event_audit_log))
         // EventType routes (12 Backbone endpoints)
         .merge(create_event_type_routes(services.event_type))
+        // LeadProvenance routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_lead_provenance_read_routes(services.lead_provenance))
+        // LeadProvenanceRegistration routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_lead_provenance_registration_read_routes(services.lead_provenance_registration))
+        // LeadRequest routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_lead_request_read_routes(services.lead_request))
+        // LeadRule routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_lead_rule_read_routes(services.lead_rule))
+        // LeadRulePredicate routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
+        .merge(create_lead_rule_predicate_read_routes(services.lead_rule_predicate))
         // Mail routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
         .merge(create_mail_read_routes(services.mail))
         // MailRegistration routes (12 Backbone endpoints)
@@ -126,6 +171,22 @@ pub fn configure_routes(services: HttpServices) -> Router {
 pub mod individual {
     use super::*;
 
+    pub fn booth_category_routes(service: Arc<BoothCategoryService>) -> Router {
+        create_booth_category_routes(service)
+    }
+
+    pub fn booth_routes(service: Arc<BoothService>) -> Router {
+        create_booth_routes(service)
+    }
+
+    pub fn type_booth_routes(service: Arc<TypeBoothService>) -> Router {
+        create_type_booth_routes(service)
+    }
+
+    pub fn booth_booking_routes(service: Arc<BoothBookingService>) -> Router {
+        create_booth_booking_routes(service)
+    }
+
     pub fn event_routes(service: Arc<EventService>) -> Router {
         create_event_routes(service)
     }
@@ -136,6 +197,26 @@ pub mod individual {
 
     pub fn event_type_routes(service: Arc<EventTypeService>) -> Router {
         create_event_type_routes(service)
+    }
+
+    pub fn lead_provenance_routes(service: Arc<LeadProvenanceService>) -> Router {
+        create_lead_provenance_routes(service)
+    }
+
+    pub fn lead_provenance_registration_routes(service: Arc<LeadProvenanceRegistrationService>) -> Router {
+        create_lead_provenance_registration_routes(service)
+    }
+
+    pub fn lead_request_routes(service: Arc<LeadRequestService>) -> Router {
+        create_lead_request_routes(service)
+    }
+
+    pub fn lead_rule_routes(service: Arc<LeadRuleService>) -> Router {
+        create_lead_rule_routes(service)
+    }
+
+    pub fn lead_rule_predicate_routes(service: Arc<LeadRulePredicateService>) -> Router {
+        create_lead_rule_predicate_routes(service)
     }
 
     pub fn mail_routes(service: Arc<MailService>) -> Router {

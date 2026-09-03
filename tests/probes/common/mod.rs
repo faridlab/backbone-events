@@ -179,6 +179,7 @@ async fn apply_module_migrations(pool: &PgPool, marker: &str) -> Result<(), Stri
 use backbone_events::application::service::event_service::EventCommandService;
 use backbone_events::application::service::registration_service::RegistrationCommandService;
 use backbone_events::application::service::scheduler_service::SchedulerService;
+use backbone_events::application::service::sms_port::{EventSmsQueue, RenderedSms};
 use backbone_events::application::service::template_port::{
     EventMailQueue, EventTemplateRenderer, RenderContext, RenderFailure, RenderedMail,
 };
@@ -243,6 +244,30 @@ impl EventMailQueue for RefusingQueue {
         ))
     }
 }
+
+/// The recording sms queue: captures every enqueue, never refuses.
+#[derive(Default)]
+pub struct RecordingSmsQueue {
+    pub sent: Mutex<Vec<(String, String)>>,
+}
+
+#[async_trait]
+impl EventSmsQueue for RecordingSmsQueue {
+    async fn enqueue(&self, phone: &str, sms: &RenderedSms) -> Result<(), String> {
+        if let Ok(mut guard) = self.sent.lock() {
+            guard.push((phone.to_string(), sms.body_text.clone()));
+        }
+        Ok(())
+    }
+}
+
+/// The module's own refusing sms default (the unconfigured-gateway
+/// arm — `sms_enqueue_refused`, parked loudly).
+pub use backbone_events::application::service::sms_port::RefusingSmsQueue;
+
+/// The module's own refusing lead sink (the unwired-host arm — the
+/// request parks loudly with the reason).
+pub use backbone_events::application::service::lead_sink::RefusingLeadSink;
 
 /// An event whose window is comfortably in the future.
 pub fn future_window() -> (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>) {
@@ -326,16 +351,35 @@ pub fn register_cmd(event_id: uuid::Uuid, n: usize) -> RegisterCommand {
         company_name: None,
         partner_id: None,
         actor: None,
+        lead_rule_skip: false,
     }
 }
 
-/// The scheduler service with the stub renderer + recording queue.
+/// The scheduler service with the stub renderer + the two queue ports
+/// (the sms queue defaults to the refusing default — the mail probes
+/// never hit it).
 pub fn scheduler(db: &TestDb, queue: Arc<dyn EventMailQueue>) -> SchedulerService {
     SchedulerService::new(
         SchedulerRepository::new(db.pool.clone()),
         EventCommandRepository::new(db.pool.clone()),
         Arc::new(StubRenderer),
         queue,
+        Arc::new(RefusingSmsQueue),
+    )
+}
+
+/// The scheduler service with an explicit sms queue (the sms probe).
+pub fn scheduler_with_sms(
+    db: &TestDb,
+    queue: Arc<dyn EventMailQueue>,
+    sms_queue: Arc<dyn EventSmsQueue>,
+) -> SchedulerService {
+    SchedulerService::new(
+        SchedulerRepository::new(db.pool.clone()),
+        EventCommandRepository::new(db.pool.clone()),
+        Arc::new(StubRenderer),
+        queue,
+        sms_queue,
     )
 }
 
@@ -355,8 +399,9 @@ pub async fn make_type_with_mail(
         .unwrap_or_else(|e| panic!("probe fixture: type insert: {e}"));
     sqlx::query(
         r#"INSERT INTO event.type_mails
-               (event_type_id, interval_nbr, interval_unit, interval_kind, notification_channel, template_ref)
-           VALUES ($1, $2, $3::event_interval_unit, 'after_sub', 'mail', $4)"#,
+               (event_type_id, interval_nbr, interval_unit, interval_kind,
+                notification_channel, template_ref, template_kind)
+           VALUES ($1, $2, $3::event_interval_unit, 'after_sub', 'mail', $4, 'mail')"#,
     )
     .bind(type_id)
     .bind(interval_nbr)
@@ -365,5 +410,35 @@ pub async fn make_type_with_mail(
     .execute(&db.pool)
     .await
     .unwrap_or_else(|e| panic!("probe fixture: type_mail insert: {e}"));
+    (type_id, template_id)
+}
+
+/// A type carrying one after_sub SMS type_mail row (the sms arm's
+/// template-apply source); returns (type_id, template_id).
+pub async fn make_type_with_sms(
+    db: &TestDb,
+    interval_unit: &str,
+    interval_nbr: i32,
+) -> (uuid::Uuid, uuid::Uuid) {
+    let type_id = uuid::Uuid::new_v4();
+    let template_id = uuid::Uuid::new_v4();
+    sqlx::query("INSERT INTO event.types (id, name) VALUES ($1, 'probe-type-sms')")
+        .bind(type_id)
+        .execute(&db.pool)
+        .await
+        .unwrap_or_else(|e| panic!("probe fixture: type insert: {e}"));
+    sqlx::query(
+        r#"INSERT INTO event.type_mails
+               (event_type_id, interval_nbr, interval_unit, interval_kind,
+                notification_channel, template_ref, template_kind)
+           VALUES ($1, $2, $3::event_interval_unit, 'after_sub', 'sms', $4, 'sms')"#,
+    )
+    .bind(type_id)
+    .bind(interval_nbr)
+    .bind(interval_unit)
+    .bind(template_id)
+    .execute(&db.pool)
+    .await
+    .unwrap_or_else(|e| panic!("probe fixture: sms type_mail insert: {e}"));
     (type_id, template_id)
 }

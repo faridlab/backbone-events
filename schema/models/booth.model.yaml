@@ -1,0 +1,216 @@
+# =============================================================================
+# event — the booth arm: BoothCategory, Booth, TypeBooth.
+#
+# PORT DECISIONS (source: docs/odoo/marketing/events/event_booth —
+# docs/spec-overlay.md §B):
+#
+#  CONFIRM IS A VERB (EBT-3): a booth becomes sold ONLY through the explicit
+#  confirm action (hand verb over the booking row) — there is NO
+#  auto-confirm-on-order-create hook, NO pricelist compute, NO website sale
+#  line auto-link. Upstream's implicit `_action_confirm()` ride on the sale
+#  order line is a banned shape under the module's port rules (the events
+#  module may not listen to selling's internals; it consumes the DECLARED
+#  carriers only).
+#
+#  EXCLUSIVITY IS THE DATABASE'S (EBS-1): the REAL constraint is the partial
+#  unique index on the confirmed booking row (event.booth_bookings —
+#  UNIQUE(event_booth_id) WHERE status='confirmed', hardening migration).
+#  Upstream's Python `is_already_reserved` pre-check is demoted to a
+#  PRE-CHECK (nice error) — the index is the wall. A concurrent loser gets
+#  the unique violation mapped to the typed booth_already_confirmed refusal
+#  (LOUD — the loser is told, never silently merged).
+#
+#  FIRST-CONFIRM-WINS (EBS-3, DELIBERATE semantic change — register row,
+#  docs/spec-overlay.md §R): upstream cancelled the COMPETING order lines on
+#  a losing booth confirm. NOT ported: the events module has no authority
+#  over another domain's order lines. First confirm wins; the loser is
+#  refused loudly and its operator re-books. Odoo-derived tests of that
+#  behavior are INVERTED here, not translated.
+#
+#  STATE IS HAND-SET (EBT-1): `state` (available|unavailable) is written by
+#  the confirm/release verbs only — no compute, no inverse from the sale
+#  order. `is_paid` is a ONE-WAY latch (WHERE NOT is_paid): once true it is
+#  never cleared — payment facts do not un-happen in this module's mirror.
+#
+#  CONTACT FIELDS ARE FILL-IF-EMPTY (EBT-4): confirm writes partner/contact
+#  values only onto EMPTY columns (COALESCE-style) — an operator-entered
+#  contact is never clobbered by a later booking.
+#
+#  SO-CANCEL DOES NOT FREE A BOOTH (register row): SalesOrderCancelled
+#  cascades REGISTRATIONS to cancel; booths keep their confirmed booking —
+#  releasing a booth is a human decision (the release verb), never an
+#  automatic side effect of an order state the module mirrors but does not
+#  own.
+#
+#  NO OPERATOR FENCE (EBT-7 dropped — register row): upstream restricted
+#  booth confirmation to "event users"; this module's verbs already sit
+#  behind the host's company_auth + module write gate — a second,
+#  module-internal operator check would be theater.
+#
+#  HTML DESCRIPTION (EBT-8): `description` is stored RAW (upstream shape —
+#  an HTML field); rendering escapes/sanitizes. The module never renders it.
+# =============================================================================
+
+models:
+
+  - name: BoothCategory
+    collection: booth_categories
+    description: "BoothCategory — a booth family (upstream event.booth.category): name, optional raw-HTML description, an optional list price, and the optional logical catalog product ref (the events-owned sellable linkage — the catalog module never gains an events enum)."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      name:
+        type: string
+        attributes: ["@required", "@max(120)"]
+        description: "Category label."
+      description:
+        type: string?
+        attributes: ["@max(20000)"]
+        description: "Raw description, stored as received (upstream HTML field shape). Rendering escapes at the edge; this module never renders it (EBT-8)."
+      product_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL catalog product ref (EP-2 — events-owned linkage; no cross-module FK, no catalog-side enum mutation). The billing policy default and the exclusion predicate read it through the event.event_linked_products view."
+      price:
+        type: decimal?
+        description: "List price (the booth arm's own list price — NOT pricelist-derived; no pricelist machinery is ported). Nullable = priced by quote."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    indexes:
+      - type: index
+        fields: [name]
+        description: "The category label lookups"
+
+  - name: Booth
+    collection: booths
+    read_only: true
+    description: "Booth — one bookable space of one event. Created by the event-create template apply (type_booths copy) or the create verb; confirmed/released ONLY through the booking verbs (EBT-3); is_paid is a one-way latch. Read-only over HTTP: all writes through the typed verbs."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(Event.events)", "@indexed"]
+        description: "The owning event (real intra-schema FK)."
+      booth_category_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(BoothCategory.booth_categories)", "@indexed"]
+        description: "The booth family (real intra-schema FK, RESTRICT — a category with booths is not deleted out from under them)."
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Booth label (e.g. 'A1')."
+      state:
+        type: EventBoothState
+        attributes: ["@required", "@default(available)"]
+        lifecycle:
+          shape: hand_set
+          state_machine: booth_state
+        description: "Hand-set availability (EBT-1): written only by the confirm/release verbs — no compute, no inverse from the sale order. 'unavailable' is also the BORN state of a directly-sold booth (the create verb with a confirmed booking posts the born-unavailable audit row)."
+      partner_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Booked-by partner — logical party ref, fill-if-empty on confirm (EBT-4)."
+      contact_name:
+        type: string?
+        attributes: ["@max(200)"]
+        description: "Exhibitor contact name — fill-if-empty on confirm."
+      contact_email:
+        type: email?
+        attributes: ["@max(254)"]
+        description: "Exhibitor contact email — fill-if-empty on confirm."
+      contact_phone:
+        type: string?
+        attributes: ["@max(40)"]
+        description: "Exhibitor contact phone — fill-if-empty on confirm."
+      sale_order_line_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
+        description: "LOGICAL selling ref of the confirmed booking's order line (no cross-module FK). A booth with this set is sale-linked: the delete verb REFUSES (EBS-5c) and the paid-hook latch targets it."
+      is_paid:
+        type: bool
+        attributes: ["@required", "@default(false)"]
+        description: "ONE-WAY payment latch: the paid-hook family sets it (WHERE NOT is_paid) and NOTHING clears it — payment facts do not un-happen in this mirror. Free-text release does not touch it."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event:
+        type: Event
+        attributes: ["@one", "@foreign_key(event_id)", "@cascade"]
+        description: "The owning event"
+      booth_category:
+        type: BoothCategory
+        attributes: ["@one", "@foreign_key(booth_category_id)", "@restrict"]
+        description: "The booth family"
+      bookings:
+        type: BoothBooking[]
+        attributes: ["@one_to_many", "@foreign_key(event_booth_id)", "@restrict"]
+        description: "The booking rows (EBS-1's partial unique rides the confirmed one)"
+
+    indexes:
+      - type: index
+        fields: [event_id, state]
+        description: "The per-event availability reads"
+      - type: index
+        fields: [sale_order_line_id]
+        description: "The paid-hook latch read"
+
+  - name: TypeBooth
+    collection: type_booths
+    description: "TypeBooth — the event TYPE's booth template line (upstream event.type.booth): copied into event.booths at event create by the ONE template-apply (never re-propagates — EVM-2's create-once rule). Whitelist: name + booth_category_id ONLY."
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique record id"
+      event_type_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(EventType.types)", "@indexed"]
+        description: "The event type (real intra-schema FK)."
+      booth_category_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(BoothCategory.booth_categories)", "@indexed"]
+        description: "The booth family this template line instantiates."
+      name:
+        type: string
+        attributes: ["@required", "@max(200)"]
+        description: "Booth label copied into the event's booths at create."
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+
+    relations:
+      event_type:
+        type: EventType
+        attributes: ["@one", "@foreign_key(event_type_id)", "@cascade"]
+        description: "The event type"
+      booth_category:
+        type: BoothCategory
+        attributes: ["@one", "@foreign_key(booth_category_id)", "@restrict"]
+        description: "The booth family"
+
+    indexes:
+      - type: index
+        fields: [event_type_id]
+        description: "The template-apply source read"
+
+enums:
+  - name: EventBoothState
+    description: "Booth availability — hand-set by the confirm/release verbs only (EBT-1: no compute, no sale-order inverse)"
+    variants:
+      - name: available
+        description: "Bookable"
+        default: true
+      - name: unavailable
+        description: "Held by a confirmed booking (or manually blocked) — release returns it to available"

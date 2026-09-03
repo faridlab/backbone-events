@@ -31,9 +31,9 @@
 #  BARCODE (EBG-1): decimal of 8 urandom bytes little-endian, minted at
 #  create, readonly, GLOBALLY unique across all events (one scanner desk
 #  serves every event — the constraint deliberately does NOT include
-#  event_id). The scan DESK verb itself is the next increment (docs/spec.md
-#  §11.2); the column, the constraint, and the branch-order table are fixed
-#  NOW so that arm changes nothing under it.
+#  event_id). The scan DESK verb (v0.2.0, docs/spec-overlay.md §E) runs the
+#  FROZEN branch-order table (docs/spec.md §11.2) over this column with
+#  EXACT-match lookups; the column and constraint it rides are unchanged.
 #
 #  EVM2-4 FIXED BY CONSTRUCTION: archived rows (active=false) leave the seat
 #  count AND the mail eligibility together — every filter reads the pair.
@@ -102,13 +102,13 @@ models:
       sale_order_id:
         type: uuid?
         attributes: ["@exclude_from_foreign_key_check", "@indexed"]
-        description: "Logical ref to the selling module's sale order; nullable (the bare branch). Written ONLY by the selling domain-event subscription (SalesOrderConfirmed/Cancelled carriers) — the wiring lands with the event_sale arm (docs/spec.md §11.1); the columns are inert until then."
+        description: "Logical ref to the selling module's sale order; nullable (the bare branch). Written ONLY by the sale seam verbs (the SalesOrderConfirmed/Cancelled subscription carriers, v0.2.0) — the host bridges selling's outbox envelopes into the typed seam verbs; nothing else writes it."
       sale_order_state:
         type: EventSaleOrderState?
-        description: "THE SPLIT DRIVER — events-owned mirror of the linked order's state, on THIS row (same-model by construction, exactly why the seam rides events-owned rows). Written only by the subscription."
+        description: "THE SPLIT DRIVER — events-owned mirror of the linked order's state, on THIS row (same-model by construction, exactly why the seam rides events-owned rows). Written only by the seam verbs (confirm/cancel/paid)."
       sale_status:
         type: EventSaleStatus?
-        description: "Derived-pair member 2 (the payability axis): free | sold | to_pay per the truth table. NULL on the bare branch."
+        description: "Derived-pair member 2 (the payability axis): free | sold | to_pay per the truth table. NULL on the bare branch. 'sold' lands with the PAID fact (the paid-hook family), not at confirm — confirm sets free (zero amount) or to_pay (held); docs/spec-overlay.md §A."
       # --- the archive axis (EVM2-4) -------------------------------------
       active:
         type: bool
@@ -118,7 +118,7 @@ models:
       barcode:
         type: string
         attributes: ["@required", "@unique", "@max(32)"]
-        description: "Decimal of 8 urandom bytes little-endian (Code128C compact), minted at create, readonly. GLOBALLY unique across all events (enforcement: db — the constraint deliberately excludes event_id: one scanner desk serves every event). The desk verb itself lands next increment (docs/spec.md §11.2)."
+        description: "Decimal of 8 urandom bytes little-endian (Code128C compact), minted at create, readonly. GLOBALLY unique across all events (enforcement: db — the constraint deliberately excludes event_id: one scanner desk serves every event). The desk verb (v0.2.0) reads it EXACT-match (docs/spec-overlay.md §E)."
       company_id:
         type: uuid?
         attributes: ["@exclude_from_foreign_key_check", "@indexed"]
@@ -167,7 +167,7 @@ enums:
         description: "Seat-holding state (default). Counted by the seat domain; arms the after_sub schedulers on entry"
         default: true
       - name: done
-        description: "Attended/used (stamps date_closed); the only auto-advancing path to done is the barcode desk (next increment)"
+        description: "Attended/used (stamps date_closed); the only auto-advancing path to done is the barcode desk verb (v0.2.0 — the FROZEN branch order, docs/spec.md §11.2)"
       - name: cancel
         description: "Cancelled — leaves the seat domain; the sale-composed cancel cascade heals forward (draft/cancel -> open) when the order confirms"
 

@@ -7,9 +7,18 @@
 pub mod error;
 pub use error::{ServiceError, ServiceResult};
 
+pub mod booth_category_service;
+pub mod booth_service;
+pub mod type_booth_service;
+pub mod booth_booking_service;
 pub mod event_service;
 pub mod event_audit_log_service;
 pub mod event_type_service;
+pub mod lead_provenance_service;
+pub mod lead_provenance_registration_service;
+pub mod lead_request_service;
+pub mod lead_rule_service;
+pub mod lead_rule_predicate_service;
 pub mod mail_service;
 pub mod mail_registration_service;
 pub mod mail_slot_service;
@@ -40,11 +49,27 @@ pub mod my_tickets_service;
 pub mod intake_service;
 pub mod scheduler_service;
 pub mod event_surface;
+pub mod sale_seam_service;
+pub mod booth_command_service;
+pub mod lead_sink;
+pub mod lead_command_service;
+pub mod lead_generation_service;
+pub mod sms_port;
+pub mod desk_service;
 // END CUSTOM
 
+pub use booth_category_service::BoothCategoryService;
+pub use booth_service::BoothService;
+pub use type_booth_service::TypeBoothService;
+pub use booth_booking_service::BoothBookingService;
 pub use event_service::EventService;
 pub use event_audit_log_service::EventAuditLogService;
 pub use event_type_service::EventTypeService;
+pub use lead_provenance_service::LeadProvenanceService;
+pub use lead_provenance_registration_service::LeadProvenanceRegistrationService;
+pub use lead_request_service::LeadRequestService;
+pub use lead_rule_service::LeadRuleService;
+pub use lead_rule_predicate_service::LeadRulePredicateService;
 pub use mail_service::MailService;
 pub use mail_registration_service::MailRegistrationService;
 pub use mail_slot_service::MailSlotService;
