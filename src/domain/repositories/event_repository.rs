@@ -54,7 +54,6 @@ pub struct EventFilter {
     pub address_id: Option<Uuid>,
     pub organizer_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
-    pub company_id: Option<Uuid>,
     pub badge_format: Option<EventBadgeFormat>,
     pub is_published: Option<bool>,
 }
@@ -62,7 +61,7 @@ pub struct EventFilter {
 impl EventFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.name.is_some() || self.event_type_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.date_tz.is_some() || self.is_multi_slots.is_some() || self.seats_limited.is_some() || self.address_id.is_some() || self.organizer_id.is_some() || self.user_id.is_some() || self.company_id.is_some() || self.badge_format.is_some() || self.is_published.is_some()
+        self.name.is_some() || self.event_type_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.date_tz.is_some() || self.is_multi_slots.is_some() || self.seats_limited.is_some() || self.address_id.is_some() || self.organizer_id.is_some() || self.user_id.is_some() || self.badge_format.is_some() || self.is_published.is_some()
     }
 }
 

@@ -119,10 +119,6 @@ models:
         type: string
         attributes: ["@required", "@unique", "@max(32)"]
         description: "Decimal of 8 urandom bytes little-endian (Code128C compact), minted at create, readonly. GLOBALLY unique across all events (enforcement: db — the constraint deliberately excludes event_id: one scanner desk serves every event). The desk verb (v0.2.0) reads it EXACT-match (docs/spec-overlay.md §E)."
-      company_id:
-        type: uuid?
-        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
-        description: "Nullable company axis derived from the event at write — shared_blank posture (same policy as the event row; logical corporate ref)."
       metadata:
         type: Metadata
         attributes: ["@audit_metadata"]

@@ -72,8 +72,6 @@ pub struct CreateEventDto {
     pub organizer_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "user_id")]
     pub user_id: Option<Uuid>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(url))]
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "event_url")]
     pub event_url: Option<String>,
@@ -137,8 +135,6 @@ pub struct UpdateEventDto {
     pub organizer_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "user_id")]
     pub user_id: Option<Uuid>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(url))]
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "event_url")]
     pub event_url: Option<String>,
@@ -203,8 +199,6 @@ pub struct PatchEventDto {
     pub organizer_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "user_id")]
     pub user_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "validation", validate(url))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "event_url")]
     pub event_url: Option<String>,
@@ -220,7 +214,7 @@ pub struct PatchEventDto {
 impl PatchEventDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.name.is_some() || self.event_type_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.date_begin.is_some() || self.date_end.is_some() || self.date_tz.is_some() || self.is_multi_slots.is_some() || self.event_slot_count.is_some() || self.seats_limited.is_some() || self.seats_max.is_some() || self.address_id.is_some() || self.organizer_id.is_some() || self.user_id.is_some() || self.company_id.is_some() || self.event_url.is_some() || self.badge_format.is_some() || self.is_published.is_some() || self.date_publish.is_some()
+        self.name.is_some() || self.event_type_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.date_begin.is_some() || self.date_end.is_some() || self.date_tz.is_some() || self.is_multi_slots.is_some() || self.event_slot_count.is_some() || self.seats_limited.is_some() || self.seats_max.is_some() || self.address_id.is_some() || self.organizer_id.is_some() || self.user_id.is_some() || self.event_url.is_some() || self.badge_format.is_some() || self.is_published.is_some() || self.date_publish.is_some()
     }
 }
 
@@ -261,7 +255,6 @@ pub struct EventResponseDto {
     pub address_id: Option<Uuid>,
     pub organizer_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
-    pub company_id: Option<Uuid>,
     pub event_url: Option<String>,
     pub badge_format: EventBadgeFormat,
     #[cfg_attr(feature = "openapi", schema(example = true))]
@@ -352,7 +345,6 @@ impl From<Event> for EventResponseDto {
             address_id: entity.address_id,
             organizer_id: entity.organizer_id,
             user_id: entity.user_id,
-            company_id: entity.company_id,
             event_url: entity.event_url,
             badge_format: entity.badge_format,
             is_published: entity.is_published,
@@ -393,7 +385,6 @@ impl From<CreateEventDto> for Event {
             address_id: dto.address_id,
             organizer_id: dto.organizer_id,
             user_id: dto.user_id,
-            company_id: dto.company_id,
             event_url: dto.event_url,
             badge_format: dto.badge_format,
             is_published: dto.is_published,
@@ -421,7 +412,6 @@ impl From<&Event> for EventResponseDto {
             address_id: entity.address_id.clone(),
             organizer_id: entity.organizer_id.clone(),
             user_id: entity.user_id.clone(),
-            company_id: entity.company_id.clone(),
             event_url: entity.event_url.clone(),
             badge_format: entity.badge_format.clone(),
             is_published: entity.is_published.clone(),
@@ -453,7 +443,6 @@ impl backbone_core::ApplyUpdateDto<UpdateEventDto> for Event {
         self.address_id = dto.address_id;
         self.organizer_id = dto.organizer_id;
         self.user_id = dto.user_id;
-        self.company_id = dto.company_id;
         self.event_url = dto.event_url;
         self.badge_format = dto.badge_format;
         self.is_published = dto.is_published;

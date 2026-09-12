@@ -82,6 +82,18 @@ pub use backbone_orm::repository::{
 // Re-export custom persistence types
 // <<< CUSTOM
 pub use seat_repository::{RegisterCommand, RegistrationRow, SaleLink, SeatCounts, SeatRepository};
+
+/// Re-bind the ambient org scope onto a connection this module opened
+/// itself (a fresh pool transaction). With no ambient scope the
+/// transaction stays plain — the module never invents one.
+pub(crate) async fn relay_ambient_scope(
+    conn: &mut sqlx::PgConnection,
+) -> Result<(), sqlx::Error> {
+    if let Some(scope) = backbone_orm::org_scope::current_org_scope() {
+        backbone_orm::org_scope::bind_org_scope_on(conn, &scope).await?;
+    }
+    Ok(())
+}
 pub use event_command_repository::{
     CreateEventInput, EventCommandRepository, EventRow, PatchEventInput,
 };

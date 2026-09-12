@@ -101,10 +101,6 @@ models:
         type: uuid?
         attributes: ["@exclude_from_foreign_key_check"]
         description: "Responsible officer — logical ref; arm 3 of the author fallback chain."
-      company_id:
-        type: uuid?
-        attributes: ["@exclude_from_foreign_key_check", "@indexed"]
-        description: "Nullable company axis (logical corporate ref). NULL rows are first-class 'visible to all' under the declared shared_blank posture — the faithful port of upstream's required=FALSE + [False] record rules (EVM-15). Never a cross-schema FK."
       event_url:
         type: url?
         description: "Officer-set external event page (scheme CHECK at db — EBG-7). No venue-wipe trap, no one-way compute (EVM-10/11 not ported: officer-set plain field)."

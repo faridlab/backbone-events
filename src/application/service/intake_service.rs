@@ -11,8 +11,8 @@
 //! 1. TYPED ALLOWLIST AT PARSE — `deny_unknown_fields`; admitted:
 //!    attendee identity + optional slot/ticket ids + answers.
 //!    NEVER admitted: `partner_id`, `state`, `sale_*`, `active`,
-//!    `barcode`, `company_id` — an unknown key is a typed 422, not a
-//!    silently dropped field.
+//!    `barcode`, any tenancy column — an unknown key is a typed 422,
+//!    not a silently dropped field.
 //! 2. NO partner minting — intake creates registrations, not parties.
 //! 3. FIXED-WINDOW THROTTLES, per-identity (email) AND per-IP —
 //!    in-memory windows (single-host posture; the module gate, not a

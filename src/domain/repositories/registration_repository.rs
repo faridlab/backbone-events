@@ -58,13 +58,12 @@ pub struct RegistrationFilter {
     pub sale_status: Option<EventSaleStatus>,
     pub active: Option<bool>,
     pub barcode: Option<String>,
-    pub company_id: Option<Uuid>,
 }
 
 impl RegistrationFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.event_id.is_some() || self.event_slot_id.is_some() || self.event_ticket_id.is_some() || self.name.is_some() || self.email.is_some() || self.phone.is_some() || self.company_name.is_some() || self.partner_id.is_some() || self.state.is_some() || self.sale_order_id.is_some() || self.sale_order_state.is_some() || self.sale_status.is_some() || self.active.is_some() || self.barcode.is_some() || self.company_id.is_some()
+        self.event_id.is_some() || self.event_slot_id.is_some() || self.event_ticket_id.is_some() || self.name.is_some() || self.email.is_some() || self.phone.is_some() || self.company_name.is_some() || self.partner_id.is_some() || self.state.is_some() || self.sale_order_id.is_some() || self.sale_order_state.is_some() || self.sale_status.is_some() || self.active.is_some() || self.barcode.is_some()
     }
 }
 

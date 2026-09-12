@@ -39,7 +39,10 @@ pub struct OrderConfirmed {
     /// order id when the host relay cannot supply one.
     pub delivery_id: Option<String>,
     pub order_id: Uuid,
-    pub company_id: Option<Uuid>,
+    /// The order's org-unit anchor (the composing service's tenancy
+    /// axis; the mint itself never reads it — registrations derive
+    /// their org from the event row).
+    pub org_unit_id: Option<Uuid>,
     pub customer_id: Option<Uuid>,
     /// The order grand total as its raw decimal string — the mint
     /// reads ONLY its zero/non-zero magnitude (ES-3's free/paid fork).
@@ -71,7 +74,9 @@ pub struct OrderCancelled {
     /// order id when the host relay cannot supply one.
     pub delivery_id: Option<String>,
     pub order_id: Uuid,
-    pub company_id: Option<Uuid>,
+    /// The order's org-unit anchor (unused by the cancel mirror; kept
+    /// so the bridge payload is one shape across the seam family).
+    pub org_unit_id: Option<Uuid>,
     pub customer_id: Option<Uuid>,
 }
 

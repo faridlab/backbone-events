@@ -208,7 +208,7 @@ async fn so_cancel_never_frees_a_booth() {
     seam.on_order_cancelled(OrderCancelled {
         delivery_id: None,
         order_id: order,
-        company_id: None,
+        org_unit_id: None,
         customer_id: None,
     })
     .await

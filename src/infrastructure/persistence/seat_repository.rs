@@ -38,7 +38,7 @@
 //! events count over the slot with the per-slot cap `seats_max`
 //! (event total = seats_max x event_slot_count).
 
-use backbone_orm::company_scope;
+use backbone_orm::{company_scope, org_scope};
 use chrono::{DateTime, Utc};
 use rand::RngCore;
 use sqlx::PgPool;
@@ -99,7 +99,6 @@ pub struct RegistrationRow {
     pub sale_status: Option<String>,
     pub active: bool,
     pub barcode: String,
-    pub company_id: Option<Uuid>,
 }
 
 /// The seat-count read (`seat_availability` over the same domain).
@@ -141,7 +140,7 @@ pub async fn record_audit(
     subject_id: Uuid,
     detail: serde_json::Value,
 ) {
-    let _ = company_scope::execute_scoped(
+    let _ = org_scope::execute_scoped(
         pool,
         sqlx::query(
             r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
@@ -171,7 +170,6 @@ struct LockedEvent {
     seats_limited: bool,
     seats_max: i32,
     kanban_state: String,
-    company_id: Option<Uuid>,
 }
 
 impl SeatRepository {
@@ -187,7 +185,7 @@ impl SeatRepository {
     /// transaction. See the module doc for the full sequence.
     pub async fn register(&self, cmd: &RegisterCommand) -> Result<RegistrationRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let row = Self::register_core(&mut tx, cmd, None).await?;
         tx.commit().await?;
         Ok(row)
@@ -204,7 +202,7 @@ impl SeatRepository {
         link: &SaleLink,
     ) -> Result<RegistrationRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let row = Self::register_core(&mut tx, cmd, Some(link)).await?;
         tx.commit().await?;
         Ok(row)
@@ -223,7 +221,7 @@ impl SeatRepository {
     ) -> Result<RegistrationRow, EventError> {
         // Lock 1: the event row.
         let event = sqlx::query_as::<_, LockedEvent>(
-            r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state, company_id
+            r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state
                  FROM event.events WHERE id = $1 FOR UPDATE"#,
         )
         .bind(cmd.event_id)
@@ -322,35 +320,87 @@ impl SeatRepository {
         let born_state = link.map(|l| l.initial_state.as_str()).unwrap_or("open");
         let id = Uuid::new_v4();
         let barcode = mint_barcode();
-        let row = sqlx::query_as::<_, RegistrationRow>(
-            r#"INSERT INTO event.registrations
-                   (id, event_id, event_slot_id, event_ticket_id, name, email, phone,
-                    company_name, partner_id, state, active, barcode, company_id,
-                    sale_order_id, sale_order_state, sale_status)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $12::event_registration_state,
-                       true, $10, $11, $13, $14::event_sale_order_state, $15::event_sale_status)
-               RETURNING id, event_id, event_slot_id, event_ticket_id, name, email, phone,
-                         company_name, partner_id, state::text AS state, date_closed,
-                         sale_order_id, sale_order_state::text AS sale_order_state,
-                         sale_status::text AS sale_status, active, barcode, company_id"#,
+
+        // The tenancy axis is decorator-installed — the module itself
+        // ships no org column, so the insert is DUAL-SHAPE: probe once
+        // per transaction whether the composing service's decorator has
+        // added `org_unit_id` to event.events. Decorated: the
+        // registration is BORN anchored to its event's org unit
+        // (derived server-side off the locked row — the seat-count
+        // invariant: every registration of an event carries the
+        // event's anchor, so ANY scope that can see the event counts
+        // ALL its seats; the explicit value also routes around the
+        // decorator's acting-unit fill). Undecorated (module tests on
+        // a bare scratch database): the plain VALUES shape.
+        let org_axis: bool = sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.columns \
+              WHERE table_schema = 'event' AND table_name = 'events' \
+                AND column_name = 'org_unit_id')",
         )
-        .bind(id)
-        .bind(cmd.event_id)
-        .bind(slot_id)
-        .bind(cmd.event_ticket_id)
-        .bind(&cmd.name)
-        .bind(&cmd.email)
-        .bind(&cmd.phone)
-        .bind(&cmd.company_name)
-        .bind(cmd.partner_id)
-        .bind(&barcode)
-        .bind(event.company_id)
-        .bind(born_state)
-        .bind(link.map(|l| l.sale_order_id))
-        .bind(link.map(|l| l.sale_order_state.as_str()))
-        .bind(link.map(|l| l.sale_status.as_str()))
         .fetch_one(&mut **tx)
         .await?;
+
+        let row = if org_axis {
+            sqlx::query_as::<_, RegistrationRow>(
+                r#"INSERT INTO event.registrations
+                       (id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+                        company_name, partner_id, state, active, barcode, org_unit_id,
+                        sale_order_id, sale_order_state, sale_status)
+                   SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9,
+                          $11::event_registration_state, true, $10, e.org_unit_id,
+                          $12, $13::event_sale_order_state, $14::event_sale_status
+                     FROM event.events e WHERE e.id = $2
+                   RETURNING id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+                             company_name, partner_id, state::text AS state, date_closed,
+                             sale_order_id, sale_order_state::text AS sale_order_state,
+                             sale_status::text AS sale_status, active, barcode"#,
+            )
+            .bind(id)
+            .bind(cmd.event_id)
+            .bind(slot_id)
+            .bind(cmd.event_ticket_id)
+            .bind(&cmd.name)
+            .bind(&cmd.email)
+            .bind(&cmd.phone)
+            .bind(&cmd.company_name)
+            .bind(cmd.partner_id)
+            .bind(&barcode)
+            .bind(born_state)
+            .bind(link.map(|l| l.sale_order_id))
+            .bind(link.map(|l| l.sale_order_state.as_str()))
+            .bind(link.map(|l| l.sale_status.as_str()))
+            .fetch_one(&mut **tx)
+            .await?
+        } else {
+            sqlx::query_as::<_, RegistrationRow>(
+                r#"INSERT INTO event.registrations
+                       (id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+                        company_name, partner_id, state, active, barcode,
+                        sale_order_id, sale_order_state, sale_status)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $11::event_registration_state,
+                           true, $10, $12, $13::event_sale_order_state, $14::event_sale_status)
+                   RETURNING id, event_id, event_slot_id, event_ticket_id, name, email, phone,
+                             company_name, partner_id, state::text AS state, date_closed,
+                             sale_order_id, sale_order_state::text AS sale_order_state,
+                             sale_status::text AS sale_status, active, barcode"#,
+            )
+            .bind(id)
+            .bind(cmd.event_id)
+            .bind(slot_id)
+            .bind(cmd.event_ticket_id)
+            .bind(&cmd.name)
+            .bind(&cmd.email)
+            .bind(&cmd.phone)
+            .bind(&cmd.company_name)
+            .bind(cmd.partner_id)
+            .bind(&barcode)
+            .bind(born_state)
+            .bind(link.map(|l| l.sale_order_id))
+            .bind(link.map(|l| l.sale_order_state.as_str()))
+            .bind(link.map(|l| l.sale_status.as_str()))
+            .fetch_one(&mut **tx)
+            .await?
+        };
 
         // ARM the after_sub engines — ONLY for a row born INTO the
         // eligible set (born open). A held mint (born draft) does NOT
@@ -417,7 +467,7 @@ impl SeatRepository {
         slot_id: Option<Uuid>,
     ) -> Result<SeatCounts, EventError> {
         let event = company_scope::fetch_optional_scoped(&self.pool, sqlx::query_as::<_, LockedEvent>(
-            r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state, company_id
+            r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state
                  FROM event.events WHERE id = $1"#,
         )
         .bind(event_id))
@@ -469,7 +519,7 @@ impl SeatRepository {
         actor: Option<Uuid>,
     ) -> Result<(String, String, bool), EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let outcome = sqlx::query_as::<_, (String, String, bool)>(
             r#"WITH prev AS (
                    SELECT state FROM event.registrations WHERE id = $1 FOR UPDATE
@@ -515,7 +565,7 @@ impl SeatRepository {
             .fetch_one(&mut *tx)
             .await?;
             let event = sqlx::query_as::<_, LockedEvent>(
-                r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state, company_id
+                r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state
                      FROM event.events WHERE id = $1 FOR UPDATE"#,
             )
             .bind(event_id)
@@ -639,7 +689,7 @@ impl SeatRepository {
                RETURNING id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                          company_name, partner_id, state::text AS state, date_closed,
                          sale_order_id, sale_order_state::text AS sale_order_state,
-                         sale_status::text AS sale_status, active, barcode, company_id"#,
+                         sale_status::text AS sale_status, active, barcode"#,
             )
             .bind(registration_id)
             .bind(partner_id)
@@ -674,7 +724,7 @@ impl SeatRepository {
                 r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
                       sale_order_id, sale_order_state::text AS sale_order_state,
-                      sale_status::text AS sale_status, active, barcode, company_id
+                      sale_status::text AS sale_status, active, barcode
                  FROM event.registrations WHERE barcode = $1"#,
             )
             .bind(barcode),
@@ -694,7 +744,7 @@ impl SeatRepository {
                 r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
                       sale_order_id, sale_order_state::text AS sale_order_state,
-                      sale_status::text AS sale_status, active, barcode, company_id
+                      sale_status::text AS sale_status, active, barcode
                  FROM event.registrations WHERE id = $1"#,
             )
             .bind(registration_id),
@@ -716,7 +766,7 @@ impl SeatRepository {
                 r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
                       sale_order_id, sale_order_state::text AS sale_order_state,
-                      sale_status::text AS sale_status, active, barcode, company_id
+                      sale_status::text AS sale_status, active, barcode
                  FROM event.registrations
                 WHERE event_id = $1 AND ($2::uuid IS NULL OR id > $2)
                 ORDER BY id LIMIT $3"#,

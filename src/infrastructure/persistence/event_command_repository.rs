@@ -34,7 +34,6 @@ pub struct EventRow {
     pub event_slot_count: i32,
     pub seats_limited: bool,
     pub seats_max: i32,
-    pub company_id: Option<Uuid>,
     pub badge_format: String,
     pub is_published: bool,
     pub date_publish: Option<DateTime<Utc>>,
@@ -52,7 +51,6 @@ pub struct CreateEventInput {
     pub event_slot_count: i32,
     pub seats_limited: bool,
     pub seats_max: i32,
-    pub company_id: Option<Uuid>,
     pub organizer_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
     pub address_id: Option<Uuid>,
@@ -75,7 +73,6 @@ pub struct PatchEventInput {
     pub event_slot_count: Option<i32>,
     pub seats_limited: Option<bool>,
     pub seats_max: Option<i32>,
-    pub company_id: Option<Uuid>,
     pub organizer_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
     pub address_id: Option<Uuid>,
@@ -86,7 +83,7 @@ pub struct PatchEventInput {
 const EVENT_COLUMNS: &str =
     "id, name, event_type_id, stage_id, kanban_state::text AS kanban_state, \
      date_begin, date_end, date_tz, is_multi_slots, event_slot_count, seats_limited, seats_max, \
-     company_id, badge_format::text AS badge_format, is_published, date_publish";
+     badge_format::text AS badge_format, is_published, date_publish";
 
 pub struct EventCommandRepository {
     pool: PgPool,
@@ -110,7 +107,7 @@ impl EventCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<EventRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let stage_id = match sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM event.stages ORDER BY sequence, id LIMIT 1",
         )
@@ -132,9 +129,9 @@ impl EventCommandRepository {
             r#"INSERT INTO event.events
                    (id, name, event_type_id, stage_id, date_begin, date_end, date_tz,
                     is_multi_slots, event_slot_count, seats_limited, seats_max,
-                    company_id, organizer_id, user_id, address_id, event_url, badge_format)
+                    organizer_id, user_id, address_id, event_url, badge_format)
                VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7, 'UTC'), $8, $9, $10, $11,
-                       $12, $13, $14, $15, $16, COALESCE($17::event_badge_format, 'a4_french_fold'))
+                       $12, $13, $14, $15, COALESCE($16::event_badge_format, 'a4_french_fold'))
                RETURNING {EVENT_COLUMNS}"#
         ))
         .bind(id)
@@ -148,7 +145,6 @@ impl EventCommandRepository {
         .bind(input.event_slot_count)
         .bind(input.seats_limited)
         .bind(input.seats_max)
-        .bind(input.company_id)
         .bind(input.organizer_id)
         .bind(input.user_id)
         .bind(input.address_id)
@@ -223,12 +219,11 @@ impl EventCommandRepository {
                    event_slot_count = COALESCE($9, event_slot_count),
                    seats_limited    = COALESCE($10, seats_limited),
                    seats_max        = COALESCE($11, seats_max),
-                   company_id       = COALESCE($12, company_id),
-                   organizer_id     = COALESCE($13, organizer_id),
-                   user_id          = COALESCE($14, user_id),
-                   address_id       = COALESCE($15, address_id),
-                   event_url        = COALESCE($16, event_url),
-                   badge_format     = COALESCE($17::event_badge_format, badge_format)
+                   organizer_id     = COALESCE($12, organizer_id),
+                   user_id          = COALESCE($13, user_id),
+                   address_id       = COALESCE($14, address_id),
+                   event_url        = COALESCE($15, event_url),
+                   badge_format     = COALESCE($16::event_badge_format, badge_format)
                 WHERE id = $1
                RETURNING {EVENT_COLUMNS}"#
             ))
@@ -243,7 +238,6 @@ impl EventCommandRepository {
             .bind(patch.event_slot_count)
             .bind(patch.seats_limited)
             .bind(patch.seats_max)
-            .bind(patch.company_id)
             .bind(patch.organizer_id)
             .bind(patch.user_id)
             .bind(patch.address_id)
@@ -323,7 +317,7 @@ impl EventCommandRepository {
     /// FIRST pipe_end stage by sequence (upstream's two-axis close).
     pub async fn mark_done(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let pipe_end = sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM event.stages WHERE pipe_end ORDER BY sequence, id LIMIT 1",
         )

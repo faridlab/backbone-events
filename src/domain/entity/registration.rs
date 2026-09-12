@@ -69,7 +69,6 @@ pub struct Registration {
     pub sale_status: Option<EventSaleStatus>,
     pub active: bool,
     pub barcode: String,
-    pub company_id: Option<Uuid>,
     #[serde(default)]
     #[sqlx(json)]
     pub metadata: AuditMetadata,
@@ -100,7 +99,6 @@ impl Registration {
             sale_status: None,
             active,
             barcode,
-            company_id: None,
             metadata: AuditMetadata::default(),
         }
     }
@@ -214,12 +212,6 @@ impl Registration {
         self
     }
 
-    /// Set the company_id field (chainable)
-    pub fn with_company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     // ==========================================================
     // State Machine
     // ==========================================================
@@ -287,9 +279,6 @@ impl Registration {
                 "barcode" => {
                     if let Ok(v) = serde_json::from_value(value) { self.barcode = v; }
                 }
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 _ => {} // ignore unknown fields
             }
         }
@@ -349,7 +338,6 @@ impl backbone_orm::EntityRepoMeta for Registration {
         m.insert("event_ticket_id".to_string(), "uuid".to_string());
         m.insert("partner_id".to_string(), "uuid".to_string());
         m.insert("sale_order_id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("state".to_string(), "event_registration_state".to_string());
         m.insert("sale_order_state".to_string(), "event_sale_order_state".to_string());
         m.insert("sale_status".to_string(), "event_sale_status".to_string());
@@ -357,9 +345,6 @@ impl backbone_orm::EntityRepoMeta for Registration {
     }
     fn search_fields() -> &'static [&'static str] {
         &["name", "email", "barcode"]
-    }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
     }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
         &[("event", "events", "eventId"), ("eventSlot", "slots", "eventSlotId"), ("eventTicket", "tickets", "eventTicketId")]
@@ -387,7 +372,6 @@ pub struct RegistrationBuilder {
     sale_status: Option<EventSaleStatus>,
     active: Option<bool>,
     barcode: Option<String>,
-    company_id: Option<Uuid>,
 }
 
 impl RegistrationBuilder {
@@ -481,12 +465,6 @@ impl RegistrationBuilder {
         self
     }
 
-    /// Set the company_id field (optional)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Build the Registration entity
     ///
     /// Returns Err if any required field without a default is missing.
@@ -513,7 +491,6 @@ impl RegistrationBuilder {
             sale_status: self.sale_status,
             active: self.active.unwrap_or(true),
             barcode,
-            company_id: self.company_id,
             metadata: AuditMetadata::default(),
         })
     }

@@ -305,7 +305,6 @@ pub struct EventDto {
     pub address_id: Option<Uuid>,
     pub organizer_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
-    pub company_id: Option<Uuid>,
     pub event_url: Option<String>,
     pub badge_format: EventBadgeFormat,
     pub is_published: bool,
@@ -1138,7 +1137,6 @@ pub struct RegistrationDto {
     pub sale_status: Option<EventSaleStatus>,
     pub active: bool,
     pub barcode: String,
-    pub company_id: Option<Uuid>,
     pub metadata: serde_json::Value,
 }
 

@@ -28,48 +28,21 @@ schema: event
 description: "event — the events core: registrations under one authoritative seat counter (lock-first, count-then-insert), the two-axis event lifecycle (stage + sticky-cancel kanban health), the publication-fenced capability surface (/ics, my-tickets), and the self-arming communication scheduler whose completion reads per-recipient receipts (Odoo `event` addon port, core arm of the eight-addon chain)"
 
 # =============================================================================
-# company_fence (ADR-0014): multi-tenant row-level-security posture
+# Tenancy: none, by design (ADR-0029)
 # -----------------------------------------------------------------------------
-# Posture: shared_blank — the faithful port of upstream's SOFT company axis.
-#
-# Upstream `event.event.company_id` is required=FALSE with global
-# `company_ids + [False]` record rules: company-less events are visible to
-# EVERYONE (the register's EVM-15 "company is soft" finding). Synthesizing a
-# strict fence here would fragment the global stage set and the scheduler
-# rows — a behavior change dressed as hardening. The soft posture is ported
-# as the DECLARED shared_blank policy instead:
-#
-# Posture map (entity -> realized fence, all under this one declaration):
-#   events          -> shared_blank (nullable company_id; the NULL arm of the
-#                      policy is the port of Odoo's `[False]` escape —
-#                      company-less events are first-class "visible to all")
-#   registrations   -> shared_blank (nullable company_id derived from its
-#                      event at write; same policy)
-#   registration_answers -> NO column of its own — rides the parent
-#                      registration's posture (parent-derived; the answers
-#                      never widen past their registration)
-#   everything else (stages, types, tags, tag_categories, tickets, slots,
-#   questions, question_answers, registration_questions,
-#   registration_answers, the whole scheduler family: mails,
-#   mail_registrations, mail_slots, type_mails, event_audit_log, and the
-#   v0.2.0 overlay families: booth_categories, booths, type_booths,
-#   booth_bookings, lead_rules, lead_rule_predicates, lead_requests,
-#   lead_provenances, lead_provenance_registrations)
-#                   -> NO company column, no policy — company-shared global
-#                      master data, exactly upstream (ADR-0014 names "event
-#                      stages" as a shared_blank exemplar).
-#
-#                      (Owner-decision row, docs/spec-overlay.md §R: the
-#                      overlay council text lists Ticket under shared_blank;
-#                      the landed core contract keeps tickets company-less
-#                      global. Adding tickets.company_id is a one-migration
-#                      additive change awaiting the council's RLS-vs-declared
-#                      resolution — NOT taken unilaterally here.)
-#
-# Making tenancy hard is a recorded additive decision for a future owner, not
-# a default this module may take unilaterally.
+# This module is tenant-agnostic. It declares NO company axis and NO fence:
+# RLS stays ENABLE+FORCE with zero policies after the strip, and the composing
+# service installs the org-unit fence (tenancy.yaml + decorator) at composition
+# time. The historical shared_blank posture (nullable company_id with a NULL
+# "visible to all" arm on events + registrations) ports to the composed world
+# as ROOT-ANCHORED rows: the decorator's allow_root admits tenant-root-anchored
+# events/registrations, and the scope union (subtree ∪ tenant root) carries
+# the visible-to-all semantics. Registration org_unit_id still derives from
+# its event at write — the desk-scanner cross-company reads keep working.
+# Everything else in the module (stages, types, tags, tickets, slots,
+# questions, the scheduler and booth/lead families) stays company-less global
+# master data, unfenced — the composer scopes only events + registrations.
 # -----------------------------------------------------------------------------
-company_fence: shared_blank
 
 config:
   database: postgresql

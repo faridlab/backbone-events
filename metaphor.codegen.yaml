@@ -193,6 +193,11 @@ user_owned:
   # uniques, the seam inbox PK).
   - "migrations/*hardening*"
 
+  # The ADR-0029 tenancy strip: drops the shared_blank policies and the
+  # company_id columns under the ordering guard (decorator-first); the
+  # composing service's tenancy decorator re-declares the fence.
+  - "migrations/*strip_tenancy*"
+
   # GENERATOR-DEFECT FREEZE, second arm (same pattern as 20005/20017
   # above): the pinned generator numbers migration files alphabetically
   # by table name, which strands four FK constraints AHEAD of the

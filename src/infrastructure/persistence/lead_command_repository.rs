@@ -14,7 +14,7 @@
 //! parse). The generation eligibility domain is always
 //! `state IN ('open','done') AND active` — the EVM2-4 pair.
 
-use backbone_orm::company_scope;
+use backbone_orm::{company_scope, org_scope};
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -111,7 +111,7 @@ impl LeadCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<LeadRuleRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let id = Uuid::new_v4();
         let row = sqlx::query_as::<_, LeadRuleRow>(
             r#"INSERT INTO event.lead_rules
@@ -201,7 +201,7 @@ impl LeadCommandRepository {
         .await?
         .ok_or(EventError::LeadRuleNotFound { rule_id })?;
         if active == Some(true) {
-            company_scope::execute_scoped(
+            org_scope::execute_scoped(
                 &self.pool,
                 sqlx::query(
                     r#"INSERT INTO event.lead_requests (event_id)
@@ -335,7 +335,7 @@ impl LeadCommandRepository {
     /// Arm one event's queue row (public arm: rule created/activated —
     /// the registration verbs arm through the seat repository).
     pub async fn arm_request(&self, event_id: Uuid) -> Result<(), EventError> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             &self.pool,
             sqlx::query(
                 r#"INSERT INTO event.lead_requests (event_id) VALUES ($1)
@@ -445,7 +445,7 @@ impl LeadCommandRepository {
         request_id: Uuid,
         error: Option<&str>,
     ) -> Result<(), EventError> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             &self.pool,
             sqlx::query(
                 r#"UPDATE event.lead_requests
@@ -467,7 +467,7 @@ impl LeadCommandRepository {
         event_id: Uuid,
         error: Option<&str>,
     ) -> Result<(), EventError> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             &self.pool,
             sqlx::query(
                 r#"UPDATE event.lead_requests
@@ -531,7 +531,12 @@ impl LeadCommandRepository {
                     ));
                 }
                 "company" => {
-                    clauses.push_str(&format!(" AND r.company_id IN ({values})"));
+                    // The registration's org anchor (decorator-installed
+                    // column): the axis matches registrations anchored
+                    // at one of the given units. Undecorated module
+                    // tests never store a company predicate — the axis
+                    // only exists where the composing decorator does.
+                    clauses.push_str(&format!(" AND r.org_unit_id IN ({values})"));
                 }
                 "question_answer" => {
                     clauses.push_str(&format!(
@@ -638,7 +643,7 @@ impl LeadCommandRepository {
         provenance_id: Uuid,
         lead_id: Uuid,
     ) -> Result<(), EventError> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             &self.pool,
             sqlx::query("UPDATE event.lead_provenances SET lead_id = $2 WHERE id = $1")
                 .bind(provenance_id)

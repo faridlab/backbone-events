@@ -10240,10 +10240,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         event_url:
           nullable: true
           type: string
@@ -10332,10 +10328,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         event_url:
           nullable: true
           type: string
@@ -10411,10 +10403,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         event_url:
           nullable: true
           type: string
@@ -10473,10 +10461,6 @@ components:
           type: string
           format: uuid
         user_id:
-          nullable: true
-          type: string
-          format: uuid
-        company_id:
           nullable: true
           type: string
           format: uuid
@@ -12247,10 +12231,6 @@ components:
         barcode:
           type: string
           maxLength: 32
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         metadata:
           type: object
 
@@ -12329,10 +12309,6 @@ components:
         barcode:
           type: string
           maxLength: 32
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         metadata:
           type: object
 
@@ -12398,10 +12374,6 @@ components:
         barcode:
           type: string
           maxLength: 32
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         metadata:
           type: object
 
@@ -12459,10 +12431,6 @@ components:
         barcode:
           type: string
           maxLength: 32
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         metadata:
           type: object
 

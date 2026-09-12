@@ -65,7 +65,6 @@ pub struct Event {
     pub address_id: Option<Uuid>,
     pub organizer_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
-    pub company_id: Option<Uuid>,
     pub event_url: Option<String>,
     pub badge_format: EventBadgeFormat,
     pub is_published: bool,
@@ -99,7 +98,6 @@ impl Event {
             address_id: None,
             organizer_id: None,
             user_id: None,
-            company_id: None,
             event_url: None,
             badge_format,
             is_published,
@@ -187,12 +185,6 @@ impl Event {
         self
     }
 
-    /// Set the company_id field (chainable)
-    pub fn with_company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the event_url field (chainable)
     pub fn with_event_url(mut self, value: String) -> Self {
         self.event_url = Some(value);
@@ -254,9 +246,6 @@ impl Event {
                 }
                 "user_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.user_id = v; }
-                }
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
                 }
                 "event_url" => {
                     if let Ok(v) = serde_json::from_value(value) { self.event_url = v; }
@@ -329,16 +318,12 @@ impl backbone_orm::EntityRepoMeta for Event {
         m.insert("address_id".to_string(), "uuid".to_string());
         m.insert("organizer_id".to_string(), "uuid".to_string());
         m.insert("user_id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("kanban_state".to_string(), "event_kanban_state".to_string());
         m.insert("badge_format".to_string(), "event_badge_format".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &["name", "date_tz"]
-    }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
     }
     fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
         &[("eventType", "types", "eventTypeId"), ("stage", "stages", "stageId")]
@@ -365,7 +350,6 @@ pub struct EventBuilder {
     address_id: Option<Uuid>,
     organizer_id: Option<Uuid>,
     user_id: Option<Uuid>,
-    company_id: Option<Uuid>,
     event_url: Option<String>,
     badge_format: Option<EventBadgeFormat>,
     is_published: Option<bool>,
@@ -457,12 +441,6 @@ impl EventBuilder {
         self
     }
 
-    /// Set the company_id field (optional)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the event_url field (optional)
     pub fn event_url(mut self, value: String) -> Self {
         self.event_url = Some(value);
@@ -512,7 +490,6 @@ impl EventBuilder {
             address_id: self.address_id,
             organizer_id: self.organizer_id,
             user_id: self.user_id,
-            company_id: self.company_id,
             event_url: self.event_url,
             badge_format: self.badge_format.unwrap_or_default(),
             is_published: self.is_published.unwrap_or(false),

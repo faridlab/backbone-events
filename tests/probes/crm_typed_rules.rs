@@ -239,7 +239,7 @@ async fn sale_linked_registrations_group_per_order() {
         seam.on_order_confirmed(backbone_events::application::service::sale_seam_service::OrderConfirmed {
             delivery_id: None,
             order_id: order,
-            company_id: None,
+            org_unit_id: None,
             customer_id: None,
             grand_total: "0.00".into(), // free: born open + eligible now
             currency: None,

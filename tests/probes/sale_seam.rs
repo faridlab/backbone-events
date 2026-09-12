@@ -21,7 +21,7 @@ fn confirmed(order: uuid::Uuid, total: &str, event_id: uuid::Uuid, n: usize) -> 
     OrderConfirmed {
         delivery_id: None,
         order_id: order,
-        company_id: None,
+        org_unit_id: None,
         customer_id: None,
         grand_total: total.to_string(),
         currency: None,
@@ -132,7 +132,7 @@ async fn cancel_cascade_keeps_sale_status_and_paid_heals_forward() {
         .on_order_cancelled(OrderCancelled {
             delivery_id: None,
             order_id: order,
-            company_id: None,
+            org_unit_id: None,
             customer_id: None,
         })
         .await
@@ -148,7 +148,7 @@ async fn cancel_cascade_keeps_sale_status_and_paid_heals_forward() {
         .on_order_cancelled(OrderCancelled {
             delivery_id: None,
             order_id: order,
-            company_id: None,
+            org_unit_id: None,
             customer_id: None,
         })
         .await

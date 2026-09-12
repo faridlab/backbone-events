@@ -194,7 +194,7 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<(), EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let linked = sqlx::query_as::<_, (Option<Uuid>, i64)>(
             r#"SELECT b.sale_order_line_id,
                       (SELECT count(*) FROM event.booth_bookings bb WHERE bb.event_booth_id = b.id)
@@ -273,7 +273,7 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<BoothBookingRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         let event_id: Uuid =
             sqlx::query_scalar::<_, Uuid>("SELECT event_id FROM event.booths WHERE id = $1")
                 .bind(event_booth_id)
@@ -340,7 +340,7 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<(BoothBookingRow, BoothRow), EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
 
         // Lock the booking + its booth together.
         let locked = sqlx::query_as::<_, (Uuid, String)>(
@@ -419,7 +419,7 @@ impl BoothCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<BoothRow, EventError> {
         let mut tx = self.pool.begin().await?;
-        company_scope::bind_current_company(&mut tx).await?;
+        super::relay_ambient_scope(&mut tx).await?;
         sqlx::query("DELETE FROM event.booth_bookings WHERE event_booth_id = $1")
             .bind(event_booth_id)
             .execute(&mut *tx)

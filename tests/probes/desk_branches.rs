@@ -50,7 +50,7 @@ async fn the_scan_branches_in_frozen_order() {
     seam.on_order_confirmed(OrderConfirmed {
         delivery_id: None,
         order_id: order,
-        company_id: None,
+        org_unit_id: None,
         customer_id: None,
         grand_total: "50.00".into(),
         currency: None,
