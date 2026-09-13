@@ -1,6 +1,6 @@
 [package]
 name = "backbone-events"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 description = "Events core + the sale/booth/crm/sms/desk overlay — registrations under one authoritative seat counter, the sale seam (order-minted registrations, forward-only paid heal, SO-cancel mirror cascade), booth bookings with the DB exclusivity wall, closed-vocabulary lead rules through a host sink port, the dual-channel (mail/sms) self-arming scheduler, and the exact-match desk verb (Odoo event port, core + overlay)"
 
@@ -41,7 +41,7 @@ backbone-messaging = { git = "https://github.com/faridlab/backbone-framework", t
 # passes no per-mail custom headers (transport headers are the sending
 # site's opt-in), which v0.2.7's enqueue signature accepts as None.
 # -----------------------------------------------------------------------------
-backbone-mail = { git = "https://github.com/faridlab/backbone-mail", tag = "v0.2.10" }
+backbone-mail = { git = "https://github.com/faridlab/backbone-mail", tag = "v0.2.11" }
 
 # Sibling modules NOT consumed by design — recorded here so no later seat
 # adds them casually (docs/spec.md §Identity):
