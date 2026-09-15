@@ -140,18 +140,16 @@ pub async fn record_audit(
     subject_id: Uuid,
     detail: serde_json::Value,
 ) {
-    let _ = org_scope::execute_scoped(
+    // Best-effort, as before: this is the fire-and-forget lane and a failed
+    // audit must not fail the verb it describes. The scoped execute is gone
+    // because the append rides the caller's pool the same way.
+    let _ = crate::infrastructure::persistence::audit::record_audit(
         pool,
-        sqlx::query(
-            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-           VALUES ($1::event_audit_event, $2, $3, $4, $5)"#,
-        )
-        .bind(kind)
-        .bind(actor)
-        .bind(subject_type)
-        .bind(subject_id)
-        .bind(detail),
-    )
+        kind,
+        actor,
+        subject_type,
+        Some(subject_id),
+        detail)
     .await;
 }
 
@@ -438,19 +436,18 @@ impl SeatRepository {
         }
 
         // The durable creation fact.
-        sqlx::query(
-            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-               VALUES ('registration_created', $1, 'registration', $2, $3)"#,
-        )
-        .bind(cmd.actor)
-        .bind(row.id)
-        .bind(serde_json::json!({
-            "event_id": cmd.event_id,
-            "email": cmd.email,
-            "state": born_state,
-            "sale_minted": link.is_some(),
-        }))
-        .execute(&mut **tx)
+        crate::infrastructure::persistence::audit::record_audit(
+            &mut **tx,
+            "registration_created",
+            cmd.actor,
+            "registration",
+            Some(row.id),
+            serde_json::json!({
+                "event_id": cmd.event_id,
+                "email": cmd.email,
+                "state": born_state,
+                "sale_minted": link.is_some(),
+            }))
         .await?;
 
         // NOTE: no commit here — the CALLER owns the transaction (the
@@ -652,15 +649,14 @@ impl SeatRepository {
             .await?;
         }
         if before != after {
-            sqlx::query(
-                r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-                   VALUES ('registration_state_changed', $1, 'registration', $2, $3)"#,
-            )
-            .bind(actor)
-            .bind(registration_id)
-            .bind(serde_json::json!({ "before": before, "after": after }))
-            .execute(&mut *tx)
-            .await?;
+            crate::infrastructure::persistence::audit::record_audit(
+            &mut *tx,
+            "registration_state_changed",
+            actor,
+            "registration",
+            Some(registration_id),
+            serde_json::json!({ "before": before, "after": after }))
+        .await?;
         }
         tx.commit().await?;
         Ok(outcome)

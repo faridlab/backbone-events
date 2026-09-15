@@ -4,6 +4,7 @@
 //!
 //! Uses backbone-orm's `DatabaseOperations<T>` trait.
 
+pub mod audit;
 mod booth_category_repository;
 mod booth_repository;
 mod type_booth_repository;

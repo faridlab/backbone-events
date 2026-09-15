@@ -182,14 +182,13 @@ impl EventCommandRepository {
             .await?;
         }
 
-        sqlx::query(
-            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-               VALUES ('event_created', $1, 'event', $2, $3)"#,
-        )
-        .bind(actor)
-        .bind(id)
-        .bind(serde_json::json!({ "name": input.name, "event_type_id": input.event_type_id }))
-        .execute(&mut *tx)
+        crate::infrastructure::persistence::audit::record_audit(
+            &mut *tx,
+            "event_created",
+            actor,
+            "event",
+            Some(id),
+            serde_json::json!({ "name": input.name, "event_type_id": input.event_type_id }))
         .await?;
 
         tx.commit().await?;
@@ -335,14 +334,13 @@ impl EventCommandRepository {
         .fetch_optional(&mut *tx)
         .await?
         .ok_or(EventError::EventNotFound)?;
-        sqlx::query(
-            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-               VALUES ('event_mark_done', $1, 'event', $2, $3)"#,
-        )
-        .bind(actor)
-        .bind(id)
-        .bind(serde_json::json!({ "verb": "mark_done" }))
-        .execute(&mut *tx)
+        crate::infrastructure::persistence::audit::record_audit(
+            &mut *tx,
+            "event_mark_done",
+            actor,
+            "event",
+            Some(id),
+            serde_json::json!({ "verb": "mark_done" }))
         .await?;
         tx.commit().await?;
         Ok(row)

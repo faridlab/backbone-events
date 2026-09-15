@@ -393,14 +393,13 @@ impl BoothCommandRepository {
         .fetch_one(&mut *tx)
         .await?;
 
-        sqlx::query(
-            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-               VALUES ('booth_confirmed', $1, 'booth', $2, $3)"#,
-        )
-        .bind(actor)
-        .bind(event_booth_id)
-        .bind(serde_json::json!({ "booking_id": booking_id }))
-        .execute(&mut *tx)
+        crate::infrastructure::persistence::audit::record_audit(
+            &mut *tx,
+            "booth_confirmed",
+            actor,
+            "booth",
+            Some(event_booth_id),
+            serde_json::json!({ "booking_id": booking_id }))
         .await?;
         tx.commit().await?;
         Ok((booking, booth))
@@ -435,14 +434,13 @@ impl BoothCommandRepository {
         .ok_or(EventError::BoothNotFound {
             booth_id: event_booth_id,
         })?;
-        sqlx::query(
-            r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-               VALUES ('booth_released', $1, 'booth', $2, $3)"#,
-        )
-        .bind(actor)
-        .bind(event_booth_id)
-        .bind(serde_json::json!({ "verb": "release" }))
-        .execute(&mut *tx)
+        crate::infrastructure::persistence::audit::record_audit(
+            &mut *tx,
+            "booth_released",
+            actor,
+            "booth",
+            Some(event_booth_id),
+            serde_json::json!({ "verb": "release" }))
         .await?;
         tx.commit().await?;
         Ok(row)

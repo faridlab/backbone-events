@@ -460,14 +460,14 @@ impl SchedulerRepository {
         .fetch_all(&mut *tx)
         .await?;
         for id in &ids {
-            sqlx::query(
-                r#"INSERT INTO event.event_audit_log (event, actor, subject_type, subject_id, detail)
-                   VALUES ('event_mark_done', NULL, 'event', $1, $2)"#,
-            )
-            .bind(id)
-            .bind(serde_json::json!({ "verb": "done_sweep" }))
-            .execute(&mut *tx)
-            .await?;
+            crate::infrastructure::persistence::audit::record_audit(
+            &mut *tx,
+            "event_mark_done",
+            None,
+            "event",
+            Some(*id),
+            serde_json::json!({ "verb": "done_sweep" }))
+        .await?;
         }
         tx.commit().await?;
         Ok(ids)
