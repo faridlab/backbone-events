@@ -146,33 +146,6 @@ pub struct EventDeletedEvent {
 }
 
 // ============================================================================
-// EVENTAUDITLOG EVENTS
-// ============================================================================
-
-/// Event published when a EventAuditLog is created
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventAuditLogCreatedEvent {
-    pub id: EventAuditLogId,
-    pub data: EventAuditLogDto,
-    pub occurred_at: DateTime<Utc>,
-}
-
-/// Event published when a EventAuditLog is updated
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventAuditLogUpdatedEvent {
-    pub id: EventAuditLogId,
-    pub data: EventAuditLogDto,
-    pub occurred_at: DateTime<Utc>,
-}
-
-/// Event published when a EventAuditLog is deleted
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventAuditLogDeletedEvent {
-    pub id: EventAuditLogId,
-    pub occurred_at: DateTime<Utc>,
-}
-
-// ============================================================================
 // EVENTTYPE EVENTS
 // ============================================================================
 
@@ -735,9 +708,6 @@ pub enum EventEvent {
     EventCreated(EventCreatedEvent),
     EventUpdated(EventUpdatedEvent),
     EventDeleted(EventDeletedEvent),
-    EventAuditLogCreated(EventAuditLogCreatedEvent),
-    EventAuditLogUpdated(EventAuditLogUpdatedEvent),
-    EventAuditLogDeleted(EventAuditLogDeletedEvent),
     EventTypeCreated(EventTypeCreatedEvent),
     EventTypeUpdated(EventTypeUpdatedEvent),
     EventTypeDeleted(EventTypeDeletedEvent),

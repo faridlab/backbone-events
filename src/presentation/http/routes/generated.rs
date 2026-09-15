@@ -14,7 +14,6 @@ use super::{
     type_booth_handler::create_type_booth_routes,
     booth_booking_handler::create_booth_booking_read_routes,
     event_handler::create_event_read_routes,
-    event_audit_log_handler::create_event_audit_log_read_routes,
     event_type_handler::create_event_type_routes,
     lead_provenance_handler::create_lead_provenance_read_routes,
     lead_provenance_registration_handler::create_lead_provenance_registration_read_routes,
@@ -43,7 +42,6 @@ use crate::application::service::{
     TypeBoothService,
     BoothBookingService,
     EventService,
-    EventAuditLogService,
     EventTypeService,
     LeadProvenanceService,
     LeadProvenanceRegistrationService,
@@ -73,7 +71,6 @@ pub struct HttpServices {
     pub type_booth: Arc<TypeBoothService>,
     pub booth_booking: Arc<BoothBookingService>,
     pub event: Arc<EventService>,
-    pub event_audit_log: Arc<EventAuditLogService>,
     pub event_type: Arc<EventTypeService>,
     pub lead_provenance: Arc<LeadProvenanceService>,
     pub lead_provenance_registration: Arc<LeadProvenanceRegistrationService>,
@@ -123,8 +120,6 @@ pub fn configure_routes(services: HttpServices) -> Router {
         .merge(create_booth_booking_read_routes(services.booth_booking))
         // Event routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
         .merge(create_event_read_routes(services.event))
-        // EventAuditLog routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
-        .merge(create_event_audit_log_read_routes(services.event_audit_log))
         // EventType routes (12 Backbone endpoints)
         .merge(create_event_type_routes(services.event_type))
         // LeadProvenance routes (READ-ONLY — append-only/event-sourced entity; writes arrive via the event handlers)
@@ -189,10 +184,6 @@ pub mod individual {
 
     pub fn event_routes(service: Arc<EventService>) -> Router {
         create_event_routes(service)
-    }
-
-    pub fn event_audit_log_routes(service: Arc<EventAuditLogService>) -> Router {
-        create_event_audit_log_routes(service)
     }
 
     pub fn event_type_routes(service: Arc<EventTypeService>) -> Router {

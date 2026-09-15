@@ -40,7 +40,6 @@ pub use application::service::BoothService;
 pub use application::service::TypeBoothService;
 pub use application::service::BoothBookingService;
 pub use application::service::EventService;
-pub use application::service::EventAuditLogService;
 pub use application::service::EventTypeService;
 pub use application::service::LeadProvenanceService;
 pub use application::service::LeadProvenanceRegistrationService;
@@ -84,7 +83,6 @@ pub struct EventModule {
     pub(crate) type_booth_service: Arc<TypeBoothService>,
     pub(crate) booth_booking_service: Arc<BoothBookingService>,
     pub(crate) event_service: Arc<EventService>,
-    pub(crate) event_audit_log_service: Arc<EventAuditLogService>,
     pub(crate) event_type_service: Arc<EventTypeService>,
     pub(crate) lead_provenance_service: Arc<LeadProvenanceService>,
     pub(crate) lead_provenance_registration_service: Arc<LeadProvenanceRegistrationService>,
@@ -127,7 +125,6 @@ impl EventModule {
             create_type_booth_routes,
             create_booth_booking_read_routes,
             create_event_read_routes,
-            create_event_audit_log_read_routes,
             create_event_type_routes,
             create_lead_provenance_read_routes,
             create_lead_provenance_registration_read_routes,
@@ -156,7 +153,6 @@ impl EventModule {
             .merge(create_type_booth_routes(self.type_booth_service.clone()))
             .merge(create_booth_booking_read_routes(self.booth_booking_service.clone()))
             .merge(create_event_read_routes(self.event_service.clone()))
-            .merge(create_event_audit_log_read_routes(self.event_audit_log_service.clone()))
             .merge(create_event_type_routes(self.event_type_service.clone()))
             .merge(create_lead_provenance_read_routes(self.lead_provenance_service.clone()))
             .merge(create_lead_provenance_registration_read_routes(self.lead_provenance_registration_service.clone()))
@@ -201,7 +197,6 @@ impl EventModule {
             create_type_booth_read_routes,
             create_booth_booking_read_routes,
             create_event_read_routes,
-            create_event_audit_log_read_routes,
             create_event_type_read_routes,
             create_lead_provenance_read_routes,
             create_lead_provenance_registration_read_routes,
@@ -230,7 +225,6 @@ impl EventModule {
             .merge(create_type_booth_read_routes(self.type_booth_service.clone()))
             .merge(create_booth_booking_read_routes(self.booth_booking_service.clone()))
             .merge(create_event_read_routes(self.event_service.clone()))
-            .merge(create_event_audit_log_read_routes(self.event_audit_log_service.clone()))
             .merge(create_event_type_read_routes(self.event_type_service.clone()))
             .merge(create_lead_provenance_read_routes(self.lead_provenance_service.clone()))
             .merge(create_lead_provenance_registration_read_routes(self.lead_provenance_registration_service.clone()))
@@ -303,10 +297,6 @@ impl EventModuleBuilder {
         // Event service
         let event_repository = Arc::new(EventRepository::new(db_pool.clone()));
         let event_service = Arc::new(EventService::with_repository(event_repository.clone()));
-
-        // EventAuditLog service
-        let event_audit_log_repository = Arc::new(EventAuditLogRepository::new(db_pool.clone()));
-        let event_audit_log_service = Arc::new(EventAuditLogService::with_repository(event_audit_log_repository.clone()));
 
         // EventType service
         let event_type_repository = Arc::new(EventTypeRepository::new(db_pool.clone()));
@@ -397,7 +387,6 @@ impl EventModuleBuilder {
             type_booth_service,
             booth_booking_service,
             event_service,
-            event_audit_log_service,
             event_type_service,
             lead_provenance_service,
             lead_provenance_registration_service,

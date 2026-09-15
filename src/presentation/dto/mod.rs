@@ -10,7 +10,6 @@ pub mod booth_dto;
 pub mod type_booth_dto;
 pub mod booth_booking_dto;
 pub mod event_dto;
-pub mod event_audit_log_dto;
 pub mod event_type_dto;
 pub mod lead_provenance_dto;
 pub mod lead_provenance_registration_dto;
@@ -72,14 +71,6 @@ pub use event_dto::{
     EventResponseDto,
     EventListResponseDto,
     EventSummaryDto,
-};
-pub use event_audit_log_dto::{
-    CreateEventAuditLogDto,
-    UpdateEventAuditLogDto,
-    PatchEventAuditLogDto,
-    EventAuditLogResponseDto,
-    EventAuditLogListResponseDto,
-    EventAuditLogSummaryDto,
 };
 pub use event_type_dto::{
     CreateEventTypeDto,

@@ -42,9 +42,6 @@ pub use events::*;
 /// - `EventDto` - Data transfer object for Event
 /// - `EventSummary` - Summary view of Event
 /// - `EventId` - Type-safe ID wrapper
-/// - `EventAuditLogDto` - Data transfer object for EventAuditLog
-/// - `EventAuditLogSummary` - Summary view of EventAuditLog
-/// - `EventAuditLogId` - Type-safe ID wrapper
 /// - `EventTypeDto` - Data transfer object for EventType
 /// - `EventTypeSummary` - Summary view of EventType
 /// - `EventTypeId` - Type-safe ID wrapper
@@ -122,9 +119,6 @@ pub use events::*;
 /// - `EventCreatedEvent` - Published when Event is created
 /// - `EventUpdatedEvent` - Published when Event is updated
 /// - `EventDeletedEvent` - Published when Event is deleted
-/// - `EventAuditLogCreatedEvent` - Published when EventAuditLog is created
-/// - `EventAuditLogUpdatedEvent` - Published when EventAuditLog is updated
-/// - `EventAuditLogDeletedEvent` - Published when EventAuditLog is deleted
 /// - `EventTypeCreatedEvent` - Published when EventType is created
 /// - `EventTypeUpdatedEvent` - Published when EventType is updated
 /// - `EventTypeDeletedEvent` - Published when EventType is deleted

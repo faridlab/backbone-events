@@ -11,7 +11,6 @@ pub mod booth_repository;
 pub mod type_booth_repository;
 pub mod booth_booking_repository;
 pub mod event_repository;
-pub mod event_audit_log_repository;
 pub mod event_type_repository;
 pub mod lead_provenance_repository;
 pub mod lead_provenance_registration_repository;
@@ -63,12 +62,6 @@ pub use event_repository::{
     EventPaginationParams,
     EventPaginatedResult,
     EventFilter,
-};
-pub use event_audit_log_repository::{
-    EventAuditLogRepository,
-    EventAuditLogPaginationParams,
-    EventAuditLogPaginatedResult,
-    EventAuditLogFilter,
 };
 pub use event_type_repository::{
     EventTypeRepository,

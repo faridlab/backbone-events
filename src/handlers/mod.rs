@@ -14,7 +14,6 @@ use crate::application::service::BoothService;
 use crate::application::service::TypeBoothService;
 use crate::application::service::BoothBookingService;
 use crate::application::service::EventService;
-use crate::application::service::EventAuditLogService;
 use crate::application::service::EventTypeService;
 use crate::application::service::LeadProvenanceService;
 use crate::application::service::LeadProvenanceRegistrationService;
@@ -64,8 +63,6 @@ pub struct AppState {
     pub booth_booking_service: Arc<BoothBookingService>,
     /// Event service
     pub event_service: Arc<EventService>,
-    /// EventAuditLog service
-    pub event_audit_log_service: Arc<EventAuditLogService>,
     /// EventType service
     pub event_type_service: Arc<EventTypeService>,
     /// LeadProvenance service
@@ -116,7 +113,6 @@ impl AppState {
         type_booth_service: Arc<TypeBoothService>,
         booth_booking_service: Arc<BoothBookingService>,
         event_service: Arc<EventService>,
-        event_audit_log_service: Arc<EventAuditLogService>,
         event_type_service: Arc<EventTypeService>,
         lead_provenance_service: Arc<LeadProvenanceService>,
         lead_provenance_registration_service: Arc<LeadProvenanceRegistrationService>,
@@ -144,7 +140,6 @@ impl AppState {
             type_booth_service,
             booth_booking_service,
             event_service,
-            event_audit_log_service,
             event_type_service,
             lead_provenance_service,
             lead_provenance_registration_service,
@@ -176,7 +171,6 @@ impl AppState {
             type_booth_service: module.type_booth_service.clone(),
             booth_booking_service: module.booth_booking_service.clone(),
             event_service: module.event_service.clone(),
-            event_audit_log_service: module.event_audit_log_service.clone(),
             event_type_service: module.event_type_service.clone(),
             lead_provenance_service: module.lead_provenance_service.clone(),
             lead_provenance_registration_service: module.lead_provenance_registration_service.clone(),
@@ -211,7 +205,6 @@ pub struct AppStateBuilder {
     type_booth_service: Option<Arc<TypeBoothService>>,
     booth_booking_service: Option<Arc<BoothBookingService>>,
     event_service: Option<Arc<EventService>>,
-    event_audit_log_service: Option<Arc<EventAuditLogService>>,
     event_type_service: Option<Arc<EventTypeService>>,
     lead_provenance_service: Option<Arc<LeadProvenanceService>>,
     lead_provenance_registration_service: Option<Arc<LeadProvenanceRegistrationService>>,
@@ -267,12 +260,6 @@ impl AppStateBuilder {
     /// Set the Event service.
     pub fn with_event_service(mut self, service: Arc<EventService>) -> Self {
         self.event_service = Some(service);
-        self
-    }
-
-    /// Set the EventAuditLog service.
-    pub fn with_event_audit_log_service(mut self, service: Arc<EventAuditLogService>) -> Self {
-        self.event_audit_log_service = Some(service);
         self
     }
 
@@ -408,7 +395,6 @@ impl AppStateBuilder {
             type_booth_service: self.type_booth_service.expect("type_booth_service is required"),
             booth_booking_service: self.booth_booking_service.expect("booth_booking_service is required"),
             event_service: self.event_service.expect("event_service is required"),
-            event_audit_log_service: self.event_audit_log_service.expect("event_audit_log_service is required"),
             event_type_service: self.event_type_service.expect("event_type_service is required"),
             lead_provenance_service: self.lead_provenance_service.expect("lead_provenance_service is required"),
             lead_provenance_registration_service: self.lead_provenance_registration_service.expect("lead_provenance_registration_service is required"),

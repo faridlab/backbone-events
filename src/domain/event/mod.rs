@@ -12,8 +12,6 @@ pub mod booth_booking_events;
 pub mod booth_booking_event_handlers;
 pub mod event_events;
 pub mod event_event_handlers;
-pub mod event_audit_log_events;
-pub mod event_audit_log_event_handlers;
 pub mod event_type_events;
 pub mod event_type_event_handlers;
 pub mod lead_provenance_events;
@@ -65,8 +63,6 @@ pub use booth_booking_events::{BoothBookingEvent, BoothBookingEventPublisher, No
 pub use booth_booking_event_handlers::BoothBookingEventHandler;
 pub use event_events::{EventEvent, EventEventPublisher, NoopEventEventPublisher};
 pub use event_event_handlers::EventEventHandler;
-pub use event_audit_log_events::{EventAuditLogEvent, EventAuditLogEventPublisher, NoopEventAuditLogEventPublisher};
-pub use event_audit_log_event_handlers::EventAuditLogEventHandler;
 pub use event_type_events::{EventTypeEvent, EventTypeEventPublisher, NoopEventTypeEventPublisher};
 pub use event_type_event_handlers::EventTypeEventHandler;
 pub use lead_provenance_events::{LeadProvenanceEvent, LeadProvenanceEventPublisher, NoopLeadProvenanceEventPublisher};

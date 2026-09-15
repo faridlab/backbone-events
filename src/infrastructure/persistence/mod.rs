@@ -4,13 +4,11 @@
 //!
 //! Uses backbone-orm's `DatabaseOperations<T>` trait.
 
-pub mod audit;
 mod booth_category_repository;
 mod booth_repository;
 mod type_booth_repository;
 mod booth_booking_repository;
 mod event_repository;
-mod event_audit_log_repository;
 mod event_type_repository;
 mod lead_provenance_repository;
 mod lead_provenance_registration_repository;
@@ -34,6 +32,9 @@ mod type_mail_repository;
 
 // Custom persistence modules
 // <<< CUSTOM
+// The shared-audit-trail funnel. Inside the markers so a regeneration
+// cannot drop the declaration and leave the file orphaned.
+pub mod audit;
 // Hand-written repositories carrying the verbs' transactional SQL
 // (user-owned; see metaphor.codegen.yaml). The generated CRUD
 // repositories keep their own files; these are the verb layer's.
@@ -51,7 +52,6 @@ pub use booth_repository::BoothRepository;
 pub use type_booth_repository::TypeBoothRepository;
 pub use booth_booking_repository::BoothBookingRepository;
 pub use event_repository::EventRepository;
-pub use event_audit_log_repository::EventAuditLogRepository;
 pub use event_type_repository::EventTypeRepository;
 pub use lead_provenance_repository::LeadProvenanceRepository;
 pub use lead_provenance_registration_repository::LeadProvenanceRegistrationRepository;

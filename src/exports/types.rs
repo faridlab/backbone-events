@@ -326,64 +326,6 @@ pub struct EventRef {
 }
 
 // ============================================================================
-// EVENTAUDITLOG TYPES
-// ============================================================================
-
-/// Type-safe ID for EventAuditLog
-///
-/// Use this instead of raw Uuid for type safety across modules.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct EventAuditLogId(pub Uuid);
-
-impl EventAuditLogId {
-    pub fn new(id: Uuid) -> Self {
-        Self(id)
-    }
-
-    pub fn into_inner(self) -> Uuid {
-        self.0
-    }
-}
-
-impl From<Uuid> for EventAuditLogId {
-    fn from(id: Uuid) -> Self {
-        Self(id)
-    }
-}
-
-impl From<EventAuditLogId> for Uuid {
-    fn from(id: EventAuditLogId) -> Self {
-        id.0
-    }
-}
-
-/// Data transfer object for EventAuditLog
-///
-/// This is the public representation of EventAuditLog for other modules.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventAuditLogDto {
-    pub id: EventAuditLogId,
-    pub event: EventAuditEvent,
-    pub actor: Option<Uuid>,
-    pub subject_type: Option<String>,
-    pub subject_id: Option<Uuid>,
-    pub detail: Option<serde_json::Value>,
-    pub occurred_at: DateTime<Utc>,
-}
-
-/// Summary view of EventAuditLog for list displays
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventAuditLogSummary {
-    pub id: EventAuditLogId,
-}
-
-/// Reference to EventAuditLog for foreign key relationships
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EventAuditLogRef {
-    pub id: EventAuditLogId,
-}
-
-// ============================================================================
 // EVENTTYPE TYPES
 // ============================================================================
 

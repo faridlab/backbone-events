@@ -10,7 +10,6 @@ pub mod booth_handler;
 pub mod type_booth_handler;
 pub mod booth_booking_handler;
 pub mod event_handler;
-pub mod event_audit_log_handler;
 pub mod event_type_handler;
 pub mod lead_provenance_handler;
 pub mod lead_provenance_registration_handler;
@@ -48,7 +47,6 @@ pub use booth_handler::{create_booth_routes, create_booth_read_routes, create_bo
 pub use type_booth_handler::{create_type_booth_routes, create_type_booth_read_routes, create_type_booth_write_routes};
 pub use booth_booking_handler::{create_booth_booking_routes, create_booth_booking_read_routes, create_booth_booking_write_routes};
 pub use event_handler::{create_event_routes, create_event_read_routes, create_event_write_routes};
-pub use event_audit_log_handler::{create_event_audit_log_routes, create_event_audit_log_read_routes, create_event_audit_log_write_routes};
 pub use event_type_handler::{create_event_type_routes, create_event_type_read_routes, create_event_type_write_routes};
 pub use lead_provenance_handler::{create_lead_provenance_routes, create_lead_provenance_read_routes, create_lead_provenance_write_routes};
 pub use lead_provenance_registration_handler::{create_lead_provenance_registration_routes, create_lead_provenance_registration_read_routes, create_lead_provenance_registration_write_routes};

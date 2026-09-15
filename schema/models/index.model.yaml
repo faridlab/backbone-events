@@ -112,7 +112,6 @@ imports:
   - mail_registration.model.yaml    # MailRegistration (the receipt grain)
   - mail_slot.model.yaml            # MailSlot (slot-grain scheduler child)
   - type_mail.model.yaml            # TypeMail (template mail line)
-  - event_audit_log.model.yaml      # EventAuditLog
   - booth.model.yaml                # BoothCategory, Booth, TypeBooth (v0.2.0)
   - booth_booking.model.yaml        # BoothBooking (the reified booking, v0.2.0)
   - lead_rule.model.yaml            # LeadRule, LeadRulePredicate (v0.2.0)
