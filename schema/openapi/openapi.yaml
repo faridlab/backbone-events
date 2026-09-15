@@ -7,7 +7,7 @@ info:
     This API provides 11 standard CRUD endpoints for each model.
 
 servers:
-  - url: http://localhost:3000
+  - url: /
     description: Development server
 
 tags:
@@ -65,7 +65,7 @@ tags:
     description: TypeMail management endpoints
 
 paths:
-  /api/v1/booth_categories:
+  /api/v1/event/booth_categories:
     get:
       tags:
         - BoothCategories
@@ -111,7 +111,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/booth_categories/{id}:
+  /api/v1/event/booth_categories/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -183,7 +183,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/booth_categories/bulk:
+  /api/v1/event/booth_categories/bulk:
     post:
       tags:
         - BoothCategories
@@ -275,7 +275,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_categories/upsert:
+  /api/v1/event/booth_categories/upsert:
     post:
       tags:
         - BoothCategories
@@ -305,7 +305,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoothCategory'
 
-  /api/v1/booth_categories/trash:
+  /api/v1/event/booth_categories/trash:
     get:
       tags:
         - BoothCategories
@@ -322,7 +322,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoothCategoryList'
 
-  /api/v1/booth_categories/{id}/restore:
+  /api/v1/event/booth_categories/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -340,7 +340,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/booth_categories/empty:
+  /api/v1/event/booth_categories/empty:
     delete:
       tags:
         - BoothCategories
@@ -357,7 +357,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/booth_categories/delete/bulk:
+  /api/v1/event/booth_categories/delete/bulk:
     post:
       tags:
         - BoothCategories
@@ -377,7 +377,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_categories/restore/bulk:
+  /api/v1/event/booth_categories/restore/bulk:
     post:
       tags:
         - BoothCategories
@@ -395,7 +395,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_categories/restore/all:
+  /api/v1/event/booth_categories/restore/all:
     post:
       tags:
         - BoothCategories
@@ -411,7 +411,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/booth_categories/trash/bulk:
+  /api/v1/event/booth_categories/trash/bulk:
     delete:
       tags:
         - BoothCategories
@@ -431,7 +431,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booths:
+  /api/v1/event/booths:
     get:
       tags:
         - Booths
@@ -477,7 +477,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/booths/{id}:
+  /api/v1/event/booths/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -549,7 +549,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/booths/bulk:
+  /api/v1/event/booths/bulk:
     post:
       tags:
         - Booths
@@ -641,7 +641,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booths/upsert:
+  /api/v1/event/booths/upsert:
     post:
       tags:
         - Booths
@@ -671,7 +671,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Booth'
 
-  /api/v1/booths/trash:
+  /api/v1/event/booths/trash:
     get:
       tags:
         - Booths
@@ -688,7 +688,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoothList'
 
-  /api/v1/booths/{id}/restore:
+  /api/v1/event/booths/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -706,7 +706,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/booths/empty:
+  /api/v1/event/booths/empty:
     delete:
       tags:
         - Booths
@@ -723,7 +723,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/booths/delete/bulk:
+  /api/v1/event/booths/delete/bulk:
     post:
       tags:
         - Booths
@@ -743,7 +743,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booths/restore/bulk:
+  /api/v1/event/booths/restore/bulk:
     post:
       tags:
         - Booths
@@ -761,7 +761,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booths/restore/all:
+  /api/v1/event/booths/restore/all:
     post:
       tags:
         - Booths
@@ -777,7 +777,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/booths/trash/bulk:
+  /api/v1/event/booths/trash/bulk:
     delete:
       tags:
         - Booths
@@ -797,7 +797,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_booths:
+  /api/v1/event/type_booths:
     get:
       tags:
         - TypeBooths
@@ -843,7 +843,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/type_booths/{id}:
+  /api/v1/event/type_booths/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -915,7 +915,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/type_booths/bulk:
+  /api/v1/event/type_booths/bulk:
     post:
       tags:
         - TypeBooths
@@ -1007,7 +1007,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_booths/upsert:
+  /api/v1/event/type_booths/upsert:
     post:
       tags:
         - TypeBooths
@@ -1037,7 +1037,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TypeBooth'
 
-  /api/v1/type_booths/trash:
+  /api/v1/event/type_booths/trash:
     get:
       tags:
         - TypeBooths
@@ -1054,7 +1054,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TypeBoothList'
 
-  /api/v1/type_booths/{id}/restore:
+  /api/v1/event/type_booths/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -1072,7 +1072,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/type_booths/empty:
+  /api/v1/event/type_booths/empty:
     delete:
       tags:
         - TypeBooths
@@ -1089,7 +1089,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/type_booths/delete/bulk:
+  /api/v1/event/type_booths/delete/bulk:
     post:
       tags:
         - TypeBooths
@@ -1109,7 +1109,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_booths/restore/bulk:
+  /api/v1/event/type_booths/restore/bulk:
     post:
       tags:
         - TypeBooths
@@ -1127,7 +1127,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_booths/restore/all:
+  /api/v1/event/type_booths/restore/all:
     post:
       tags:
         - TypeBooths
@@ -1143,7 +1143,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/type_booths/trash/bulk:
+  /api/v1/event/type_booths/trash/bulk:
     delete:
       tags:
         - TypeBooths
@@ -1163,7 +1163,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_bookings:
+  /api/v1/event/booth_bookings:
     get:
       tags:
         - BoothBookings
@@ -1209,7 +1209,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/booth_bookings/{id}:
+  /api/v1/event/booth_bookings/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -1281,7 +1281,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/booth_bookings/bulk:
+  /api/v1/event/booth_bookings/bulk:
     post:
       tags:
         - BoothBookings
@@ -1373,7 +1373,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_bookings/upsert:
+  /api/v1/event/booth_bookings/upsert:
     post:
       tags:
         - BoothBookings
@@ -1403,7 +1403,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoothBooking'
 
-  /api/v1/booth_bookings/trash:
+  /api/v1/event/booth_bookings/trash:
     get:
       tags:
         - BoothBookings
@@ -1420,7 +1420,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/BoothBookingList'
 
-  /api/v1/booth_bookings/{id}/restore:
+  /api/v1/event/booth_bookings/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -1438,7 +1438,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/booth_bookings/empty:
+  /api/v1/event/booth_bookings/empty:
     delete:
       tags:
         - BoothBookings
@@ -1455,7 +1455,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/booth_bookings/delete/bulk:
+  /api/v1/event/booth_bookings/delete/bulk:
     post:
       tags:
         - BoothBookings
@@ -1475,7 +1475,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_bookings/restore/bulk:
+  /api/v1/event/booth_bookings/restore/bulk:
     post:
       tags:
         - BoothBookings
@@ -1493,7 +1493,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/booth_bookings/restore/all:
+  /api/v1/event/booth_bookings/restore/all:
     post:
       tags:
         - BoothBookings
@@ -1509,7 +1509,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/booth_bookings/trash/bulk:
+  /api/v1/event/booth_bookings/trash/bulk:
     delete:
       tags:
         - BoothBookings
@@ -1529,7 +1529,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/events:
+  /api/v1/event/events:
     get:
       tags:
         - Events
@@ -1575,7 +1575,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/events/{id}:
+  /api/v1/event/events/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -1647,7 +1647,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/events/bulk:
+  /api/v1/event/events/bulk:
     post:
       tags:
         - Events
@@ -1739,7 +1739,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/events/upsert:
+  /api/v1/event/events/upsert:
     post:
       tags:
         - Events
@@ -1769,7 +1769,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Event'
 
-  /api/v1/events/trash:
+  /api/v1/event/events/trash:
     get:
       tags:
         - Events
@@ -1786,7 +1786,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventList'
 
-  /api/v1/events/{id}/restore:
+  /api/v1/event/events/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -1804,7 +1804,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/events/empty:
+  /api/v1/event/events/empty:
     delete:
       tags:
         - Events
@@ -1821,7 +1821,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/events/delete/bulk:
+  /api/v1/event/events/delete/bulk:
     post:
       tags:
         - Events
@@ -1841,7 +1841,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/events/restore/bulk:
+  /api/v1/event/events/restore/bulk:
     post:
       tags:
         - Events
@@ -1859,7 +1859,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/events/restore/all:
+  /api/v1/event/events/restore/all:
     post:
       tags:
         - Events
@@ -1875,7 +1875,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/events/trash/bulk:
+  /api/v1/event/events/trash/bulk:
     delete:
       tags:
         - Events
@@ -1895,7 +1895,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_audit_logs:
+  /api/v1/event/event_audit_logs:
     get:
       tags:
         - EventAuditLogs
@@ -1941,7 +1941,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/event_audit_logs/{id}:
+  /api/v1/event/event_audit_logs/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -2013,7 +2013,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/event_audit_logs/bulk:
+  /api/v1/event/event_audit_logs/bulk:
     post:
       tags:
         - EventAuditLogs
@@ -2105,7 +2105,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_audit_logs/upsert:
+  /api/v1/event/event_audit_logs/upsert:
     post:
       tags:
         - EventAuditLogs
@@ -2135,7 +2135,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventAuditLog'
 
-  /api/v1/event_audit_logs/trash:
+  /api/v1/event/event_audit_logs/trash:
     get:
       tags:
         - EventAuditLogs
@@ -2152,7 +2152,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventAuditLogList'
 
-  /api/v1/event_audit_logs/{id}/restore:
+  /api/v1/event/event_audit_logs/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -2170,7 +2170,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/event_audit_logs/empty:
+  /api/v1/event/event_audit_logs/empty:
     delete:
       tags:
         - EventAuditLogs
@@ -2187,7 +2187,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/event_audit_logs/delete/bulk:
+  /api/v1/event/event_audit_logs/delete/bulk:
     post:
       tags:
         - EventAuditLogs
@@ -2207,7 +2207,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_audit_logs/restore/bulk:
+  /api/v1/event/event_audit_logs/restore/bulk:
     post:
       tags:
         - EventAuditLogs
@@ -2225,7 +2225,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_audit_logs/restore/all:
+  /api/v1/event/event_audit_logs/restore/all:
     post:
       tags:
         - EventAuditLogs
@@ -2241,7 +2241,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/event_audit_logs/trash/bulk:
+  /api/v1/event/event_audit_logs/trash/bulk:
     delete:
       tags:
         - EventAuditLogs
@@ -2261,7 +2261,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_types:
+  /api/v1/event/event_types:
     get:
       tags:
         - EventTypes
@@ -2307,7 +2307,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/event_types/{id}:
+  /api/v1/event/event_types/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -2379,7 +2379,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/event_types/bulk:
+  /api/v1/event/event_types/bulk:
     post:
       tags:
         - EventTypes
@@ -2471,7 +2471,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_types/upsert:
+  /api/v1/event/event_types/upsert:
     post:
       tags:
         - EventTypes
@@ -2501,7 +2501,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventType'
 
-  /api/v1/event_types/trash:
+  /api/v1/event/event_types/trash:
     get:
       tags:
         - EventTypes
@@ -2518,7 +2518,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventTypeList'
 
-  /api/v1/event_types/{id}/restore:
+  /api/v1/event/event_types/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -2536,7 +2536,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/event_types/empty:
+  /api/v1/event/event_types/empty:
     delete:
       tags:
         - EventTypes
@@ -2553,7 +2553,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/event_types/delete/bulk:
+  /api/v1/event/event_types/delete/bulk:
     post:
       tags:
         - EventTypes
@@ -2573,7 +2573,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_types/restore/bulk:
+  /api/v1/event/event_types/restore/bulk:
     post:
       tags:
         - EventTypes
@@ -2591,7 +2591,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/event_types/restore/all:
+  /api/v1/event/event_types/restore/all:
     post:
       tags:
         - EventTypes
@@ -2607,7 +2607,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/event_types/trash/bulk:
+  /api/v1/event/event_types/trash/bulk:
     delete:
       tags:
         - EventTypes
@@ -2627,7 +2627,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenances:
+  /api/v1/event/lead_provenances:
     get:
       tags:
         - LeadProvenances
@@ -2673,7 +2673,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/lead_provenances/{id}:
+  /api/v1/event/lead_provenances/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -2745,7 +2745,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_provenances/bulk:
+  /api/v1/event/lead_provenances/bulk:
     post:
       tags:
         - LeadProvenances
@@ -2837,7 +2837,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenances/upsert:
+  /api/v1/event/lead_provenances/upsert:
     post:
       tags:
         - LeadProvenances
@@ -2867,7 +2867,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadProvenance'
 
-  /api/v1/lead_provenances/trash:
+  /api/v1/event/lead_provenances/trash:
     get:
       tags:
         - LeadProvenances
@@ -2884,7 +2884,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadProvenanceList'
 
-  /api/v1/lead_provenances/{id}/restore:
+  /api/v1/event/lead_provenances/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -2902,7 +2902,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_provenances/empty:
+  /api/v1/event/lead_provenances/empty:
     delete:
       tags:
         - LeadProvenances
@@ -2919,7 +2919,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/lead_provenances/delete/bulk:
+  /api/v1/event/lead_provenances/delete/bulk:
     post:
       tags:
         - LeadProvenances
@@ -2939,7 +2939,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenances/restore/bulk:
+  /api/v1/event/lead_provenances/restore/bulk:
     post:
       tags:
         - LeadProvenances
@@ -2957,7 +2957,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenances/restore/all:
+  /api/v1/event/lead_provenances/restore/all:
     post:
       tags:
         - LeadProvenances
@@ -2973,7 +2973,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/lead_provenances/trash/bulk:
+  /api/v1/event/lead_provenances/trash/bulk:
     delete:
       tags:
         - LeadProvenances
@@ -2993,7 +2993,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenance_registrations:
+  /api/v1/event/lead_provenance_registrations:
     get:
       tags:
         - LeadProvenanceRegistrations
@@ -3039,7 +3039,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/lead_provenance_registrations/{id}:
+  /api/v1/event/lead_provenance_registrations/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -3111,7 +3111,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_provenance_registrations/bulk:
+  /api/v1/event/lead_provenance_registrations/bulk:
     post:
       tags:
         - LeadProvenanceRegistrations
@@ -3203,7 +3203,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenance_registrations/upsert:
+  /api/v1/event/lead_provenance_registrations/upsert:
     post:
       tags:
         - LeadProvenanceRegistrations
@@ -3233,7 +3233,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadProvenanceRegistration'
 
-  /api/v1/lead_provenance_registrations/trash:
+  /api/v1/event/lead_provenance_registrations/trash:
     get:
       tags:
         - LeadProvenanceRegistrations
@@ -3250,7 +3250,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadProvenanceRegistrationList'
 
-  /api/v1/lead_provenance_registrations/{id}/restore:
+  /api/v1/event/lead_provenance_registrations/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -3268,7 +3268,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_provenance_registrations/empty:
+  /api/v1/event/lead_provenance_registrations/empty:
     delete:
       tags:
         - LeadProvenanceRegistrations
@@ -3285,7 +3285,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/lead_provenance_registrations/delete/bulk:
+  /api/v1/event/lead_provenance_registrations/delete/bulk:
     post:
       tags:
         - LeadProvenanceRegistrations
@@ -3305,7 +3305,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenance_registrations/restore/bulk:
+  /api/v1/event/lead_provenance_registrations/restore/bulk:
     post:
       tags:
         - LeadProvenanceRegistrations
@@ -3323,7 +3323,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_provenance_registrations/restore/all:
+  /api/v1/event/lead_provenance_registrations/restore/all:
     post:
       tags:
         - LeadProvenanceRegistrations
@@ -3339,7 +3339,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/lead_provenance_registrations/trash/bulk:
+  /api/v1/event/lead_provenance_registrations/trash/bulk:
     delete:
       tags:
         - LeadProvenanceRegistrations
@@ -3359,7 +3359,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_requests:
+  /api/v1/event/lead_requests:
     get:
       tags:
         - LeadRequests
@@ -3405,7 +3405,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/lead_requests/{id}:
+  /api/v1/event/lead_requests/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -3477,7 +3477,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_requests/bulk:
+  /api/v1/event/lead_requests/bulk:
     post:
       tags:
         - LeadRequests
@@ -3569,7 +3569,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_requests/upsert:
+  /api/v1/event/lead_requests/upsert:
     post:
       tags:
         - LeadRequests
@@ -3599,7 +3599,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadRequest'
 
-  /api/v1/lead_requests/trash:
+  /api/v1/event/lead_requests/trash:
     get:
       tags:
         - LeadRequests
@@ -3616,7 +3616,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadRequestList'
 
-  /api/v1/lead_requests/{id}/restore:
+  /api/v1/event/lead_requests/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -3634,7 +3634,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_requests/empty:
+  /api/v1/event/lead_requests/empty:
     delete:
       tags:
         - LeadRequests
@@ -3651,7 +3651,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/lead_requests/delete/bulk:
+  /api/v1/event/lead_requests/delete/bulk:
     post:
       tags:
         - LeadRequests
@@ -3671,7 +3671,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_requests/restore/bulk:
+  /api/v1/event/lead_requests/restore/bulk:
     post:
       tags:
         - LeadRequests
@@ -3689,7 +3689,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_requests/restore/all:
+  /api/v1/event/lead_requests/restore/all:
     post:
       tags:
         - LeadRequests
@@ -3705,7 +3705,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/lead_requests/trash/bulk:
+  /api/v1/event/lead_requests/trash/bulk:
     delete:
       tags:
         - LeadRequests
@@ -3725,7 +3725,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rules:
+  /api/v1/event/lead_rules:
     get:
       tags:
         - LeadRules
@@ -3771,7 +3771,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/lead_rules/{id}:
+  /api/v1/event/lead_rules/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -3843,7 +3843,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_rules/bulk:
+  /api/v1/event/lead_rules/bulk:
     post:
       tags:
         - LeadRules
@@ -3935,7 +3935,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rules/upsert:
+  /api/v1/event/lead_rules/upsert:
     post:
       tags:
         - LeadRules
@@ -3965,7 +3965,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadRule'
 
-  /api/v1/lead_rules/trash:
+  /api/v1/event/lead_rules/trash:
     get:
       tags:
         - LeadRules
@@ -3982,7 +3982,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadRuleList'
 
-  /api/v1/lead_rules/{id}/restore:
+  /api/v1/event/lead_rules/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -4000,7 +4000,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_rules/empty:
+  /api/v1/event/lead_rules/empty:
     delete:
       tags:
         - LeadRules
@@ -4017,7 +4017,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/lead_rules/delete/bulk:
+  /api/v1/event/lead_rules/delete/bulk:
     post:
       tags:
         - LeadRules
@@ -4037,7 +4037,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rules/restore/bulk:
+  /api/v1/event/lead_rules/restore/bulk:
     post:
       tags:
         - LeadRules
@@ -4055,7 +4055,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rules/restore/all:
+  /api/v1/event/lead_rules/restore/all:
     post:
       tags:
         - LeadRules
@@ -4071,7 +4071,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/lead_rules/trash/bulk:
+  /api/v1/event/lead_rules/trash/bulk:
     delete:
       tags:
         - LeadRules
@@ -4091,7 +4091,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rule_predicates:
+  /api/v1/event/lead_rule_predicates:
     get:
       tags:
         - LeadRulePredicates
@@ -4137,7 +4137,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/lead_rule_predicates/{id}:
+  /api/v1/event/lead_rule_predicates/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -4209,7 +4209,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_rule_predicates/bulk:
+  /api/v1/event/lead_rule_predicates/bulk:
     post:
       tags:
         - LeadRulePredicates
@@ -4301,7 +4301,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rule_predicates/upsert:
+  /api/v1/event/lead_rule_predicates/upsert:
     post:
       tags:
         - LeadRulePredicates
@@ -4331,7 +4331,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadRulePredicate'
 
-  /api/v1/lead_rule_predicates/trash:
+  /api/v1/event/lead_rule_predicates/trash:
     get:
       tags:
         - LeadRulePredicates
@@ -4348,7 +4348,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadRulePredicateList'
 
-  /api/v1/lead_rule_predicates/{id}/restore:
+  /api/v1/event/lead_rule_predicates/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -4366,7 +4366,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/lead_rule_predicates/empty:
+  /api/v1/event/lead_rule_predicates/empty:
     delete:
       tags:
         - LeadRulePredicates
@@ -4383,7 +4383,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/lead_rule_predicates/delete/bulk:
+  /api/v1/event/lead_rule_predicates/delete/bulk:
     post:
       tags:
         - LeadRulePredicates
@@ -4403,7 +4403,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rule_predicates/restore/bulk:
+  /api/v1/event/lead_rule_predicates/restore/bulk:
     post:
       tags:
         - LeadRulePredicates
@@ -4421,7 +4421,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/lead_rule_predicates/restore/all:
+  /api/v1/event/lead_rule_predicates/restore/all:
     post:
       tags:
         - LeadRulePredicates
@@ -4437,7 +4437,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/lead_rule_predicates/trash/bulk:
+  /api/v1/event/lead_rule_predicates/trash/bulk:
     delete:
       tags:
         - LeadRulePredicates
@@ -4457,7 +4457,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mails:
+  /api/v1/event/mails:
     get:
       tags:
         - Mails
@@ -4503,7 +4503,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/mails/{id}:
+  /api/v1/event/mails/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -4575,7 +4575,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/mails/bulk:
+  /api/v1/event/mails/bulk:
     post:
       tags:
         - Mails
@@ -4667,7 +4667,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mails/upsert:
+  /api/v1/event/mails/upsert:
     post:
       tags:
         - Mails
@@ -4697,7 +4697,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Mail'
 
-  /api/v1/mails/trash:
+  /api/v1/event/mails/trash:
     get:
       tags:
         - Mails
@@ -4714,7 +4714,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailList'
 
-  /api/v1/mails/{id}/restore:
+  /api/v1/event/mails/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -4732,7 +4732,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/mails/empty:
+  /api/v1/event/mails/empty:
     delete:
       tags:
         - Mails
@@ -4749,7 +4749,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/mails/delete/bulk:
+  /api/v1/event/mails/delete/bulk:
     post:
       tags:
         - Mails
@@ -4769,7 +4769,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mails/restore/bulk:
+  /api/v1/event/mails/restore/bulk:
     post:
       tags:
         - Mails
@@ -4787,7 +4787,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mails/restore/all:
+  /api/v1/event/mails/restore/all:
     post:
       tags:
         - Mails
@@ -4803,7 +4803,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/mails/trash/bulk:
+  /api/v1/event/mails/trash/bulk:
     delete:
       tags:
         - Mails
@@ -4823,7 +4823,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_registrations:
+  /api/v1/event/mail_registrations:
     get:
       tags:
         - MailRegistrations
@@ -4869,7 +4869,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/mail_registrations/{id}:
+  /api/v1/event/mail_registrations/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -4941,7 +4941,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/mail_registrations/bulk:
+  /api/v1/event/mail_registrations/bulk:
     post:
       tags:
         - MailRegistrations
@@ -5033,7 +5033,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_registrations/upsert:
+  /api/v1/event/mail_registrations/upsert:
     post:
       tags:
         - MailRegistrations
@@ -5063,7 +5063,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailRegistration'
 
-  /api/v1/mail_registrations/trash:
+  /api/v1/event/mail_registrations/trash:
     get:
       tags:
         - MailRegistrations
@@ -5080,7 +5080,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailRegistrationList'
 
-  /api/v1/mail_registrations/{id}/restore:
+  /api/v1/event/mail_registrations/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -5098,7 +5098,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/mail_registrations/empty:
+  /api/v1/event/mail_registrations/empty:
     delete:
       tags:
         - MailRegistrations
@@ -5115,7 +5115,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/mail_registrations/delete/bulk:
+  /api/v1/event/mail_registrations/delete/bulk:
     post:
       tags:
         - MailRegistrations
@@ -5135,7 +5135,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_registrations/restore/bulk:
+  /api/v1/event/mail_registrations/restore/bulk:
     post:
       tags:
         - MailRegistrations
@@ -5153,7 +5153,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_registrations/restore/all:
+  /api/v1/event/mail_registrations/restore/all:
     post:
       tags:
         - MailRegistrations
@@ -5169,7 +5169,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/mail_registrations/trash/bulk:
+  /api/v1/event/mail_registrations/trash/bulk:
     delete:
       tags:
         - MailRegistrations
@@ -5189,7 +5189,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_slots:
+  /api/v1/event/mail_slots:
     get:
       tags:
         - MailSlots
@@ -5235,7 +5235,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/mail_slots/{id}:
+  /api/v1/event/mail_slots/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -5307,7 +5307,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/mail_slots/bulk:
+  /api/v1/event/mail_slots/bulk:
     post:
       tags:
         - MailSlots
@@ -5399,7 +5399,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_slots/upsert:
+  /api/v1/event/mail_slots/upsert:
     post:
       tags:
         - MailSlots
@@ -5429,7 +5429,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailSlot'
 
-  /api/v1/mail_slots/trash:
+  /api/v1/event/mail_slots/trash:
     get:
       tags:
         - MailSlots
@@ -5446,7 +5446,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailSlotList'
 
-  /api/v1/mail_slots/{id}/restore:
+  /api/v1/event/mail_slots/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -5464,7 +5464,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/mail_slots/empty:
+  /api/v1/event/mail_slots/empty:
     delete:
       tags:
         - MailSlots
@@ -5481,7 +5481,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/mail_slots/delete/bulk:
+  /api/v1/event/mail_slots/delete/bulk:
     post:
       tags:
         - MailSlots
@@ -5501,7 +5501,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_slots/restore/bulk:
+  /api/v1/event/mail_slots/restore/bulk:
     post:
       tags:
         - MailSlots
@@ -5519,7 +5519,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/mail_slots/restore/all:
+  /api/v1/event/mail_slots/restore/all:
     post:
       tags:
         - MailSlots
@@ -5535,7 +5535,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/mail_slots/trash/bulk:
+  /api/v1/event/mail_slots/trash/bulk:
     delete:
       tags:
         - MailSlots
@@ -5555,7 +5555,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/questions:
+  /api/v1/event/questions:
     get:
       tags:
         - Questions
@@ -5601,7 +5601,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/questions/{id}:
+  /api/v1/event/questions/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -5673,7 +5673,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/questions/bulk:
+  /api/v1/event/questions/bulk:
     post:
       tags:
         - Questions
@@ -5765,7 +5765,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/questions/upsert:
+  /api/v1/event/questions/upsert:
     post:
       tags:
         - Questions
@@ -5795,7 +5795,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Question'
 
-  /api/v1/questions/trash:
+  /api/v1/event/questions/trash:
     get:
       tags:
         - Questions
@@ -5812,7 +5812,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/QuestionList'
 
-  /api/v1/questions/{id}/restore:
+  /api/v1/event/questions/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -5830,7 +5830,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/questions/empty:
+  /api/v1/event/questions/empty:
     delete:
       tags:
         - Questions
@@ -5847,7 +5847,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/questions/delete/bulk:
+  /api/v1/event/questions/delete/bulk:
     post:
       tags:
         - Questions
@@ -5867,7 +5867,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/questions/restore/bulk:
+  /api/v1/event/questions/restore/bulk:
     post:
       tags:
         - Questions
@@ -5885,7 +5885,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/questions/restore/all:
+  /api/v1/event/questions/restore/all:
     post:
       tags:
         - Questions
@@ -5901,7 +5901,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/questions/trash/bulk:
+  /api/v1/event/questions/trash/bulk:
     delete:
       tags:
         - Questions
@@ -5921,7 +5921,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/question_answers:
+  /api/v1/event/question_answers:
     get:
       tags:
         - QuestionAnswers
@@ -5967,7 +5967,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/question_answers/{id}:
+  /api/v1/event/question_answers/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -6039,7 +6039,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/question_answers/bulk:
+  /api/v1/event/question_answers/bulk:
     post:
       tags:
         - QuestionAnswers
@@ -6131,7 +6131,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/question_answers/upsert:
+  /api/v1/event/question_answers/upsert:
     post:
       tags:
         - QuestionAnswers
@@ -6161,7 +6161,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/QuestionAnswer'
 
-  /api/v1/question_answers/trash:
+  /api/v1/event/question_answers/trash:
     get:
       tags:
         - QuestionAnswers
@@ -6178,7 +6178,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/QuestionAnswerList'
 
-  /api/v1/question_answers/{id}/restore:
+  /api/v1/event/question_answers/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -6196,7 +6196,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/question_answers/empty:
+  /api/v1/event/question_answers/empty:
     delete:
       tags:
         - QuestionAnswers
@@ -6213,7 +6213,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/question_answers/delete/bulk:
+  /api/v1/event/question_answers/delete/bulk:
     post:
       tags:
         - QuestionAnswers
@@ -6233,7 +6233,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/question_answers/restore/bulk:
+  /api/v1/event/question_answers/restore/bulk:
     post:
       tags:
         - QuestionAnswers
@@ -6251,7 +6251,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/question_answers/restore/all:
+  /api/v1/event/question_answers/restore/all:
     post:
       tags:
         - QuestionAnswers
@@ -6267,7 +6267,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/question_answers/trash/bulk:
+  /api/v1/event/question_answers/trash/bulk:
     delete:
       tags:
         - QuestionAnswers
@@ -6287,7 +6287,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_questions:
+  /api/v1/event/registration_questions:
     get:
       tags:
         - RegistrationQuestions
@@ -6333,7 +6333,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/registration_questions/{id}:
+  /api/v1/event/registration_questions/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -6405,7 +6405,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/registration_questions/bulk:
+  /api/v1/event/registration_questions/bulk:
     post:
       tags:
         - RegistrationQuestions
@@ -6497,7 +6497,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_questions/upsert:
+  /api/v1/event/registration_questions/upsert:
     post:
       tags:
         - RegistrationQuestions
@@ -6527,7 +6527,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistrationQuestion'
 
-  /api/v1/registration_questions/trash:
+  /api/v1/event/registration_questions/trash:
     get:
       tags:
         - RegistrationQuestions
@@ -6544,7 +6544,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistrationQuestionList'
 
-  /api/v1/registration_questions/{id}/restore:
+  /api/v1/event/registration_questions/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -6562,7 +6562,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/registration_questions/empty:
+  /api/v1/event/registration_questions/empty:
     delete:
       tags:
         - RegistrationQuestions
@@ -6579,7 +6579,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/registration_questions/delete/bulk:
+  /api/v1/event/registration_questions/delete/bulk:
     post:
       tags:
         - RegistrationQuestions
@@ -6599,7 +6599,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_questions/restore/bulk:
+  /api/v1/event/registration_questions/restore/bulk:
     post:
       tags:
         - RegistrationQuestions
@@ -6617,7 +6617,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_questions/restore/all:
+  /api/v1/event/registration_questions/restore/all:
     post:
       tags:
         - RegistrationQuestions
@@ -6633,7 +6633,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/registration_questions/trash/bulk:
+  /api/v1/event/registration_questions/trash/bulk:
     delete:
       tags:
         - RegistrationQuestions
@@ -6653,7 +6653,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registrations:
+  /api/v1/event/registrations:
     get:
       tags:
         - Registrations
@@ -6699,7 +6699,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/registrations/{id}:
+  /api/v1/event/registrations/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -6771,7 +6771,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/registrations/bulk:
+  /api/v1/event/registrations/bulk:
     post:
       tags:
         - Registrations
@@ -6863,7 +6863,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registrations/upsert:
+  /api/v1/event/registrations/upsert:
     post:
       tags:
         - Registrations
@@ -6893,7 +6893,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Registration'
 
-  /api/v1/registrations/trash:
+  /api/v1/event/registrations/trash:
     get:
       tags:
         - Registrations
@@ -6910,7 +6910,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistrationList'
 
-  /api/v1/registrations/{id}/restore:
+  /api/v1/event/registrations/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -6928,7 +6928,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/registrations/empty:
+  /api/v1/event/registrations/empty:
     delete:
       tags:
         - Registrations
@@ -6945,7 +6945,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/registrations/delete/bulk:
+  /api/v1/event/registrations/delete/bulk:
     post:
       tags:
         - Registrations
@@ -6965,7 +6965,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registrations/restore/bulk:
+  /api/v1/event/registrations/restore/bulk:
     post:
       tags:
         - Registrations
@@ -6983,7 +6983,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registrations/restore/all:
+  /api/v1/event/registrations/restore/all:
     post:
       tags:
         - Registrations
@@ -6999,7 +6999,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/registrations/trash/bulk:
+  /api/v1/event/registrations/trash/bulk:
     delete:
       tags:
         - Registrations
@@ -7019,7 +7019,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_answers:
+  /api/v1/event/registration_answers:
     get:
       tags:
         - RegistrationAnswers
@@ -7065,7 +7065,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/registration_answers/{id}:
+  /api/v1/event/registration_answers/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -7137,7 +7137,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/registration_answers/bulk:
+  /api/v1/event/registration_answers/bulk:
     post:
       tags:
         - RegistrationAnswers
@@ -7229,7 +7229,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_answers/upsert:
+  /api/v1/event/registration_answers/upsert:
     post:
       tags:
         - RegistrationAnswers
@@ -7259,7 +7259,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistrationAnswer'
 
-  /api/v1/registration_answers/trash:
+  /api/v1/event/registration_answers/trash:
     get:
       tags:
         - RegistrationAnswers
@@ -7276,7 +7276,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistrationAnswerList'
 
-  /api/v1/registration_answers/{id}/restore:
+  /api/v1/event/registration_answers/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -7294,7 +7294,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/registration_answers/empty:
+  /api/v1/event/registration_answers/empty:
     delete:
       tags:
         - RegistrationAnswers
@@ -7311,7 +7311,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/registration_answers/delete/bulk:
+  /api/v1/event/registration_answers/delete/bulk:
     post:
       tags:
         - RegistrationAnswers
@@ -7331,7 +7331,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_answers/restore/bulk:
+  /api/v1/event/registration_answers/restore/bulk:
     post:
       tags:
         - RegistrationAnswers
@@ -7349,7 +7349,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/registration_answers/restore/all:
+  /api/v1/event/registration_answers/restore/all:
     post:
       tags:
         - RegistrationAnswers
@@ -7365,7 +7365,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/registration_answers/trash/bulk:
+  /api/v1/event/registration_answers/trash/bulk:
     delete:
       tags:
         - RegistrationAnswers
@@ -7385,7 +7385,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/slots:
+  /api/v1/event/slots:
     get:
       tags:
         - Slots
@@ -7431,7 +7431,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/slots/{id}:
+  /api/v1/event/slots/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -7503,7 +7503,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/slots/bulk:
+  /api/v1/event/slots/bulk:
     post:
       tags:
         - Slots
@@ -7595,7 +7595,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/slots/upsert:
+  /api/v1/event/slots/upsert:
     post:
       tags:
         - Slots
@@ -7625,7 +7625,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Slot'
 
-  /api/v1/slots/trash:
+  /api/v1/event/slots/trash:
     get:
       tags:
         - Slots
@@ -7642,7 +7642,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SlotList'
 
-  /api/v1/slots/{id}/restore:
+  /api/v1/event/slots/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -7660,7 +7660,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/slots/empty:
+  /api/v1/event/slots/empty:
     delete:
       tags:
         - Slots
@@ -7677,7 +7677,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/slots/delete/bulk:
+  /api/v1/event/slots/delete/bulk:
     post:
       tags:
         - Slots
@@ -7697,7 +7697,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/slots/restore/bulk:
+  /api/v1/event/slots/restore/bulk:
     post:
       tags:
         - Slots
@@ -7715,7 +7715,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/slots/restore/all:
+  /api/v1/event/slots/restore/all:
     post:
       tags:
         - Slots
@@ -7731,7 +7731,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/slots/trash/bulk:
+  /api/v1/event/slots/trash/bulk:
     delete:
       tags:
         - Slots
@@ -7751,7 +7751,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/stages:
+  /api/v1/event/stages:
     get:
       tags:
         - Stages
@@ -7797,7 +7797,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/stages/{id}:
+  /api/v1/event/stages/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -7869,7 +7869,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/stages/bulk:
+  /api/v1/event/stages/bulk:
     post:
       tags:
         - Stages
@@ -7961,7 +7961,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/stages/upsert:
+  /api/v1/event/stages/upsert:
     post:
       tags:
         - Stages
@@ -7991,7 +7991,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Stage'
 
-  /api/v1/stages/trash:
+  /api/v1/event/stages/trash:
     get:
       tags:
         - Stages
@@ -8008,7 +8008,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StageList'
 
-  /api/v1/stages/{id}/restore:
+  /api/v1/event/stages/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -8026,7 +8026,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/stages/empty:
+  /api/v1/event/stages/empty:
     delete:
       tags:
         - Stages
@@ -8043,7 +8043,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/stages/delete/bulk:
+  /api/v1/event/stages/delete/bulk:
     post:
       tags:
         - Stages
@@ -8063,7 +8063,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/stages/restore/bulk:
+  /api/v1/event/stages/restore/bulk:
     post:
       tags:
         - Stages
@@ -8081,7 +8081,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/stages/restore/all:
+  /api/v1/event/stages/restore/all:
     post:
       tags:
         - Stages
@@ -8097,7 +8097,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/stages/trash/bulk:
+  /api/v1/event/stages/trash/bulk:
     delete:
       tags:
         - Stages
@@ -8117,7 +8117,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tag_categories:
+  /api/v1/event/tag_categories:
     get:
       tags:
         - TagCategories
@@ -8163,7 +8163,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/tag_categories/{id}:
+  /api/v1/event/tag_categories/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -8235,7 +8235,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/tag_categories/bulk:
+  /api/v1/event/tag_categories/bulk:
     post:
       tags:
         - TagCategories
@@ -8327,7 +8327,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tag_categories/upsert:
+  /api/v1/event/tag_categories/upsert:
     post:
       tags:
         - TagCategories
@@ -8357,7 +8357,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCategory'
 
-  /api/v1/tag_categories/trash:
+  /api/v1/event/tag_categories/trash:
     get:
       tags:
         - TagCategories
@@ -8374,7 +8374,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCategoryList'
 
-  /api/v1/tag_categories/{id}/restore:
+  /api/v1/event/tag_categories/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -8392,7 +8392,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/tag_categories/empty:
+  /api/v1/event/tag_categories/empty:
     delete:
       tags:
         - TagCategories
@@ -8409,7 +8409,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/tag_categories/delete/bulk:
+  /api/v1/event/tag_categories/delete/bulk:
     post:
       tags:
         - TagCategories
@@ -8429,7 +8429,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tag_categories/restore/bulk:
+  /api/v1/event/tag_categories/restore/bulk:
     post:
       tags:
         - TagCategories
@@ -8447,7 +8447,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tag_categories/restore/all:
+  /api/v1/event/tag_categories/restore/all:
     post:
       tags:
         - TagCategories
@@ -8463,7 +8463,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/tag_categories/trash/bulk:
+  /api/v1/event/tag_categories/trash/bulk:
     delete:
       tags:
         - TagCategories
@@ -8483,7 +8483,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tags:
+  /api/v1/event/tags:
     get:
       tags:
         - Tags
@@ -8529,7 +8529,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/tags/{id}:
+  /api/v1/event/tags/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -8601,7 +8601,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/tags/bulk:
+  /api/v1/event/tags/bulk:
     post:
       tags:
         - Tags
@@ -8693,7 +8693,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tags/upsert:
+  /api/v1/event/tags/upsert:
     post:
       tags:
         - Tags
@@ -8723,7 +8723,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Tag'
 
-  /api/v1/tags/trash:
+  /api/v1/event/tags/trash:
     get:
       tags:
         - Tags
@@ -8740,7 +8740,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagList'
 
-  /api/v1/tags/{id}/restore:
+  /api/v1/event/tags/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -8758,7 +8758,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/tags/empty:
+  /api/v1/event/tags/empty:
     delete:
       tags:
         - Tags
@@ -8775,7 +8775,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/tags/delete/bulk:
+  /api/v1/event/tags/delete/bulk:
     post:
       tags:
         - Tags
@@ -8795,7 +8795,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tags/restore/bulk:
+  /api/v1/event/tags/restore/bulk:
     post:
       tags:
         - Tags
@@ -8813,7 +8813,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tags/restore/all:
+  /api/v1/event/tags/restore/all:
     post:
       tags:
         - Tags
@@ -8829,7 +8829,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/tags/trash/bulk:
+  /api/v1/event/tags/trash/bulk:
     delete:
       tags:
         - Tags
@@ -8849,7 +8849,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tickets:
+  /api/v1/event/tickets:
     get:
       tags:
         - Tickets
@@ -8895,7 +8895,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/tickets/{id}:
+  /api/v1/event/tickets/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -8967,7 +8967,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/tickets/bulk:
+  /api/v1/event/tickets/bulk:
     post:
       tags:
         - Tickets
@@ -9059,7 +9059,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tickets/upsert:
+  /api/v1/event/tickets/upsert:
     post:
       tags:
         - Tickets
@@ -9089,7 +9089,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Ticket'
 
-  /api/v1/tickets/trash:
+  /api/v1/event/tickets/trash:
     get:
       tags:
         - Tickets
@@ -9106,7 +9106,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TicketList'
 
-  /api/v1/tickets/{id}/restore:
+  /api/v1/event/tickets/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -9124,7 +9124,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/tickets/empty:
+  /api/v1/event/tickets/empty:
     delete:
       tags:
         - Tickets
@@ -9141,7 +9141,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/tickets/delete/bulk:
+  /api/v1/event/tickets/delete/bulk:
     post:
       tags:
         - Tickets
@@ -9161,7 +9161,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tickets/restore/bulk:
+  /api/v1/event/tickets/restore/bulk:
     post:
       tags:
         - Tickets
@@ -9179,7 +9179,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/tickets/restore/all:
+  /api/v1/event/tickets/restore/all:
     post:
       tags:
         - Tickets
@@ -9195,7 +9195,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/tickets/trash/bulk:
+  /api/v1/event/tickets/trash/bulk:
     delete:
       tags:
         - Tickets
@@ -9215,7 +9215,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_mails:
+  /api/v1/event/type_mails:
     get:
       tags:
         - TypeMails
@@ -9261,7 +9261,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/v1/type_mails/{id}:
+  /api/v1/event/type_mails/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
 
@@ -9333,7 +9333,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/type_mails/bulk:
+  /api/v1/event/type_mails/bulk:
     post:
       tags:
         - TypeMails
@@ -9425,7 +9425,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_mails/upsert:
+  /api/v1/event/type_mails/upsert:
     post:
       tags:
         - TypeMails
@@ -9455,7 +9455,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TypeMail'
 
-  /api/v1/type_mails/trash:
+  /api/v1/event/type_mails/trash:
     get:
       tags:
         - TypeMails
@@ -9472,7 +9472,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TypeMailList'
 
-  /api/v1/type_mails/{id}/restore:
+  /api/v1/event/type_mails/{id}/restore:
     parameters:
       - $ref: '#/components/parameters/IdParam'
     post:
@@ -9490,7 +9490,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/v1/type_mails/empty:
+  /api/v1/event/type_mails/empty:
     delete:
       tags:
         - TypeMails
@@ -9507,7 +9507,7 @@ paths:
                   deleted_count:
                     type: integer
 
-  /api/v1/type_mails/delete/bulk:
+  /api/v1/event/type_mails/delete/bulk:
     post:
       tags:
         - TypeMails
@@ -9527,7 +9527,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_mails/restore/bulk:
+  /api/v1/event/type_mails/restore/bulk:
     post:
       tags:
         - TypeMails
@@ -9545,7 +9545,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /api/v1/type_mails/restore/all:
+  /api/v1/event/type_mails/restore/all:
     post:
       tags:
         - TypeMails
@@ -9561,7 +9561,7 @@ paths:
                 properties:
                   restored: { type: integer }
 
-  /api/v1/type_mails/trash/bulk:
+  /api/v1/event/type_mails/trash/bulk:
     delete:
       tags:
         - TypeMails

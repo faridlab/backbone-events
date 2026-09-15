@@ -17,6 +17,10 @@
 # same change that lands it.
 
 user_owned:
+  # Hand-written files the audit found undeclared; declared so a schema
+  # regeneration cannot delete them.
+  - "src/module.rs"
+
 
   # The module's typed error surface (one enum, HTTP mappings) — shared by
   # every hand service below.
