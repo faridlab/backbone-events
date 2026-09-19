@@ -71,8 +71,20 @@ impl SchedulerRepository {
 
     /// The claim domain: scheduler rows NOT done, DUE, on non-cancel
     /// events, with WORK REMAINING (an eligible registration without
-    /// a sent receipt). `FOR UPDATE SKIP LOCKED` — concurrent hosts
-    /// never double-walk a row.
+    /// a sent receipt).
+    ///
+    /// `FOR UPDATE SKIP LOCKED` selects a disjoint set for two passes
+    /// that overlap IN THIS STATEMENT, and nothing beyond it: the row
+    /// locks end with the statement, so the pass that walks the row
+    /// afterwards holds no claim on it. That is deliberate, because
+    /// the walk enqueues mail through a host port and must not run
+    /// inside a transaction held open across it. What actually keeps
+    /// a concurrent pass from repeating work is the receipt grain:
+    /// `UNIQUE(scheduler_id, registration_id)` on materialization,
+    /// and every send marked `AND NOT mail_sent`. The contract is
+    /// at-least-once, so two passes racing the same row can enqueue a
+    /// duplicate; they cannot lose one, and they cannot double-count
+    /// a receipt.
     pub async fn claim_due(&self, limit: i64) -> Result<Vec<SchedulerRow>, EventError> {
         company_scope::fetch_all_scoped(
             &self.pool,
