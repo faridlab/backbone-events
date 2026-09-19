@@ -206,6 +206,16 @@ user_owned:
   # composing service's tenancy decorator re-declares the fence.
   - "migrations/*strip_tenancy*"
 
+  # Retirement of this module's own audit table: the audited facts moved to
+  # the shared audit trail, so the per-module table and its closed vocabulary
+  # go.
+  - "migrations/*retire_event_audit_log*"
+
+  # The event URL shape guarantee: an external event page must carry a scheme
+  # and a host, the rule both the specification and the model description
+  # already declared as a database CHECK.
+  - "migrations/*event_url_scheme_check*"
+
   # GENERATOR-DEFECT FREEZE, second arm (same pattern as 20005/20017
   # above): the pinned generator numbers migration files alphabetically
   # by table name, which strands four FK constraints AHEAD of the

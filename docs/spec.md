@@ -477,6 +477,7 @@ writer in the module takes them in that order.
 | EBG-5 date_end ≥ date_begin; EBG-10 sale-date order; EBG-8 slot hours | CHECKs | `db` |
 | EBG-6/EBG-9 slots inside event range | service (set-based) + row-level CHECK for the row arm | `both` |
 | EBG-11 per-order cap ≤ min(seats_max, 30) | service pre-check + column CHECK (≥0, ≤30) | `both` |
+| EBG-7 event URL absolute (scheme + host) | column CHECK + service pre-check for the typed field error | `both` |
 | EBG-14..18 ondelete protections | real FKs `ondelete RESTRICT` (answers CASCADE where upstream cascades) | `db` |
 | EBG-19 question kind immutable once answered | service write-guard (procedural: it guards a WRITE PATH, not a value) | `service` + justification note |
 | seat availability (EBB-1) | the verb's FOR UPDATE count-then-insert | `service` + justification note (§5.2) |

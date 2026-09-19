@@ -103,7 +103,7 @@ models:
         description: "Responsible officer — logical ref; arm 3 of the author fallback chain."
       event_url:
         type: url?
-        description: "Officer-set external event page (scheme CHECK at db — EBG-7). No venue-wipe trap, no one-way compute (EVM-10/11 not ported: officer-set plain field)."
+        description: "Officer-set external event page. Absolute or absent: scheme + host, CHECK at db plus a service pre-check for the typed field error (EBG-7). No venue-wipe trap, no one-way compute (EVM-10/11 not ported: officer-set plain field)."
       badge_format:
         type: EventBadgeFormat
         attributes: ["@required", "@default(a4_french_fold)"]
