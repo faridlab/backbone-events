@@ -103,16 +103,31 @@ impl TestDb {
     }
 
     /// Explicit teardown: drop the scratch database entirely.
+    ///
+    /// Fails HARD. A teardown that cannot drop its database leaves an
+    /// `event_seat_*` behind, and a leaked database holds its role's grants, so
+    /// the next run's `DROP ROLE` fails too: one silent failure here becomes a
+    /// scratch estate nobody can clean and a probe that mysteriously cannot
+    /// mint its role. The fenced-runtime probe already carries a workaround for
+    /// exactly that; this is the thing it was working around.
     pub async fn dispose(self) {
-        self.drop_db().await;
+        if let Err(e) = self.drop_db().await {
+            panic!(
+                "scratch database {} could not be dropped: {e}. It is still on the \
+                 scratch postgres holding its role's grants; drop it by hand before \
+                 the next run.",
+                self.name
+            );
+        }
     }
 
-    async fn drop_db(&self) {
+    async fn drop_db(&self) -> Result<(), sqlx::Error> {
         // FORCE: the connected probe pool may still hold an idle
         // session.
-        let _ = sqlx::query(&format!(r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE)"#, self.name))
+        sqlx::query(&format!(r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE)"#, self.name))
             .execute(&self.admin)
-            .await;
+            .await
+            .map(|_| ())
     }
 }
 
@@ -121,28 +136,109 @@ impl Drop for TestDb {
         let name = self.name.clone();
         let url = admin_url();
         // Leak-guard teardown for panicking probes; dispose() is the
-        // happy path.
-        std::thread::spawn(move || {
+        // happy path. JOINED, not detached: a detached thread racing the test
+        // binary's exit loses, and the database it was halfway through dropping
+        // survives with nothing said about it.
+        let guard = std::thread::spawn(move || {
             if let Ok(rt) = tokio::runtime::Builder::new_current_thread().enable_all().build() {
                 rt.block_on(async move {
-                    if let Ok(admin) = sqlx::PgPool::connect(&url).await {
-                        let _ = sqlx::query(&format!(
+                    let admin = match sqlx::PgPool::connect(&url).await {
+                        Ok(admin) => Some(admin),
+                        Err(e) => {
+                            eprintln!(
+                                "LEAKED scratch database {name}: cannot reach the admin \
+                                 database to drop it ({e})."
+                            );
+                            None
+                        }
+                    };
+                    if let Some(admin) = admin {
+                        // Best-effort by design (a panicking probe is already
+                        // failing), but never silent: a leaked database is the
+                        // thing the next run trips over.
+                        if let Err(e) = sqlx::query(&format!(
                             r#"DROP DATABASE IF EXISTS "{name}" WITH (FORCE)"#
                         ))
                         .execute(&admin)
-                        .await;
+                        .await
+                        {
+                            eprintln!(
+                                "LEAKED scratch database {name}: drop failed ({e}). \
+                                 Remove it by hand or the next run's DROP ROLE will fail."
+                            );
+                        }
                     }
                 });
             }
         });
+        if guard.join().is_err() {
+            eprintln!(
+                "LEAKED scratch database {}: the teardown thread panicked. Remove it \
+                 by hand or the next run's DROP ROLE will fail.",
+                self.name
+            );
+        }
     }
 }
 
-/// Apply this module's migrations with a raw SQL file runner (sorted
-/// `.up.sql` order — the module's files are self-contained).
-async fn apply_module_migrations(pool: &PgPool, marker: &str) -> Result<(), String> {
-    let manifest = env!("CARGO_MANIFEST_DIR");
-    let dir = format!("{manifest}/migrations");
+/// Where the shared audit trail's schema comes from.
+///
+/// This module records its audited facts on `auditlog.audit_trails`, so a
+/// scratch database carrying only this module's migrations cannot take a
+/// single write: the capture path casts to `audit_event_type`, an enum that
+/// lives in the audit module. The probes therefore apply that module's
+/// migrations first.
+///
+/// The directory is resolved from the dependency graph rather than guessed, so
+/// it is the exact revision this crate is built against: the checkout of the
+/// pinned tag, not a sibling working tree that may be on another branch.
+/// `EVENT_TEST_AUDITLOG_MIGRATIONS` overrides it for a host that has the files
+/// somewhere else.
+fn audit_migrations_dir() -> Result<std::path::PathBuf, String> {
+    if let Ok(dir) = std::env::var("EVENT_TEST_AUDITLOG_MIGRATIONS") {
+        return Ok(std::path::PathBuf::from(dir));
+    }
+    let out = std::process::Command::new(
+        std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()),
+    )
+    .args(["metadata", "--format-version", "1"])
+    .current_dir(env!("CARGO_MANIFEST_DIR"))
+    .output()
+    .map_err(|e| format!("cannot run cargo metadata to locate the audit migrations: {e}"))?;
+    if !out.status.success() {
+        return Err(format!(
+            "cargo metadata failed while locating the audit migrations: {}",
+            String::from_utf8_lossy(&out.stderr)
+        ));
+    }
+    let meta: serde_json::Value = serde_json::from_slice(&out.stdout)
+        .map_err(|e| format!("cargo metadata returned unreadable JSON: {e}"))?;
+    let manifest = meta["packages"]
+        .as_array()
+        .and_then(|pkgs| {
+            pkgs.iter()
+                .find(|p| p["name"] == "backbone-auditlog")
+                .and_then(|p| p["manifest_path"].as_str())
+        })
+        .ok_or_else(|| "backbone-auditlog is not in the dependency graph".to_string())?;
+    let dir = std::path::Path::new(manifest)
+        .parent()
+        .ok_or_else(|| format!("no directory for {manifest}"))?
+        .join("migrations");
+    if !dir.is_dir() {
+        return Err(format!("{} is not a directory", dir.display()));
+    }
+    Ok(dir)
+}
+
+/// Apply the migrations of one directory with a raw SQL file runner (sorted
+/// `.up.sql` order).
+async fn apply_migrations_from(
+    pool: &PgPool,
+    marker: &str,
+    dir: &std::path::Path,
+) -> Result<(), String> {
+    let dir = dir.display().to_string();
     let mut files: Vec<std::path::PathBuf> = match std::fs::read_dir(&dir) {
         Ok(rd) => rd
             .filter_map(|e| e.ok())
@@ -172,6 +268,19 @@ async fn apply_module_migrations(pool: &PgPool, marker: &str) -> Result<(), Stri
         }
     }
     Ok(())
+}
+
+/// Bring one scratch database to the shape a probe runs against: the shared
+/// audit trail first, then this module's own migrations.
+async fn apply_module_migrations(pool: &PgPool, marker: &str) -> Result<(), String> {
+    let audit = audit_migrations_dir().map_err(|e| format!("PROBE-FAIL: {marker}: {e}"))?;
+    apply_migrations_from(pool, marker, &audit).await?;
+    apply_migrations_from(
+        pool,
+        marker,
+        std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/migrations")),
+    )
+    .await
 }
 
 // ── shared fixtures ─────────────────────────────────────────────────────────
