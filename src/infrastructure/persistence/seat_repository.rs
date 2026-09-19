@@ -143,7 +143,7 @@ pub async fn record_audit(
     // Best-effort, as before: this is the fire-and-forget lane and a failed
     // audit must not fail the verb it describes. The scoped execute is gone
     // because the append rides the caller's pool the same way.
-    let _ = crate::infrastructure::persistence::audit::record_audit(
+    let _ = crate::infrastructure::persistence::audit::record_audit_on_pool(
         pool,
         kind,
         actor,
