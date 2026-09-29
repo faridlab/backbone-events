@@ -189,42 +189,18 @@ impl Drop for TestDb {
 /// lives in the audit module. The probes therefore apply that module's
 /// migrations first.
 ///
-/// The directory is resolved from the dependency graph rather than guessed, so
-/// it is the exact revision this crate is built against: the checkout of the
-/// pinned tag, not a sibling working tree that may be on another branch.
-/// `EVENT_TEST_AUDITLOG_MIGRATIONS` overrides it for a host that has the files
-/// somewhere else.
+/// The directory comes from the audit module's published MIGRATIONS_DIR const
+/// (resolved at that crate's compile time, so it is the checkout of the exact
+/// pinned tag). `EVENT_TEST_AUDITLOG_MIGRATIONS` overrides it for a host that
+/// has the files somewhere else.
 fn audit_migrations_dir() -> Result<std::path::PathBuf, String> {
     if let Ok(dir) = std::env::var("EVENT_TEST_AUDITLOG_MIGRATIONS") {
         return Ok(std::path::PathBuf::from(dir));
     }
-    let out = std::process::Command::new(
-        std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()),
-    )
-    .args(["metadata", "--format-version", "1"])
-    .current_dir(env!("CARGO_MANIFEST_DIR"))
-    .output()
-    .map_err(|e| format!("cannot run cargo metadata to locate the audit migrations: {e}"))?;
-    if !out.status.success() {
-        return Err(format!(
-            "cargo metadata failed while locating the audit migrations: {}",
-            String::from_utf8_lossy(&out.stderr)
-        ));
-    }
-    let meta: serde_json::Value = serde_json::from_slice(&out.stdout)
-        .map_err(|e| format!("cargo metadata returned unreadable JSON: {e}"))?;
-    let manifest = meta["packages"]
-        .as_array()
-        .and_then(|pkgs| {
-            pkgs.iter()
-                .find(|p| p["name"] == "backbone-auditlog")
-                .and_then(|p| p["manifest_path"].as_str())
-        })
-        .ok_or_else(|| "backbone-auditlog is not in the dependency graph".to_string())?;
-    let dir = std::path::Path::new(manifest)
-        .parent()
-        .ok_or_else(|| format!("no directory for {manifest}"))?
-        .join("migrations");
+    // The audit module publishes its migrations directory as a compile-time
+    // const, so this lands in the cargo checkout of the pinned tag — the
+    // exact revision in the graph, no cargo-metadata lookup needed.
+    let dir = std::path::PathBuf::from(backbone_auditlog::MIGRATIONS_DIR);
     if !dir.is_dir() {
         return Err(format!("{} is not a directory", dir.display()));
     }

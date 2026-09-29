@@ -149,3 +149,14 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Scratch databases need the audit schema first
+
+This module's tables are audited: writes cast to `audit_event_type` and land
+on `auditlog.audit_trails`, both owned by backbone-auditlog. A scratch
+database carrying only this module's migrations cannot take a single write.
+Apply the audit module's migrations FIRST — it publishes its directory as
+`backbone_auditlog::MIGRATIONS_DIR` (a compile-time const pointing into the
+pinned tag's checkout), which is what this module's probe harness uses. By
+hand: `psql -d <scratch> -f $(...)/backbone-auditlog/migrations/*.up.sql`
+in filename order, then this module's own migrations.
