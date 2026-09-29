@@ -70,6 +70,23 @@ impl SaleSeamRepository {
         &self.pool
     }
 
+    /// The multi-slot flag for each named event, for the routing guard:
+    /// a Cart order cannot choose an attendee's slot, so a multi-slot
+    /// event must route through the direct intake where the attendee
+    /// names their slot (officer-ruled disposition, 2026-09-29).
+    pub async fn multi_slot_flags(
+        &self,
+        event_ids: &[uuid::Uuid],
+    ) -> Result<std::collections::HashMap<uuid::Uuid, bool>, EventError> {
+        let rows: Vec<(uuid::Uuid, bool)> = sqlx::query_as(
+            "SELECT id, is_multi_slots FROM event.events WHERE id = ANY($1)",
+        )
+        .bind(event_ids)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows.into_iter().collect())
+    }
+
     /// Claim a delivery exactly once. Returns false when the delivery
     /// was already consumed (the caller returns the no-op outcome).
     async fn claim(

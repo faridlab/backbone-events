@@ -123,6 +123,32 @@ impl SaleSeamService {
                 "SalesOrderConfirmed carries no attendee specs — nothing to mint".into(),
             ));
         }
+        // Routing guard (officer-ruled 2026-09-29): a multi-slot event's
+        // attendee must name their slot, and a Cart order cannot — the
+        // SellingEvent wire carries no slot data, so minting here would
+        // silently book a slot-less registration on a slot-partitioned
+        // event. Refuse loudly instead; the officer routes multi-slot
+        // events through the direct intake (per-slot) until the wire
+        // learns a slot shape.
+        let distinct: Vec<uuid::Uuid> = {
+            let mut ids: Vec<uuid::Uuid> =
+                cmd.registrations.iter().map(|r| r.event_id).collect();
+            ids.sort_unstable();
+            ids.dedup();
+            ids
+        };
+        let flags = self.repo.multi_slot_flags(&distinct).await?;
+        for spec in &cmd.registrations {
+            if flags.get(&spec.event_id).copied().unwrap_or(false)
+                && spec.event_slot_id.is_none()
+            {
+                return Err(super::event_error::EventError::Validation(format!(
+                    "event {} is multi-slot: a Cart order cannot choose the attendee's slot — \
+                     route registrations for it through the direct intake",
+                    spec.event_id
+                )));
+            }
+        }
         let specs: Vec<RegisterCommand> = cmd
             .registrations
             .iter()
