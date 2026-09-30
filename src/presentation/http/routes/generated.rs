@@ -23,7 +23,7 @@ use super::{
     mail_handler::create_mail_read_routes,
     mail_registration_handler::create_mail_registration_routes,
     mail_slot_handler::create_mail_slot_routes,
-    question_handler::create_question_routes,
+    question_handler::create_question_read_routes,
     question_answer_handler::create_question_answer_routes,
     registration_question_handler::create_registration_question_routes,
     registration_handler::create_registration_read_routes,
@@ -138,8 +138,8 @@ pub fn configure_routes(services: HttpServices) -> Router {
         .merge(create_mail_registration_routes(services.mail_registration))
         // MailSlot routes (12 Backbone endpoints)
         .merge(create_mail_slot_routes(services.mail_slot))
-        // Question routes (12 Backbone endpoints)
-        .merge(create_question_routes(services.question))
+        // Question routes (READ-ONLY mount — hand_set lifecycle; the state field moves only through the module's validated verbs)
+        .merge(create_question_read_routes(services.question))
         // QuestionAnswer routes (12 Backbone endpoints)
         .merge(create_question_answer_routes(services.question_answer))
         // RegistrationQuestion routes (12 Backbone endpoints)
@@ -171,7 +171,7 @@ pub mod individual {
     }
 
     pub fn booth_routes(service: Arc<BoothService>) -> Router {
-        create_booth_routes(service)
+        create_booth_read_routes(service)
     }
 
     pub fn type_booth_routes(service: Arc<TypeBoothService>) -> Router {
@@ -179,11 +179,11 @@ pub mod individual {
     }
 
     pub fn booth_booking_routes(service: Arc<BoothBookingService>) -> Router {
-        create_booth_booking_routes(service)
+        create_booth_booking_read_routes(service)
     }
 
     pub fn event_routes(service: Arc<EventService>) -> Router {
-        create_event_routes(service)
+        create_event_read_routes(service)
     }
 
     pub fn event_type_routes(service: Arc<EventTypeService>) -> Router {
@@ -191,27 +191,27 @@ pub mod individual {
     }
 
     pub fn lead_provenance_routes(service: Arc<LeadProvenanceService>) -> Router {
-        create_lead_provenance_routes(service)
+        create_lead_provenance_read_routes(service)
     }
 
     pub fn lead_provenance_registration_routes(service: Arc<LeadProvenanceRegistrationService>) -> Router {
-        create_lead_provenance_registration_routes(service)
+        create_lead_provenance_registration_read_routes(service)
     }
 
     pub fn lead_request_routes(service: Arc<LeadRequestService>) -> Router {
-        create_lead_request_routes(service)
+        create_lead_request_read_routes(service)
     }
 
     pub fn lead_rule_routes(service: Arc<LeadRuleService>) -> Router {
-        create_lead_rule_routes(service)
+        create_lead_rule_read_routes(service)
     }
 
     pub fn lead_rule_predicate_routes(service: Arc<LeadRulePredicateService>) -> Router {
-        create_lead_rule_predicate_routes(service)
+        create_lead_rule_predicate_read_routes(service)
     }
 
     pub fn mail_routes(service: Arc<MailService>) -> Router {
-        create_mail_routes(service)
+        create_mail_read_routes(service)
     }
 
     pub fn mail_registration_routes(service: Arc<MailRegistrationService>) -> Router {
@@ -223,7 +223,7 @@ pub mod individual {
     }
 
     pub fn question_routes(service: Arc<QuestionService>) -> Router {
-        create_question_routes(service)
+        create_question_read_routes(service)
     }
 
     pub fn question_answer_routes(service: Arc<QuestionAnswerService>) -> Router {
@@ -235,7 +235,7 @@ pub mod individual {
     }
 
     pub fn registration_routes(service: Arc<RegistrationService>) -> Router {
-        create_registration_routes(service)
+        create_registration_read_routes(service)
     }
 
     pub fn registration_answer_routes(service: Arc<RegistrationAnswerService>) -> Router {

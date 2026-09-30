@@ -224,6 +224,7 @@ impl backbone_orm::EntityRepoMeta for MailSlot {
         m.insert("scheduler_id".to_string(), "uuid".to_string());
         m.insert("slot_id".to_string(), "uuid".to_string());
         m.insert("last_registration_id".to_string(), "uuid".to_string());
+        m.insert("scheduled_date".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
