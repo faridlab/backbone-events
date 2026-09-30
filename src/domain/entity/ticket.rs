@@ -239,6 +239,8 @@ impl backbone_orm::EntityRepoMeta for Ticket {
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("event_id".to_string(), "uuid".to_string());
         m.insert("product_id".to_string(), "uuid".to_string());
+        m.insert("start_sale_datetime".to_string(), "timestamptz".to_string());
+        m.insert("end_sale_datetime".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

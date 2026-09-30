@@ -320,6 +320,9 @@ impl backbone_orm::EntityRepoMeta for Event {
         m.insert("user_id".to_string(), "uuid".to_string());
         m.insert("kanban_state".to_string(), "event_kanban_state".to_string());
         m.insert("badge_format".to_string(), "event_badge_format".to_string());
+        m.insert("date_begin".to_string(), "timestamptz".to_string());
+        m.insert("date_end".to_string(), "timestamptz".to_string());
+        m.insert("date_publish".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

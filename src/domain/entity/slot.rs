@@ -211,6 +211,8 @@ impl backbone_orm::EntityRepoMeta for Slot {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("event_id".to_string(), "uuid".to_string());
+        m.insert("date_begin".to_string(), "timestamptz".to_string());
+        m.insert("date_end".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

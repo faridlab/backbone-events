@@ -341,6 +341,7 @@ impl backbone_orm::EntityRepoMeta for Registration {
         m.insert("state".to_string(), "event_registration_state".to_string());
         m.insert("sale_order_state".to_string(), "event_sale_order_state".to_string());
         m.insert("sale_status".to_string(), "event_sale_status".to_string());
+        m.insert("date_closed".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

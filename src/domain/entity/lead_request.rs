@@ -217,6 +217,7 @@ impl backbone_orm::EntityRepoMeta for LeadRequest {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("event_id".to_string(), "uuid".to_string());
+        m.insert("claimed_at".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

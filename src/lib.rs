@@ -134,7 +134,7 @@ impl EventModule {
             create_mail_read_routes,
             create_mail_registration_routes,
             create_mail_slot_routes,
-            create_question_routes,
+            create_question_read_routes,
             create_question_answer_routes,
             create_registration_question_routes,
             create_registration_read_routes,
@@ -162,7 +162,10 @@ impl EventModule {
             .merge(create_mail_read_routes(self.mail_service.clone()))
             .merge(create_mail_registration_routes(self.mail_registration_service.clone()))
             .merge(create_mail_slot_routes(self.mail_slot_service.clone()))
-            .merge(create_question_routes(self.question_service.clone()))
+            // Question: hand_set lifecycle — the state field moves only through the
+            // module's validated verbs; generic writes cannot reach it, so only the
+            // read surface mounts here.
+            .merge(create_question_read_routes(self.question_service.clone()))
             .merge(create_question_answer_routes(self.question_answer_service.clone()))
             .merge(create_registration_question_routes(self.registration_question_service.clone()))
             .merge(create_registration_read_routes(self.registration_service.clone()))

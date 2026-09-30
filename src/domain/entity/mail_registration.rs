@@ -223,6 +223,7 @@ impl backbone_orm::EntityRepoMeta for MailRegistration {
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("scheduler_id".to_string(), "uuid".to_string());
         m.insert("registration_id".to_string(), "uuid".to_string());
+        m.insert("scheduled_date".to_string(), "timestamptz".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
