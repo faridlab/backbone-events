@@ -70,6 +70,13 @@ impl SaleSeamRepository {
         &self.pool
     }
 
+    /// The database this call runs on: the composer's request pool when one
+    /// is bound (a tenant mount, or a relay consumer wrapped by the host),
+    /// else the composed pool (ADR-0029 pool law).
+    fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.pool.clone())
+    }
+
     /// The multi-slot flag for each named event, for the routing guard:
     /// a Cart order cannot choose an attendee's slot, so a multi-slot
     /// event must route through the direct intake where the attendee
@@ -82,7 +89,7 @@ impl SaleSeamRepository {
             "SELECT id, is_multi_slots FROM event.events WHERE id = ANY($1)",
         )
         .bind(event_ids)
-        .fetch_all(&self.pool)
+        .fetch_all(&self.rpool())
         .await?;
         Ok(rows.into_iter().collect())
     }
@@ -146,7 +153,7 @@ impl SaleSeamRepository {
         actor: Option<Uuid>,
     ) -> Result<SeamOutcome, EventError> {
         let free = grand_total_is_zero(grand_total);
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
 
         if !Self::claim(
@@ -192,7 +199,7 @@ impl SaleSeamRepository {
             }
             tx.commit().await?;
             record_audit(
-                &self.pool,
+                &self.rpool(),
                 "sale_seam_confirmed",
                 actor,
                 "sale_order",
@@ -261,7 +268,7 @@ impl SaleSeamRepository {
                 })
             };
             record_audit(
-                &self.pool,
+                &self.rpool(),
                 "sale_seam_confirmed",
                 actor,
                 "sale_order",
@@ -291,7 +298,7 @@ impl SaleSeamRepository {
         order_id: Uuid,
         actor: Option<Uuid>,
     ) -> Result<SeamOutcome, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         if !Self::claim(
             &mut tx,
@@ -319,7 +326,7 @@ impl SaleSeamRepository {
         .await?;
         let touched = rows.len();
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "sale_seam_cancelled",
             actor,
             "sale_order",
@@ -351,7 +358,7 @@ impl SaleSeamRepository {
         line_ids: &[Uuid],
         actor: Option<Uuid>,
     ) -> Result<SeamOutcome, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         if !Self::claim(
             &mut tx,
@@ -421,7 +428,7 @@ impl SaleSeamRepository {
         }
 
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "sale_seam_paid",
             actor,
             "sale_order",

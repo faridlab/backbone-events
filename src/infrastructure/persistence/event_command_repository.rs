@@ -98,6 +98,13 @@ impl EventCommandRepository {
         &self.pool
     }
 
+    /// The database this call runs on: the composer's request pool when one
+    /// is bound (a tenant mount, or a relay consumer wrapped by the host),
+    /// else the composed pool (ADR-0029 pool law).
+    fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.pool.clone())
+    }
+
     /// Create an event + apply the type's mail templates EXACTLY ONCE
     /// (never re-propagates — a later type change does not fork
     /// scheduler rows onto existing events).
@@ -106,7 +113,7 @@ impl EventCommandRepository {
         input: &CreateEventInput,
         actor: Option<Uuid>,
     ) -> Result<EventRow, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let stage_id = match sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM event.stages ORDER BY sequence, id LIMIT 1",
@@ -205,7 +212,7 @@ impl EventCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<EventRow, EventError> {
         let row = company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, EventRow>(&format!(
                 r#"UPDATE event.events SET
                    name             = COALESCE($2, name),
@@ -246,7 +253,7 @@ impl EventCommandRepository {
         .await?
         .ok_or(EventError::EventNotFound)?;
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "event_updated",
             actor,
             "event",
@@ -262,7 +269,7 @@ impl EventCommandRepository {
     /// rewritten on republish.
     pub async fn publish(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
         let row = company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, EventRow>(&format!(
                 r#"UPDATE event.events
                   SET is_published = true,
@@ -275,7 +282,7 @@ impl EventCommandRepository {
         .await?
         .ok_or(EventError::EventNotFound)?;
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "event_published",
             actor,
             "event",
@@ -290,7 +297,7 @@ impl EventCommandRepository {
     /// (`date_publish` keeps the historical first-publish stamp).
     pub async fn unpublish(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
         let row = company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, EventRow>(&format!(
                 r#"UPDATE event.events SET is_published = false
                 WHERE id = $1
@@ -301,7 +308,7 @@ impl EventCommandRepository {
         .await?
         .ok_or(EventError::EventNotFound)?;
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "event_unpublished",
             actor,
             "event",
@@ -315,7 +322,7 @@ impl EventCommandRepository {
     /// MARK DONE — the verb: sets `done` AND moves the row to the
     /// FIRST pipe_end stage by sequence (upstream's two-axis close).
     pub async fn mark_done(&self, id: Uuid, actor: Option<Uuid>) -> Result<EventRow, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let pipe_end = sqlx::query_scalar::<_, Uuid>(
             "SELECT id FROM event.stages WHERE pipe_end ORDER BY sequence, id LIMIT 1",
@@ -349,7 +356,7 @@ impl EventCommandRepository {
     /// Fetch one event row.
     pub async fn find(&self, id: Uuid) -> Result<EventRow, EventError> {
         company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, EventRow>(&format!(
                 "SELECT {EVENT_COLUMNS} FROM event.events WHERE id = $1"
             ))
@@ -362,7 +369,7 @@ impl EventCommandRepository {
     /// List events (newest first), capped.
     pub async fn list(&self, limit: i64) -> Result<Vec<EventRow>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, EventRow>(&format!(
                 "SELECT {EVENT_COLUMNS} FROM event.events ORDER BY date_begin DESC, id LIMIT $1"
             ))
@@ -378,7 +385,7 @@ impl EventCommandRepository {
     /// catalog consumes only this.
     pub async fn list_linked_products(&self) -> Result<Vec<Uuid>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, (Uuid,)>(
                 "SELECT product_id FROM event.event_linked_products ORDER BY product_id",
             ),
@@ -412,7 +419,7 @@ impl EventCommandRepository {
         event_id: Uuid,
     ) -> Result<Option<(Uuid, DateTime<Utc>, DateTime<Utc>)>, EventError> {
         company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, (Uuid, DateTime<Utc>, Option<DateTime<Utc>>)>(
                 "SELECT id, date_begin, date_end FROM event.slots WHERE id = $1 AND event_id = $2",
             )

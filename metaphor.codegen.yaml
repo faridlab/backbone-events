@@ -141,6 +141,11 @@ user_owned:
   # fenced out (register row).
   - "src/application/service/desk_service.rs"
 
+  # The composer-installed request-pool shim the verb repositories resolve
+  # their database through (ADR-0029 pool law): hand-written, never
+  # schema-derived.
+  - "src/request_pool.rs"
+
   # Hand repositories carrying the transactional SQL the services compose
   # (services hold no raw sqlx — the DDD boundary): the seat-lock
   # registration transaction (lock -> count -> insert -> arm), the

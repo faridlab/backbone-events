@@ -63,7 +63,7 @@ impl RegistrationCommandService {
                 // The typed refusal is a durable fact (critical-events
                 // list) — best-effort, never masking the refusal.
                 crate::infrastructure::persistence::seat_repository::record_audit(
-                    self.seats.pool(),
+                    &self.seats.rpool(),
                     "registration_refused",
                     cmd.actor,
                     "event",

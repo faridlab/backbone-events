@@ -94,6 +94,13 @@ impl LeadCommandRepository {
         &self.pool
     }
 
+    /// The database this call runs on: the composer's request pool when one
+    /// is bound (a tenant mount, or a relay consumer wrapped by the host),
+    /// else the composed pool (ADR-0029 pool law).
+    fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.pool.clone())
+    }
+
     /// Create a rule + its typed predicates in ONE transaction. The
     /// service layer has already validated: the closed vocabulary, the
     /// question_answer axis shape, and the at-least-one-trigger guard.
@@ -110,7 +117,7 @@ impl LeadCommandRepository {
         predicates: &[PredicateInput],
         actor: Option<Uuid>,
     ) -> Result<LeadRuleRow, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let id = Uuid::new_v4();
         let row = sqlx::query_as::<_, LeadRuleRow>(
@@ -161,7 +168,7 @@ impl LeadCommandRepository {
         .await?;
         tx.commit().await?;
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "lead_rule_created",
             actor,
             "lead_rule",
@@ -183,7 +190,7 @@ impl LeadCommandRepository {
         actor: Option<Uuid>,
     ) -> Result<LeadRuleRow, EventError> {
         let row = company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, LeadRuleRow>(
                 r#"UPDATE event.lead_rules SET
                    name     = COALESCE($2, name),
@@ -202,7 +209,7 @@ impl LeadCommandRepository {
         .ok_or(EventError::LeadRuleNotFound { rule_id })?;
         if active == Some(true) {
             org_scope::execute_scoped(
-                &self.pool,
+                &self.rpool(),
                 sqlx::query(
                     r#"INSERT INTO event.lead_requests (event_id)
                    SELECT e.id FROM event.events e
@@ -214,7 +221,7 @@ impl LeadCommandRepository {
             .await?;
         }
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "lead_rule_updated",
             actor,
             "lead_rule",
@@ -226,7 +233,7 @@ impl LeadCommandRepository {
     }
 
     pub async fn find_rule(&self, rule_id: Uuid) -> Result<LeadRuleRow, EventError> {
-        company_scope::fetch_optional_scoped(&self.pool, sqlx::query_as::<_, LeadRuleRow>(
+        company_scope::fetch_optional_scoped(&self.rpool(), sqlx::query_as::<_, LeadRuleRow>(
             r#"SELECT id, name, event_id, basis::text AS basis, on_create, on_confirm, on_done, active
                  FROM event.lead_rules WHERE id = $1"#,
         )
@@ -236,7 +243,7 @@ impl LeadCommandRepository {
     }
 
     pub async fn list_rules(&self, limit: i64) -> Result<Vec<LeadRuleRow>, EventError> {
-        company_scope::fetch_all_scoped(&self.pool, sqlx::query_as::<_, LeadRuleRow>(
+        company_scope::fetch_all_scoped(&self.rpool(), sqlx::query_as::<_, LeadRuleRow>(
             r#"SELECT id, name, event_id, basis::text AS basis, on_create, on_confirm, on_done, active
                  FROM event.lead_rules ORDER BY name, id LIMIT $1"#,
         )
@@ -250,7 +257,7 @@ impl LeadCommandRepository {
         rule_id: Uuid,
     ) -> Result<Vec<LeadPredicateRow>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, LeadPredicateRow>(
                 r#"SELECT id, rule_id, axis::text AS axis, question_id, value_ids
                  FROM event.lead_rule_predicates WHERE rule_id = $1 ORDER BY id"#,
@@ -299,7 +306,7 @@ impl LeadCommandRepository {
         let rule = self.find_rule(rule_id).await?;
         let predicates = self.predicates_of_rule(rule_id).await?;
         let stats = company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, (String, i64, i64)>(
                 r#"SELECT grouping::text AS grouping,
                       count(*) AS groups,
@@ -336,7 +343,7 @@ impl LeadCommandRepository {
     /// the registration verbs arm through the seat repository).
     pub async fn arm_request(&self, event_id: Uuid) -> Result<(), EventError> {
         org_scope::execute_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query(
                 r#"INSERT INTO event.lead_requests (event_id) VALUES ($1)
                ON CONFLICT (event_id) DO UPDATE SET done = false WHERE lead_requests.done"#,
@@ -366,7 +373,7 @@ impl LeadCommandRepository {
         exclude: &[Uuid],
     ) -> Result<Option<LeadRequestRow>, EventError> {
         company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, LeadRequestRow>(
                 r#"WITH due AS (
                    SELECT id FROM event.lead_requests
@@ -402,7 +409,7 @@ impl LeadCommandRepository {
         lease_secs: i64,
     ) -> Result<LeadRequestRow, EventError> {
         let row = company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, LeadRequestRow>(
                 r#"UPDATE event.lead_requests
                   SET claimed_at = now()
@@ -421,7 +428,7 @@ impl LeadCommandRepository {
             // held. Which one decides the refusal the officer hears.
             None => {
                 let held = company_scope::fetch_one_scalar_scoped(
-                    &self.pool,
+                    &self.rpool(),
                     sqlx::query_scalar::<_, i64>(
                         "SELECT count(*) FROM event.lead_requests WHERE event_id = $1",
                     )
@@ -446,7 +453,7 @@ impl LeadCommandRepository {
         error: Option<&str>,
     ) -> Result<(), EventError> {
         org_scope::execute_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query(
                 r#"UPDATE event.lead_requests
                   SET done = $2, error_detail = $3, claimed_at = NULL
@@ -468,7 +475,7 @@ impl LeadCommandRepository {
         error: Option<&str>,
     ) -> Result<(), EventError> {
         org_scope::execute_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query(
                 r#"UPDATE event.lead_requests
                   SET done = $2, error_detail = $3, claimed_at = NULL
@@ -487,7 +494,7 @@ impl LeadCommandRepository {
         &self,
         event_id: Uuid,
     ) -> Result<Vec<LeadRuleRow>, EventError> {
-        company_scope::fetch_all_scoped(&self.pool, sqlx::query_as::<_, LeadRuleRow>(
+        company_scope::fetch_all_scoped(&self.rpool(), sqlx::query_as::<_, LeadRuleRow>(
             r#"SELECT id, name, event_id, basis::text AS basis, on_create, on_confirm, on_done, active
                  FROM event.lead_rules
                 WHERE active AND (event_id IS NULL OR event_id = $1)
@@ -580,7 +587,7 @@ impl LeadCommandRepository {
                 q = q.bind(p.question_id);
             }
         }
-        company_scope::fetch_all_scoped(&self.pool, q)
+        company_scope::fetch_all_scoped(&self.rpool(), q)
             .await
             .map_err(EventError::from)
     }
@@ -596,7 +603,7 @@ impl LeadCommandRepository {
         grouping: &str,
     ) -> Result<(Uuid, Option<Uuid>), EventError> {
         company_scope::fetch_one_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, (Uuid, Option<Uuid>)>(
                 r#"INSERT INTO event.lead_provenances
                    (id, rule_id, event_id, group_key, grouping)
@@ -622,7 +629,7 @@ impl LeadCommandRepository {
         provenance_id: Uuid,
     ) -> Result<Vec<EligibleRegistration>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, EligibleRegistration>(
                 r#"SELECT r.id, r.name, r.email, r.phone, r.company_name, r.partner_id,
                       r.sale_order_id, (r.metadata->>'created_at')::timestamptz AS created_at
@@ -644,7 +651,7 @@ impl LeadCommandRepository {
         lead_id: Uuid,
     ) -> Result<(), EventError> {
         org_scope::execute_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query("UPDATE event.lead_provenances SET lead_id = $2 WHERE id = $1")
                 .bind(provenance_id)
                 .bind(lead_id),
@@ -663,7 +670,7 @@ impl LeadCommandRepository {
         if registration_ids.is_empty() {
             return Ok(0);
         }
-        let rows = company_scope::fetch_all_rows_scoped(&self.pool, sqlx::query(
+        let rows = org_scope::fetch_all_rows_scoped(&self.rpool(), sqlx::query(
             r#"INSERT INTO event.lead_provenance_registrations (id, provenance_id, registration_id)
                SELECT gen_random_uuid(), $1, x FROM unnest($2::uuid[]) AS x
                ON CONFLICT (provenance_id, registration_id) DO NOTHING
@@ -684,8 +691,8 @@ impl LeadCommandRepository {
         new_lead_id: Uuid,
         actor: Option<Uuid>,
     ) -> Result<usize, EventError> {
-        let rows = company_scope::fetch_all_rows_scoped(
-            &self.pool,
+        let rows = org_scope::fetch_all_rows_scoped(
+            &self.rpool(),
             sqlx::query(
                 r#"UPDATE event.lead_provenances SET lead_id = $2
                 WHERE lead_id = $1 AND $1 <> $2
@@ -697,7 +704,7 @@ impl LeadCommandRepository {
         .await?;
         let n = rows.len();
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "lead_relinked",
             actor,
             "lead",
@@ -714,7 +721,7 @@ impl LeadCommandRepository {
         &self,
         event_id: Uuid,
     ) -> Result<Option<LeadRequestRow>, EventError> {
-        company_scope::fetch_optional_scoped(&self.pool, sqlx::query_as::<_, LeadRequestRow>(
+        company_scope::fetch_optional_scoped(&self.rpool(), sqlx::query_as::<_, LeadRequestRow>(
             "SELECT id, event_id, done, error_detail, claimed_at FROM event.lead_requests WHERE event_id = $1",
         )
         .bind(event_id))

@@ -179,10 +179,17 @@ impl SeatRepository {
         &self.pool
     }
 
+    /// The database this call runs on: the composer's request pool when one
+    /// is bound (a tenant mount, or a relay consumer wrapped by the host),
+    /// else the composed pool (ADR-0029 pool law).
+    pub fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.pool.clone())
+    }
+
     /// THE ONE REGISTER VERB — lock-first, count-then-insert, one
     /// transaction. See the module doc for the full sequence.
     pub async fn register(&self, cmd: &RegisterCommand) -> Result<RegistrationRow, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let row = Self::register_core(&mut tx, cmd, None).await?;
         tx.commit().await?;
@@ -199,7 +206,7 @@ impl SeatRepository {
         cmd: &RegisterCommand,
         link: &SaleLink,
     ) -> Result<RegistrationRow, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let row = Self::register_core(&mut tx, cmd, Some(link)).await?;
         tx.commit().await?;
@@ -463,7 +470,7 @@ impl SeatRepository {
         event_id: Uuid,
         slot_id: Option<Uuid>,
     ) -> Result<SeatCounts, EventError> {
-        let event = company_scope::fetch_optional_scoped(&self.pool, sqlx::query_as::<_, LockedEvent>(
+        let event = company_scope::fetch_optional_scoped(&self.rpool(), sqlx::query_as::<_, LockedEvent>(
             r#"SELECT id, is_multi_slots, seats_limited, seats_max, kanban_state::text AS kanban_state
                  FROM event.events WHERE id = $1"#,
         )
@@ -474,7 +481,7 @@ impl SeatRepository {
         let taken: i64 = match slot_id {
             Some(slot) => {
                 company_scope::fetch_one_scalar_scoped(
-                    &self.pool,
+                    &self.rpool(),
                     sqlx::query_scalar::<_, i64>(
                         r#"SELECT count(*) FROM event.registrations
                         WHERE event_id = $1 AND event_slot_id = $2
@@ -487,7 +494,7 @@ impl SeatRepository {
             }
             None => {
                 company_scope::fetch_one_scalar_scoped(
-                    &self.pool,
+                    &self.rpool(),
                     sqlx::query_scalar::<_, i64>(
                         r#"SELECT count(*) FROM event.registrations
                         WHERE event_id = $1 AND state IN ('open','done') AND active"#,
@@ -515,7 +522,7 @@ impl SeatRepository {
         to: &str,
         actor: Option<Uuid>,
     ) -> Result<(String, String, bool), EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let outcome = sqlx::query_as::<_, (String, String, bool)>(
             r#"WITH prev AS (
@@ -674,7 +681,7 @@ impl SeatRepository {
         actor: Option<Uuid>,
     ) -> Result<RegistrationRow, EventError> {
         let row = company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, RegistrationRow>(
                 r#"UPDATE event.registrations SET
                    partner_id   = COALESCE(partner_id, $2),
@@ -696,7 +703,7 @@ impl SeatRepository {
         .await?
         .ok_or(EventError::RegistrationNotFound)?;
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "registration_updated",
             actor,
             "registration",
@@ -715,7 +722,7 @@ impl SeatRepository {
         barcode: &str,
     ) -> Result<Option<RegistrationRow>, EventError> {
         company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, RegistrationRow>(
                 r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
@@ -735,7 +742,7 @@ impl SeatRepository {
         registration_id: Uuid,
     ) -> Result<RegistrationRow, EventError> {
         company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, RegistrationRow>(
                 r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,
@@ -757,7 +764,7 @@ impl SeatRepository {
         after: Option<Uuid>,
     ) -> Result<Vec<RegistrationRow>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, RegistrationRow>(
                 r#"SELECT id, event_id, event_slot_id, event_ticket_id, name, email, phone,
                       company_name, partner_id, state::text AS state, date_closed,

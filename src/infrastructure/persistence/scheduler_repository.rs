@@ -69,6 +69,13 @@ impl SchedulerRepository {
         &self.pool
     }
 
+    /// The database this call runs on: the composer's request pool when one
+    /// is bound (a tenant mount, or a relay consumer wrapped by the host),
+    /// else the composed pool (ADR-0029 pool law).
+    fn rpool(&self) -> PgPool {
+        crate::request_pool::current().unwrap_or_else(|| self.pool.clone())
+    }
+
     /// The claim domain: scheduler rows NOT done, DUE, on non-cancel
     /// events, with WORK REMAINING (an eligible registration without
     /// a sent receipt).
@@ -87,7 +94,7 @@ impl SchedulerRepository {
     /// a receipt.
     pub async fn claim_due(&self, limit: i64) -> Result<Vec<SchedulerRow>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, SchedulerRow>(
                 r#"WITH claimed AS (
                    SELECT m.id FROM event.mails m
@@ -138,7 +145,7 @@ impl SchedulerRepository {
         scheduler: &SchedulerRow,
         cap: i64,
     ) -> Result<Vec<Uuid>, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let ids = sqlx::query_scalar::<_, Uuid>(
             r#"INSERT INTO event.mail_registrations (scheduler_id, registration_id, scheduled_date)
@@ -180,7 +187,7 @@ impl SchedulerRepository {
     /// this scheduler (the overflow signal for the re-arm rule).
     pub async fn unmaterialized_count(&self, scheduler_id: Uuid) -> Result<i64, EventError> {
         company_scope::fetch_one_scalar_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_scalar::<_, i64>(
                 r#"SELECT count(*) FROM event.registrations r
                 WHERE r.event_id = (SELECT event_id FROM event.mails WHERE id = $1)
@@ -202,7 +209,7 @@ impl SchedulerRepository {
         scheduler_id: Uuid,
         limit: i64,
     ) -> Result<Vec<DueReceipt>, EventError> {
-        company_scope::fetch_all_scoped(&self.pool, sqlx::query_as::<_, DueReceipt>(
+        company_scope::fetch_all_scoped(&self.rpool(), sqlx::query_as::<_, DueReceipt>(
             r#"SELECT mr.id AS receipt_id, mr.registration_id, r.name AS attendee_name,
                       r.email AS attendee_email, r.phone AS attendee_phone, r.barcode, mr.scheduled_date
                  FROM event.mail_registrations mr
@@ -223,7 +230,7 @@ impl SchedulerRepository {
     /// Mark one receipt `'sent' = queued` (the idempotent send guard:
     /// only the first writer flips the flag).
     pub async fn mark_receipt_queued(&self, receipt_id: Uuid) -> Result<(), EventError> {
-        org_scope::execute_scoped(&self.pool, sqlx::query(
+        org_scope::execute_scoped(&self.rpool(), sqlx::query(
             "UPDATE event.mail_registrations SET mail_sent = true, outcome = 'queued' WHERE id = $1 AND NOT mail_sent",
         )
         .bind(receipt_id))
@@ -238,7 +245,7 @@ impl SchedulerRepository {
         &self,
         receipt_id: Uuid,
     ) -> Result<(), EventError> {
-        org_scope::execute_scoped(&self.pool, sqlx::query(
+        org_scope::execute_scoped(&self.rpool(), sqlx::query(
             "UPDATE event.mail_registrations SET mail_sent = true, outcome = 'dropped_window_closed' WHERE id = $1 AND NOT mail_sent",
         )
         .bind(receipt_id))
@@ -251,7 +258,7 @@ impl SchedulerRepository {
     /// refused / recipient invalid). Recorded and CONTINUED — never a
     /// registration blocker, never a throttle.
     pub async fn record_failure(&self, scheduler_id: Uuid, kind: &str) -> Result<(), EventError> {
-        org_scope::execute_scoped(&self.pool, sqlx::query(
+        org_scope::execute_scoped(&self.rpool(), sqlx::query(
             "UPDATE event.mails SET error_kind = $2::event_mail_error_kind, error_datetime = now() WHERE id = $1",
         )
         .bind(scheduler_id)
@@ -263,7 +270,7 @@ impl SchedulerRepository {
     /// Clear the failure marker after a fully successful pass.
     pub async fn clear_failure(&self, scheduler_id: Uuid) -> Result<(), EventError> {
         org_scope::execute_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query(
                 "UPDATE event.mails SET error_kind = NULL, error_datetime = NULL WHERE id = $1",
             )
@@ -278,7 +285,7 @@ impl SchedulerRepository {
     /// late registrant re-opens the row automatically.
     pub async fn recompute_mail_done(&self, scheduler_id: Uuid) -> Result<bool, EventError> {
         let done: bool = company_scope::fetch_optional_scalar_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_scalar::<_, bool>(
                 r#"UPDATE event.mails m
                   SET mail_done = NOT EXISTS (
@@ -303,7 +310,7 @@ impl SchedulerRepository {
     /// The overflow re-arm: a pass hit its cap with work left.
     pub async fn rearm(&self, scheduler_id: Uuid) -> Result<(), EventError> {
         org_scope::execute_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query(
                 "UPDATE event.mails SET scheduled_date = now() WHERE id = $1 AND NOT mail_done",
             )
@@ -317,7 +324,7 @@ impl SchedulerRepository {
     /// cancelled registrations are deleted on the next pass — the
     /// audit row is the durable trace.
     pub async fn propagate_cancellations(&self, limit: i64) -> Result<i64, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let deleted = sqlx::query_scalar::<_, Uuid>(
             r#"DELETE FROM event.mail_registrations mr
@@ -334,7 +341,7 @@ impl SchedulerRepository {
         let n = deleted.len() as i64;
         if n > 0 {
             record_audit(
-                &self.pool,
+                &self.rpool(),
                 "scheduler_run",
                 None,
                 "mail_scheduler",
@@ -367,7 +374,7 @@ impl SchedulerRepository {
         template_ref: Uuid,
         actor: Option<Uuid>,
     ) -> Result<(i64, i64), EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let mails = sqlx::query_scalar::<_, Uuid>(
             r#"DELETE FROM event.mails
@@ -389,7 +396,7 @@ impl SchedulerRepository {
         .await?;
         let counts = (mails.len() as i64, type_mails.len() as i64);
         record_audit(
-            &self.pool,
+            &self.rpool(),
             "template_cascade",
             actor,
             "mail_scheduler",
@@ -408,7 +415,7 @@ impl SchedulerRepository {
     /// Officer read: one scheduler row.
     pub async fn find(&self, scheduler_id: Uuid) -> Result<SchedulerRow, EventError> {
         company_scope::fetch_optional_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, SchedulerRow>(
                 r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
                       interval_kind::text AS interval_kind,
@@ -430,7 +437,7 @@ impl SchedulerRepository {
     /// Officer read: an event's scheduler rows.
     pub async fn list_for_event(&self, event_id: Uuid) -> Result<Vec<SchedulerRow>, EventError> {
         company_scope::fetch_all_scoped(
-            &self.pool,
+            &self.rpool(),
             sqlx::query_as::<_, SchedulerRow>(
                 r#"SELECT id, event_id, interval_nbr, interval_unit::text AS interval_unit,
                       interval_kind::text AS interval_kind,
@@ -450,7 +457,7 @@ impl SchedulerRepository {
     /// resting in a pipe_end stage move to `done` — the verb, run as
     /// a sweep. Returns the swept ids.
     pub async fn sweep_mark_done(&self, limit: i64) -> Result<Vec<Uuid>, EventError> {
-        let mut tx = self.pool.begin().await?;
+        let mut tx = self.rpool().begin().await?;
         super::relay_ambient_scope(&mut tx).await?;
         let ids = sqlx::query_scalar::<_, Uuid>(
             r#"WITH claimed AS (
