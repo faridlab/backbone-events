@@ -250,6 +250,9 @@ impl super::Entity for Booth {
 }
 
 impl backbone_core::PersistentEntity for Booth {
+    fn write_protected_fields() -> &'static [&'static str] {
+        &["state"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

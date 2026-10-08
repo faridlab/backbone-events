@@ -175,6 +175,9 @@ impl super::Entity for Question {
 }
 
 impl backbone_core::PersistentEntity for Question {
+    fn write_protected_fields() -> &'static [&'static str] {
+        &["question_kind"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }
