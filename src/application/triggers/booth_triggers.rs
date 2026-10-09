@@ -22,6 +22,6 @@ pub type BoothTriggerHandlerObj =
 
 /// Create a default registry pre-populated with all handlers for Booth.
 pub fn booth_trigger_registry() -> BoothTriggerRegistry {
-    TriggerRegistry::build(|r| {
+    TriggerRegistry::build(|_r| {
     })
 }

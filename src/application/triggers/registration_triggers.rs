@@ -22,6 +22,6 @@ pub type RegistrationTriggerHandlerObj =
 
 /// Create a default registry pre-populated with all handlers for Registration.
 pub fn registration_trigger_registry() -> RegistrationTriggerRegistry {
-    TriggerRegistry::build(|r| {
+    TriggerRegistry::build(|_r| {
     })
 }

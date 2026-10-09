@@ -136,7 +136,7 @@ pub fn build_ics(event: &EventRow, slot_window: Option<(Uuid, DateTime<Utc>, Dat
         None => (event.date_begin, event.date_end),
     };
     let slot_id = slot_window.map(|(id, _, _)| id);
-    let mut lines = vec![
+    let lines = vec![
         "BEGIN:VCALENDAR".to_string(),
         "VERSION:2.0".to_string(),
         "PRODID:-//backbone-events//core//EN".to_string(),

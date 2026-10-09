@@ -391,7 +391,7 @@ impl SaleSeamRepository {
         .bind(order_id)
         .fetch_all(&mut *tx)
         .await?;
-        let mut touched = healed.len();
+        let touched = healed.len();
         sqlx::query(
             r#"UPDATE event.registrations
                   SET sale_status = 'sold'

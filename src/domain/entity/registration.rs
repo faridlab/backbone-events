@@ -8,7 +8,7 @@ use super::EventSaleOrderState;
 use super::EventSaleStatus;
 use super::AuditMetadata;
 
-use crate::domain::state_machine::{registration_stateStateMachine, registration_stateState, StateMachineError};
+use crate::domain::state_machine::{RegistrationStateStateMachine, RegistrationStateState, StateMachineError};
 
 /// Strongly-typed ID for Registration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -220,9 +220,9 @@ impl Registration {
     ///
     /// Returns `Err` if the transition is not permitted from the current state.
     /// Use this method instead of assigning `self.state` directly.
-    pub fn transition_to(&mut self, new_state: registration_stateState) -> Result<(), StateMachineError> {
-        let current = self.state.to_string().parse::<registration_stateState>()?;
-        let mut sm = registration_stateStateMachine::from_state(current);
+    pub fn transition_to(&mut self, new_state: RegistrationStateState) -> Result<(), StateMachineError> {
+        let current = self.state.to_string().parse::<RegistrationStateState>()?;
+        let mut sm = RegistrationStateStateMachine::from_state(current);
         sm.transition_to_state(new_state)?;
         self.state = new_state.to_string().parse::<EventRegistrationState>()
             .map_err(|e| StateMachineError::InvalidState(e.to_string()))?;

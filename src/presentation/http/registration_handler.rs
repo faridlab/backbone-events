@@ -28,7 +28,7 @@ use crate::application::service::{RegistrationService, ServiceError};
 // DTO imports
 use crate::presentation::dto::{CreateRegistrationDto, UpdateRegistrationDto, PatchRegistrationDto, RegistrationResponseDto};
 
-use crate::domain::state_machine::{registration_stateState, registration_stateStateMachine, registration_stateTransition};
+use crate::domain::state_machine::{RegistrationStateState, RegistrationStateStateMachine, RegistrationStateTransition};
 
 /// Application error type
 #[derive(Debug, thiserror::Error)]
@@ -213,7 +213,7 @@ pub async fn set_draft_transition(
     // Check permission (if auth enabled)
     #[cfg(feature = "auth")]
     {
-        let allowed_roles = registration_stateTransition::SetDraft.allowed_roles();
+        let allowed_roles = RegistrationStateTransition::SetDraft.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:set_draft");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
         if !has_specific_perm && !has_update_perm {
@@ -222,10 +222,10 @@ pub async fn set_draft_transition(
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: registration_stateState = entity.state.to_string().parse()
-        .unwrap_or(registration_stateState::default());
-    let sm = registration_stateStateMachine::from_state(current_state);
-    if !sm.can_transition(registration_stateTransition::SetDraft) {
+    let current_state: RegistrationStateState = entity.state.to_string().parse()
+        .unwrap_or(RegistrationStateState::default());
+    let sm = RegistrationStateStateMachine::from_state(current_state);
+    if !sm.can_transition(RegistrationStateTransition::SetDraft) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
     }
 
@@ -263,7 +263,7 @@ pub async fn confirm_transition(
     // Check permission (if auth enabled)
     #[cfg(feature = "auth")]
     {
-        let allowed_roles = registration_stateTransition::Confirm.allowed_roles();
+        let allowed_roles = RegistrationStateTransition::Confirm.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:confirm");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
         if !has_specific_perm && !has_update_perm {
@@ -272,10 +272,10 @@ pub async fn confirm_transition(
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: registration_stateState = entity.state.to_string().parse()
-        .unwrap_or(registration_stateState::default());
-    let sm = registration_stateStateMachine::from_state(current_state);
-    if !sm.can_transition(registration_stateTransition::Confirm) {
+    let current_state: RegistrationStateState = entity.state.to_string().parse()
+        .unwrap_or(RegistrationStateState::default());
+    let sm = RegistrationStateStateMachine::from_state(current_state);
+    if !sm.can_transition(RegistrationStateTransition::Confirm) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
     }
 
@@ -313,7 +313,7 @@ pub async fn set_done_transition(
     // Check permission (if auth enabled)
     #[cfg(feature = "auth")]
     {
-        let allowed_roles = registration_stateTransition::SetDone.allowed_roles();
+        let allowed_roles = RegistrationStateTransition::SetDone.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:set_done");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
         if !has_specific_perm && !has_update_perm {
@@ -322,10 +322,10 @@ pub async fn set_done_transition(
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: registration_stateState = entity.state.to_string().parse()
-        .unwrap_or(registration_stateState::default());
-    let sm = registration_stateStateMachine::from_state(current_state);
-    if !sm.can_transition(registration_stateTransition::SetDone) {
+    let current_state: RegistrationStateState = entity.state.to_string().parse()
+        .unwrap_or(RegistrationStateState::default());
+    let sm = RegistrationStateStateMachine::from_state(current_state);
+    if !sm.can_transition(RegistrationStateTransition::SetDone) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
     }
 
@@ -363,7 +363,7 @@ pub async fn cancel_transition(
     // Check permission (if auth enabled)
     #[cfg(feature = "auth")]
     {
-        let allowed_roles = registration_stateTransition::Cancel.allowed_roles();
+        let allowed_roles = RegistrationStateTransition::Cancel.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:cancel");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
         if !has_specific_perm && !has_update_perm {
@@ -372,10 +372,10 @@ pub async fn cancel_transition(
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: registration_stateState = entity.state.to_string().parse()
-        .unwrap_or(registration_stateState::default());
-    let sm = registration_stateStateMachine::from_state(current_state);
-    if !sm.can_transition(registration_stateTransition::Cancel) {
+    let current_state: RegistrationStateState = entity.state.to_string().parse()
+        .unwrap_or(RegistrationStateState::default());
+    let sm = RegistrationStateStateMachine::from_state(current_state);
+    if !sm.can_transition(RegistrationStateTransition::Cancel) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
     }
 

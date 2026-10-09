@@ -27,7 +27,7 @@ use crate::application::service::{BoothService, ServiceError};
 // DTO imports
 use crate::presentation::dto::{CreateBoothDto, UpdateBoothDto, PatchBoothDto, BoothResponseDto};
 
-use crate::domain::state_machine::{booth_stateState, booth_stateStateMachine, booth_stateTransition};
+use crate::domain::state_machine::{BoothStateState, BoothStateStateMachine, BoothStateTransition};
 
 /// Application error type
 #[derive(Debug, thiserror::Error)]
@@ -212,7 +212,7 @@ pub async fn confirm_transition(
     // Check permission (if auth enabled)
     #[cfg(feature = "auth")]
     {
-        let allowed_roles = booth_stateTransition::Confirm.allowed_roles();
+        let allowed_roles = BoothStateTransition::Confirm.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "booth:transition:confirm");
         let has_update_perm = auth.permissions.iter().any(|p| p == "booth:update");
         if !has_specific_perm && !has_update_perm {
@@ -221,10 +221,10 @@ pub async fn confirm_transition(
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: booth_stateState = entity.state.to_string().parse()
-        .unwrap_or(booth_stateState::default());
-    let sm = booth_stateStateMachine::from_state(current_state);
-    if !sm.can_transition(booth_stateTransition::Confirm) {
+    let current_state: BoothStateState = entity.state.to_string().parse()
+        .unwrap_or(BoothStateState::default());
+    let sm = BoothStateStateMachine::from_state(current_state);
+    if !sm.can_transition(BoothStateTransition::Confirm) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<BoothResponseDto>::error("Transition not allowed from current state")));
     }
 
@@ -262,7 +262,7 @@ pub async fn release_transition(
     // Check permission (if auth enabled)
     #[cfg(feature = "auth")]
     {
-        let allowed_roles = booth_stateTransition::Release.allowed_roles();
+        let allowed_roles = BoothStateTransition::Release.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "booth:transition:release");
         let has_update_perm = auth.permissions.iter().any(|p| p == "booth:update");
         if !has_specific_perm && !has_update_perm {
@@ -271,10 +271,10 @@ pub async fn release_transition(
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: booth_stateState = entity.state.to_string().parse()
-        .unwrap_or(booth_stateState::default());
-    let sm = booth_stateStateMachine::from_state(current_state);
-    if !sm.can_transition(booth_stateTransition::Release) {
+    let current_state: BoothStateState = entity.state.to_string().parse()
+        .unwrap_or(BoothStateState::default());
+    let sm = BoothStateStateMachine::from_state(current_state);
+    if !sm.can_transition(BoothStateTransition::Release) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<BoothResponseDto>::error("Transition not allowed from current state")));
     }
 

@@ -29,5 +29,5 @@ pub enum StateMachineError {
     FinalStateReached(String),
 }
 
-pub use booth_state_state_machine::{booth_stateState, booth_stateTransition, booth_stateStateMachine};
-pub use registration_state_state_machine::{registration_stateState, registration_stateTransition, registration_stateStateMachine};
+pub use booth_state_state_machine::{BoothStateState, BoothStateTransition, BoothStateStateMachine};
+pub use registration_state_state_machine::{RegistrationStateState, RegistrationStateTransition, RegistrationStateStateMachine};
