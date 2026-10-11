@@ -32,13 +32,6 @@ pub mod ticket_handler;
 pub mod type_mail_handler;
 
 // <<< CUSTOM
-// Hand-written route surfaces (user-owned; see metaphor.codegen.yaml):
-// the bare-of-auth public capability tree (the token + throttle are
-// the fence; the host nests it under the schema name) and the officer
-// tree (the host mounts it behind company_auth + the module write
-// gate keyed "event").
-pub mod public_routes;
-pub mod admin_routes;
 // END CUSTOM
 
 // Re-exports
@@ -68,9 +61,7 @@ pub use tag_handler::{create_tag_routes, create_tag_read_routes, create_tag_writ
 pub use ticket_handler::{create_ticket_routes, create_ticket_read_routes, create_ticket_write_routes};
 pub use type_mail_handler::{create_type_mail_routes, create_type_mail_read_routes, create_type_mail_write_routes};
 // <<< CUSTOM
-pub use public_routes::{
-    caller_ip, event_intake_routes, event_public_routes, trusted_proxy_from_env,
-    EventPublicState, ICS_THROTTLE,
-};
-pub use admin_routes::{event_admin_routes, EventActor, EventAdminState};
 // END CUSTOM
+
+// This directory's extension (hand-written; ADR-0031).
+include!("mod.ext.rs");
