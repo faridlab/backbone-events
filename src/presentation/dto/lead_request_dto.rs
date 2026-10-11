@@ -261,7 +261,7 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadRequestDto> for LeadRequest {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to LeadRequest here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

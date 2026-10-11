@@ -18,5 +18,3 @@ use crate::domain::entity::MailSlot;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type MailSlotDomainPolicy = PermitAllPolicy<MailSlot>;
 
-// <<< CUSTOM
-// END CUSTOM

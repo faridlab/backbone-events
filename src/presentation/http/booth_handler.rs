@@ -301,3 +301,4 @@ pub fn create_booth_transition_routes(service: Arc<BoothService>) -> Router {
         .route("/booths/:id/transitions/release", post(release_transition))
         .with_state(service)
 }
+

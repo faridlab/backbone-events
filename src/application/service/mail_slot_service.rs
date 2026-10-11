@@ -32,5 +32,3 @@ pub type MailSlotService = GenericCrudService<
     MailSlotRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

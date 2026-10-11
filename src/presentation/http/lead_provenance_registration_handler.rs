@@ -186,3 +186,4 @@ pub fn create_protected_lead_provenance_registration_routes<A: AuthMiddleware + 
             }
         }))
 }
+

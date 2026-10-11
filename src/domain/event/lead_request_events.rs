@@ -11,8 +11,6 @@ use crate::domain::entity::LeadRequest;
 /// enum containing a `Crud(CrudEvent<LeadRequest>)` variant.
 pub type LeadRequestEvent = CrudEvent<LeadRequest>;
 
-// <<< CUSTOM
-// END CUSTOM
 
 use backbone_messaging::{CrudEventPublisher, NoOpCrudEventPublisher};
 use std::sync::Arc;

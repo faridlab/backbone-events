@@ -16,9 +16,5 @@ pub type LeadRequestValidator = EntityValidator<LeadRequest>;
 pub fn lead_request_validator() -> LeadRequestValidator {
     EntityValidator::new()
         .rule(OptionalNotBlank::new("error_detail", |e: &LeadRequest| e.error_detail.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

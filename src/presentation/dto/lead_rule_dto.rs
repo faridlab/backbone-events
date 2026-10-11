@@ -303,7 +303,7 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadRuleDto> for LeadRule {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to LeadRule here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

@@ -278,7 +278,7 @@ impl backbone_core::ApplyUpdateDto<UpdateMailRegistrationDto> for MailRegistrati
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to MailRegistration here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

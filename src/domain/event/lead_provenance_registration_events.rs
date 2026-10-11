@@ -11,8 +11,6 @@ use crate::domain::entity::LeadProvenanceRegistration;
 /// enum containing a `Crud(CrudEvent<LeadProvenanceRegistration>)` variant.
 pub type LeadProvenanceRegistrationEvent = CrudEvent<LeadProvenanceRegistration>;
 
-// <<< CUSTOM
-// END CUSTOM
 
 use backbone_messaging::{CrudEventPublisher, NoOpCrudEventPublisher};
 use std::sync::Arc;

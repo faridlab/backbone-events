@@ -11,8 +11,6 @@ use crate::domain::entity::RegistrationAnswer;
 /// enum containing a `Crud(CrudEvent<RegistrationAnswer>)` variant.
 pub type RegistrationAnswerEvent = CrudEvent<RegistrationAnswer>;
 
-// <<< CUSTOM
-// END CUSTOM
 
 use backbone_messaging::{CrudEventPublisher, NoOpCrudEventPublisher};
 use std::sync::Arc;

@@ -10,44 +10,9 @@
 // CUSTOM SERVICES
 // ============================================================================
 
-// <<< CUSTOM SERVICES START >>>
-// The module's exported trait surface — the W8 seam contract (W8
-// consumes ONLY this: seat availability reads, publication state,
-// the guarded intake verb, the split's pair read, capability
-// minting, the scheduler run verb; NEVER a second seat counter).
-pub use crate::application::service::event_surface::{
-    CapabilityScope, DefaultEventSurface, EventSurface, PublicationState, RegistrationStateView,
-};
-// The typed error surface + the verb services (in-process hosts).
-pub use crate::application::service::event_error::{EventError, EventResult};
-pub use crate::application::service::event_service::EventCommandService;
-pub use crate::application::service::registration_service::RegistrationCommandService;
-pub use crate::application::service::scheduler_service::SchedulerService;
-pub use crate::application::service::seat_service::{SeatAvailability, SeatService};
-// The sale seam (the host bridge calls these typed verbs per outbox
-// delivery — SalesOrderConfirmed/Cancelled + the billing paid fact).
-pub use crate::application::service::sale_seam_service::{
-    OrderCancelled, OrderConfirmed, OrderPaid, RegistrationSpec, SaleSeamService,
-};
-// The booth verbs (explicit confirm, release, the one-way paid latch).
-pub use crate::application::service::booth_command_service::BoothCommandService;
-// The lead rule + generation surfaces (closed-vocabulary predicates;
-// the host-installed lead sink port with its refusing default).
-pub use crate::application::service::lead_command_service::{
-    CreateRuleInput, FromAnswerInput, LeadRuleCommandService, PatchRuleInput, RelinkInput,
-};
-pub use crate::application::service::lead_generation_service::LeadGenerationService;
-pub use crate::application::service::lead_sink::{
-    EventLeadSink, LeadGroup, LeadRegistrationView, RefusingLeadSink,
-};
-// The sms arm of the scheduler (port + refusing default).
-pub use crate::application::service::sms_port::{EventSmsQueue, RefusingSmsQueue, RenderedSms};
-// The registration desk verb.
-pub use crate::application::service::desk_service::DeskService;
-// The exported route composers (the host mounts these; the module
-// does not self-mount).
-pub use crate::presentation::http::{
-    event_admin_routes, event_intake_routes, event_public_routes, EventActor, EventAdminState,
-    EventPublicState,
-};
-// <<< CUSTOM SERVICES END >>>
+// Add custom public services here
+
+// This file's extension (hand-written; ADR-0031).
+#[path = "services.ext.rs"]
+mod services_ext;
+pub use services_ext::*;

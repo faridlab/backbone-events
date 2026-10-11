@@ -18,5 +18,3 @@ use crate::domain::entity::BoothCategory;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type BoothCategoryDomainPolicy = PermitAllPolicy<BoothCategory>;
 
-// <<< CUSTOM
-// END CUSTOM

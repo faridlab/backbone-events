@@ -19,14 +19,10 @@ pub fn event_validator() -> EventValidator {
         .rule(RequiredString::new("date_tz", |e: &Event| &e.date_tz))
         .rule(NonNegative::new("seats_max", |e: &Event| e.seats_max as i64))
         .rule(OptionalNotBlank::new("event_url", |e: &Event| e.event_url.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
     ;
     event_validator_ext::extend(validator)
 }
 
-// <<< CUSTOM
-// END CUSTOM
 
 // This file's extension (hand-written; ADR-0031).
 #[path = "event_validator.ext.rs"]

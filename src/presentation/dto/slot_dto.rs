@@ -265,7 +265,7 @@ impl backbone_core::ApplyUpdateDto<UpdateSlotDto> for Slot {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Slot here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

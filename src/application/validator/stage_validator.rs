@@ -17,9 +17,5 @@ pub fn stage_validator() -> StageValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &Stage| &e.name))
         .rule(NonNegative::new("sequence", |e: &Stage| e.sequence as i64))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

@@ -255,7 +255,7 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadRulePredicateDto> for LeadRulePredi
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to LeadRulePredicate here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

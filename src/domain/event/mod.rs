@@ -104,5 +104,3 @@ pub use ticket_event_handlers::TicketEventHandler;
 pub use type_mail_events::{TypeMailEvent, TypeMailEventPublisher, NoopTypeMailEventPublisher};
 pub use type_mail_event_handlers::TypeMailEventHandler;
 
-// <<< CUSTOM
-// END CUSTOM

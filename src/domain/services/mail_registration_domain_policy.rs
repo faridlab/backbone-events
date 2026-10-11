@@ -18,5 +18,3 @@ use crate::domain::entity::MailRegistration;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type MailRegistrationDomainPolicy = PermitAllPolicy<MailRegistration>;
 
-// <<< CUSTOM
-// END CUSTOM

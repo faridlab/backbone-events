@@ -19,9 +19,5 @@ pub fn event_type_validator() -> EventTypeValidator {
         .rule(OptionalNotBlank::new("description", |e: &EventType| e.description.as_deref()))
         .rule(NonNegative::new("seats_max", |e: &EventType| e.seats_max as i64))
         .rule(RequiredString::new("default_date_tz", |e: &EventType| &e.default_date_tz))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

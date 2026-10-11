@@ -17,9 +17,5 @@ pub fn question_answer_validator() -> QuestionAnswerValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &QuestionAnswer| &e.name))
         .rule(NonNegative::new("sequence", |e: &QuestionAnswer| e.sequence as i64))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

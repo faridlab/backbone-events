@@ -277,7 +277,7 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadProvenanceDto> for LeadProvenance {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to LeadProvenance here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

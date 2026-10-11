@@ -17,9 +17,5 @@ pub fn booth_category_validator() -> BoothCategoryValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &BoothCategory| &e.name))
         .rule(OptionalNotBlank::new("description", |e: &BoothCategory| e.description.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

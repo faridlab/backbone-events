@@ -32,5 +32,3 @@ pub type LeadRulePredicateService = GenericCrudService<
     LeadRulePredicateRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

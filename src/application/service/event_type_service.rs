@@ -32,5 +32,3 @@ pub type EventTypeService = GenericCrudService<
     EventTypeRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

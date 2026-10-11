@@ -261,7 +261,7 @@ impl backbone_core::ApplyUpdateDto<UpdateBoothCategoryDto> for BoothCategory {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to BoothCategory here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

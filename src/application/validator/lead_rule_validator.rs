@@ -16,9 +16,5 @@ pub type LeadRuleValidator = EntityValidator<LeadRule>;
 pub fn lead_rule_validator() -> LeadRuleValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &LeadRule| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

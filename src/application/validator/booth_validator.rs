@@ -19,9 +19,5 @@ pub fn booth_validator() -> BoothValidator {
         .rule(OptionalNotBlank::new("contact_name", |e: &Booth| e.contact_name.as_deref()))
         .rule(OptionalNotBlank::new("contact_email", |e: &Booth| e.contact_email.as_deref()))
         .rule(OptionalNotBlank::new("contact_phone", |e: &Booth| e.contact_phone.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

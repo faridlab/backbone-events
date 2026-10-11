@@ -18,5 +18,3 @@ use crate::domain::entity::EventType;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type EventTypeDomainPolicy = PermitAllPolicy<EventType>;
 
-// <<< CUSTOM
-// END CUSTOM

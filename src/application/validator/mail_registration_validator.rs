@@ -16,9 +16,5 @@ pub type MailRegistrationValidator = EntityValidator<MailRegistration>;
 pub fn mail_registration_validator() -> MailRegistrationValidator {
     EntityValidator::new()
         .rule(OptionalNotBlank::new("outcome", |e: &MailRegistration| e.outcome.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

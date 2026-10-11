@@ -16,9 +16,5 @@ pub type SlotValidator = EntityValidator<Slot>;
 pub fn slot_validator() -> SlotValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &Slot| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

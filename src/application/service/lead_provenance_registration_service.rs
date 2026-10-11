@@ -32,5 +32,3 @@ pub type LeadProvenanceRegistrationService = GenericCrudService<
     LeadProvenanceRegistrationRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

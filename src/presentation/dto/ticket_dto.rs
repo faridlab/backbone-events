@@ -302,7 +302,7 @@ impl backbone_core::ApplyUpdateDto<UpdateTicketDto> for Ticket {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Ticket here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

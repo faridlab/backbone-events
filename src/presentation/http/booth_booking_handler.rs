@@ -186,3 +186,4 @@ pub fn create_protected_booth_booking_routes<A: AuthMiddleware + Send + Sync + '
             }
         }))
 }
+

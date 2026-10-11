@@ -24,8 +24,6 @@ pub mod application;
 pub mod presentation;
 pub mod seeders;
 pub mod exports;
-// <<< CUSTOM MODULES
-// END CUSTOM
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -105,8 +103,6 @@ pub struct EventModule {
     pub(crate) tag_service: Arc<TagService>,
     pub(crate) ticket_service: Arc<TicketService>,
     pub(crate) type_mail_service: Arc<TypeMailService>,
-    // <<< CUSTOM FIELDS
-    // END CUSTOM
 }
 
 impl EventModule {
@@ -252,15 +248,11 @@ impl EventModule {
             .merge(create_type_mail_read_routes(self.type_mail_service.clone()))
     }
 
-    // <<< CUSTOM METHODS
-    // END CUSTOM
 }
 
 /// Builder for EventModule
 pub struct EventModuleBuilder {
     db_pool: Option<PgPool>,
-    // <<< CUSTOM BUILDER FIELDS
-    // END CUSTOM
 }
 
 impl EventModuleBuilder {
@@ -268,8 +260,6 @@ impl EventModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
-            // <<< CUSTOM BUILDER DEFAULTS
-            // END CUSTOM
         }
     }
 
@@ -279,8 +269,6 @@ impl EventModuleBuilder {
         self
     }
 
-    // <<< CUSTOM - custom builder methods
-    // END CUSTOM
 
     /// Build the module with configured dependencies
     pub fn build(self) -> anyhow::Result<EventModule> {
@@ -387,8 +375,6 @@ impl EventModuleBuilder {
         let type_mail_repository = Arc::new(TypeMailRepository::new(db_pool.clone()));
         let type_mail_service = Arc::new(TypeMailService::with_repository(type_mail_repository.clone()));
 
-        // <<< CUSTOM
-        // END CUSTOM
 
         Ok(EventModule {
             booth_category_service,
@@ -416,8 +402,6 @@ impl EventModuleBuilder {
             tag_service,
             ticket_service,
             type_mail_service,
-            // <<< CUSTOM
-            // END CUSTOM
         })
     }
 }

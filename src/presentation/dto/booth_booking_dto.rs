@@ -297,7 +297,7 @@ impl backbone_core::ApplyUpdateDto<UpdateBoothBookingDto> for BoothBooking {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to BoothBooking here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

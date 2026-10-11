@@ -18,5 +18,3 @@ use crate::domain::entity::TypeMail;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type TypeMailDomainPolicy = PermitAllPolicy<TypeMail>;
 
-// <<< CUSTOM
-// END CUSTOM

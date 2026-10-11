@@ -18,5 +18,3 @@ use crate::domain::entity::TypeBooth;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type TypeBoothDomainPolicy = PermitAllPolicy<TypeBooth>;
 
-// <<< CUSTOM
-// END CUSTOM

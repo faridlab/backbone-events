@@ -16,9 +16,5 @@ pub type LeadProvenanceValidator = EntityValidator<LeadProvenance>;
 pub fn lead_provenance_validator() -> LeadProvenanceValidator {
     EntityValidator::new()
         .rule(RequiredString::new("group_key", |e: &LeadProvenance| &e.group_key))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

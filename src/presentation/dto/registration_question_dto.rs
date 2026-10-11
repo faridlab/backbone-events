@@ -258,7 +258,7 @@ impl backbone_core::ApplyUpdateDto<UpdateRegistrationQuestionDto> for Registrati
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to RegistrationQuestion here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

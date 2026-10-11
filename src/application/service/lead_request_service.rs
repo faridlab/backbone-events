@@ -32,5 +32,3 @@ pub type LeadRequestService = GenericCrudService<
     LeadRequestRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

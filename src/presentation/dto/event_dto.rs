@@ -455,7 +455,7 @@ impl backbone_core::ApplyUpdateDto<UpdateEventDto> for Event {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Event here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

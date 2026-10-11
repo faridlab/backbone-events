@@ -32,5 +32,3 @@ pub type RegistrationQuestionService = GenericCrudService<
     RegistrationQuestionRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -174,8 +174,6 @@ impl BoothCategory {
         }
     }
 
-    // <<< CUSTOM METHODS START >>>
-    // <<< CUSTOM METHODS END >>>
 }
 
 impl super::Entity for BoothCategory {

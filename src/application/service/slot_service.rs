@@ -32,5 +32,3 @@ pub type SlotService = GenericCrudService<
     SlotRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -54,5 +54,3 @@ pub use tag_domain_policy::TagDomainPolicy;
 pub use ticket_domain_policy::TicketDomainPolicy;
 pub use type_mail_domain_policy::TypeMailDomainPolicy;
 
-// <<< CUSTOM
-// END CUSTOM

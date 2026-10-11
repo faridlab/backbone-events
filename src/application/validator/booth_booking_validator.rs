@@ -18,9 +18,5 @@ pub fn booth_booking_validator() -> BoothBookingValidator {
         .rule(OptionalNotBlank::new("contact_name", |e: &BoothBooking| e.contact_name.as_deref()))
         .rule(OptionalNotBlank::new("contact_email", |e: &BoothBooking| e.contact_email.as_deref()))
         .rule(OptionalNotBlank::new("contact_phone", |e: &BoothBooking| e.contact_phone.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

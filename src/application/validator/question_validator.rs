@@ -16,9 +16,5 @@ pub type QuestionValidator = EntityValidator<Question>;
 pub fn question_validator() -> QuestionValidator {
     EntityValidator::new()
         .rule(RequiredString::new("question", |e: &Question| &e.question))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

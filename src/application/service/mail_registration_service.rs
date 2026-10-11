@@ -32,5 +32,3 @@ pub type MailRegistrationService = GenericCrudService<
     MailRegistrationRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

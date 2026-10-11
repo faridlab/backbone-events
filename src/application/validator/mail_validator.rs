@@ -17,9 +17,5 @@ pub fn mail_validator() -> MailValidator {
     EntityValidator::new()
         .rule(NonNegative::new("interval_nbr", |e: &Mail| e.interval_nbr as i64))
         .rule(OptionalNotBlank::new("template_kind", |e: &Mail| e.template_kind.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

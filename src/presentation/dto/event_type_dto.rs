@@ -301,7 +301,7 @@ impl backbone_core::ApplyUpdateDto<UpdateEventTypeDto> for EventType {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to EventType here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

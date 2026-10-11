@@ -16,9 +16,5 @@ pub type RegistrationQuestionValidator = EntityValidator<RegistrationQuestion>;
 pub fn registration_question_validator() -> RegistrationQuestionValidator {
     EntityValidator::new()
         .rule(NonNegative::new("sequence", |e: &RegistrationQuestion| e.sequence as i64))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

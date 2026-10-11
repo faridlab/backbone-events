@@ -31,8 +31,6 @@ pub mod tag_handler;
 pub mod ticket_handler;
 pub mod type_mail_handler;
 
-// <<< CUSTOM
-// END CUSTOM
 
 // Re-exports
 pub use booth_category_handler::{create_booth_category_routes, create_booth_category_read_routes, create_booth_category_write_routes};
@@ -60,8 +58,6 @@ pub use tag_category_handler::{create_tag_category_routes, create_tag_category_r
 pub use tag_handler::{create_tag_routes, create_tag_read_routes, create_tag_write_routes};
 pub use ticket_handler::{create_ticket_routes, create_ticket_read_routes, create_ticket_write_routes};
 pub use type_mail_handler::{create_type_mail_routes, create_type_mail_read_routes, create_type_mail_write_routes};
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

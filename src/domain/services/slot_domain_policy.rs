@@ -18,5 +18,3 @@ use crate::domain::entity::Slot;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type SlotDomainPolicy = PermitAllPolicy<Slot>;
 
-// <<< CUSTOM
-// END CUSTOM

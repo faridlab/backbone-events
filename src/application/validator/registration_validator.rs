@@ -20,9 +20,5 @@ pub fn registration_validator() -> RegistrationValidator {
         .rule(OptionalNotBlank::new("phone", |e: &Registration| e.phone.as_deref()))
         .rule(OptionalNotBlank::new("company_name", |e: &Registration| e.company_name.as_deref()))
         .rule(RequiredString::new("barcode", |e: &Registration| &e.barcode))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

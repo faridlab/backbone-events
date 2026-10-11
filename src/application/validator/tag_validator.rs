@@ -17,9 +17,5 @@ pub fn tag_validator() -> TagValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &Tag| &e.name))
         .rule(OptionalNotBlank::new("color", |e: &Tag| e.color.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

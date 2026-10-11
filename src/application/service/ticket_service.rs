@@ -32,5 +32,3 @@ pub type TicketService = GenericCrudService<
     TicketRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

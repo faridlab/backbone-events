@@ -57,5 +57,3 @@ pub use tag_validator::{TagValidator, tag_validator};
 pub use ticket_validator::{TicketValidator, ticket_validator};
 pub use type_mail_validator::{TypeMailValidator, type_mail_validator};
 
-// <<< CUSTOM
-// END CUSTOM

@@ -32,5 +32,3 @@ pub type TypeBoothService = GenericCrudService<
     TypeBoothRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -18,5 +18,3 @@ use crate::domain::entity::RegistrationAnswer;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type RegistrationAnswerDomainPolicy = PermitAllPolicy<RegistrationAnswer>;
 
-// <<< CUSTOM
-// END CUSTOM

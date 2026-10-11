@@ -18,5 +18,3 @@ use crate::domain::entity::LeadProvenanceRegistration;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type LeadProvenanceRegistrationDomainPolicy = PermitAllPolicy<LeadProvenanceRegistration>;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -186,3 +186,4 @@ pub fn create_protected_registration_answer_routes<A: AuthMiddleware + Send + Sy
             }
         }))
 }
+

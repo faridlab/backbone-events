@@ -299,7 +299,7 @@ impl backbone_core::ApplyUpdateDto<UpdateTypeMailDto> for TypeMail {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to TypeMail here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

@@ -18,5 +18,3 @@ use crate::domain::entity::LeadRule;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type LeadRuleDomainPolicy = PermitAllPolicy<LeadRule>;
 
-// <<< CUSTOM
-// END CUSTOM

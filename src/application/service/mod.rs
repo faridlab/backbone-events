@@ -33,8 +33,6 @@ pub mod tag_service;
 pub mod ticket_service;
 pub mod type_mail_service;
 
-// <<< CUSTOM
-// END CUSTOM
 
 pub use booth_category_service::BoothCategoryService;
 pub use booth_service::BoothService;
@@ -61,8 +59,6 @@ pub use tag_category_service::TagCategoryService;
 pub use tag_service::TagService;
 pub use ticket_service::TicketService;
 pub use type_mail_service::TypeMailService;
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

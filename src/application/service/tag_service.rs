@@ -32,5 +32,3 @@ pub type TagService = GenericCrudService<
     TagRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

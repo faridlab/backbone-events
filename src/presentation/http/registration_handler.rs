@@ -404,3 +404,4 @@ pub fn create_registration_transition_routes(service: Arc<RegistrationService>) 
         .route("/registrations/:id/transitions/cancel", post(cancel_transition))
         .with_state(service)
 }
+

@@ -275,7 +275,7 @@ impl backbone_core::ApplyUpdateDto<UpdateMailSlotDto> for MailSlot {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to MailSlot here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

@@ -17,9 +17,5 @@ pub fn ticket_validator() -> TicketValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &Ticket| &e.name))
         .rule(NonNegative::new("seats_max", |e: &Ticket| e.seats_max as i64))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

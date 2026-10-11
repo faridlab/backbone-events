@@ -16,9 +16,5 @@ pub type TypeBoothValidator = EntityValidator<TypeBooth>;
 pub fn type_booth_validator() -> TypeBoothValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &TypeBooth| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

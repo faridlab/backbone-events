@@ -249,7 +249,7 @@ impl backbone_core::ApplyUpdateDto<UpdateTagDto> for Tag {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Tag here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

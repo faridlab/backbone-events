@@ -16,9 +16,5 @@ pub type RegistrationAnswerValidator = EntityValidator<RegistrationAnswer>;
 pub fn registration_answer_validator() -> RegistrationAnswerValidator {
     EntityValidator::new()
         .rule(OptionalNotBlank::new("value_text", |e: &RegistrationAnswer| e.value_text.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

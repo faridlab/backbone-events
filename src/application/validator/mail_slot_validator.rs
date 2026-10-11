@@ -14,10 +14,6 @@ pub type MailSlotValidator = EntityValidator<MailSlot>;
 /// Build a validator for MailSlot with all schema-defined field rules.
 pub fn mail_slot_validator() -> MailSlotValidator {
     EntityValidator::new()
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
         // No schema-derived rules — add custom rules above.
 }
 
-// <<< CUSTOM
-// END CUSTOM

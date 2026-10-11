@@ -32,5 +32,3 @@ pub type BoothService = GenericCrudService<
     BoothRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

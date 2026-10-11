@@ -343,7 +343,7 @@ impl backbone_core::ApplyUpdateDto<UpdateBoothDto> for Booth {
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to Booth here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

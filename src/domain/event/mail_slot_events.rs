@@ -11,8 +11,6 @@ use crate::domain::entity::MailSlot;
 /// enum containing a `Crud(CrudEvent<MailSlot>)` variant.
 pub type MailSlotEvent = CrudEvent<MailSlot>;
 
-// <<< CUSTOM
-// END CUSTOM
 
 use backbone_messaging::{CrudEventPublisher, NoOpCrudEventPublisher};
 use std::sync::Arc;

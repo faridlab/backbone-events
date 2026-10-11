@@ -32,5 +32,3 @@ pub mod tag_specification;
 pub mod ticket_specification;
 pub mod type_mail_specification;
 
-// <<< CUSTOM
-// END CUSTOM
