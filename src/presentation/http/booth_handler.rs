@@ -215,14 +215,20 @@ pub async fn confirm_transition(
         let allowed_roles = BoothStateTransition::Confirm.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "booth:transition:confirm");
         let has_update_perm = auth.permissions.iter().any(|p| p == "booth:update");
-        if !has_specific_perm && !has_update_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("Insufficient permissions for confirm transition")));
+        let _ = &allowed_roles;
+        if !has_specific_perm {
+            if !has_update_perm {
+                return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("Insufficient permissions for confirm transition")));
+            }
+            tracing::warn!(target: "backbone::write_guard", entity = "Booth", verb = "confirm", code = "transition_by_update_permission", "a transition granted only by booth:update, running in shadow; it needs booth:transition:confirm");
         }
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: BoothStateState = entity.state.to_string().parse()
-        .unwrap_or(BoothStateState::default());
+    let current_state: BoothStateState = match entity.state.to_string().parse() {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::CONFLICT, Json(ApiResponse::<BoothResponseDto>::error("The stored state is not a state of this machine"))),
+    };
     let sm = BoothStateStateMachine::from_state(current_state);
     if !sm.can_transition(BoothStateTransition::Confirm) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<BoothResponseDto>::error("Transition not allowed from current state")));
@@ -230,9 +236,9 @@ pub async fn confirm_transition(
 
     // Apply transition via partial update
     let mut fields: HashMap<String, serde_json::Value> = HashMap::new();
-    fields.insert("state".to_string(), serde_json::Value::String("Unavailable".to_string()));
+    fields.insert("state".to_string(), serde_json::Value::String("unavailable".to_string()));
 
-    match service.partial_update(&id, fields).await {
+    match backbone_core::write_guard::as_transition("confirm", service.partial_update(&id, fields)).await {
         Ok(Some(updated)) => {
             let response: BoothResponseDto = updated.into();
             (StatusCode::OK, Json(ApiResponse::ok(response)))
@@ -265,14 +271,20 @@ pub async fn release_transition(
         let allowed_roles = BoothStateTransition::Release.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "booth:transition:release");
         let has_update_perm = auth.permissions.iter().any(|p| p == "booth:update");
-        if !has_specific_perm && !has_update_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("Insufficient permissions for release transition")));
+        let _ = &allowed_roles;
+        if !has_specific_perm {
+            if !has_update_perm {
+                return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("Insufficient permissions for release transition")));
+            }
+            tracing::warn!(target: "backbone::write_guard", entity = "Booth", verb = "release", code = "transition_by_update_permission", "a transition granted only by booth:update, running in shadow; it needs booth:transition:release");
         }
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: BoothStateState = entity.state.to_string().parse()
-        .unwrap_or(BoothStateState::default());
+    let current_state: BoothStateState = match entity.state.to_string().parse() {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::CONFLICT, Json(ApiResponse::<BoothResponseDto>::error("The stored state is not a state of this machine"))),
+    };
     let sm = BoothStateStateMachine::from_state(current_state);
     if !sm.can_transition(BoothStateTransition::Release) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<BoothResponseDto>::error("Transition not allowed from current state")));
@@ -280,9 +292,9 @@ pub async fn release_transition(
 
     // Apply transition via partial update
     let mut fields: HashMap<String, serde_json::Value> = HashMap::new();
-    fields.insert("state".to_string(), serde_json::Value::String("Available".to_string()));
+    fields.insert("state".to_string(), serde_json::Value::String("available".to_string()));
 
-    match service.partial_update(&id, fields).await {
+    match backbone_core::write_guard::as_transition("release", service.partial_update(&id, fields)).await {
         Ok(Some(updated)) => {
             let response: BoothResponseDto = updated.into();
             (StatusCode::OK, Json(ApiResponse::ok(response)))

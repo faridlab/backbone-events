@@ -28,6 +28,7 @@ model: Registration
 
 states:
   field: state
+  verbs: hand
   values:
     draft:
       description: "Sale-flow special case only — held while the linked order is to_pay"

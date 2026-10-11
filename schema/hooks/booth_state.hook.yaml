@@ -21,6 +21,7 @@ model: Booth
 
 states:
   field: state
+  verbs: hand
   values:
     available:
       initial: true

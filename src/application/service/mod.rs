@@ -59,6 +59,9 @@ pub use tag_category_service::TagCategoryService;
 pub use tag_service::TagService;
 pub use ticket_service::TicketService;
 pub use type_mail_service::TypeMailService;
+pub use booth_service::BoothRowRules;
+pub mod registration_row_rules;
+pub use registration_row_rules::RegistrationRowRules;
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

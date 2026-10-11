@@ -216,14 +216,20 @@ pub async fn set_draft_transition(
         let allowed_roles = RegistrationStateTransition::SetDraft.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:set_draft");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
-        if !has_specific_perm && !has_update_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for set_draft transition")));
+        let _ = &allowed_roles;
+        if !has_specific_perm {
+            if !has_update_perm {
+                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for set_draft transition")));
+            }
+            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "set_draft", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:set_draft");
         }
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: RegistrationStateState = entity.state.to_string().parse()
-        .unwrap_or(RegistrationStateState::default());
+    let current_state: RegistrationStateState = match entity.state.to_string().parse() {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::CONFLICT, Json(ApiResponse::<RegistrationResponseDto>::error("The stored state is not a state of this machine"))),
+    };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::SetDraft) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
@@ -231,9 +237,9 @@ pub async fn set_draft_transition(
 
     // Apply transition via partial update
     let mut fields: HashMap<String, serde_json::Value> = HashMap::new();
-    fields.insert("state".to_string(), serde_json::Value::String("Draft".to_string()));
+    fields.insert("state".to_string(), serde_json::Value::String("draft".to_string()));
 
-    match service.partial_update(&id, fields).await {
+    match backbone_core::write_guard::as_transition("set_draft", service.partial_update(&id, fields)).await {
         Ok(Some(updated)) => {
             let response: RegistrationResponseDto = updated.into();
             (StatusCode::OK, Json(ApiResponse::ok(response)))
@@ -266,14 +272,20 @@ pub async fn confirm_transition(
         let allowed_roles = RegistrationStateTransition::Confirm.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:confirm");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
-        if !has_specific_perm && !has_update_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for confirm transition")));
+        let _ = &allowed_roles;
+        if !has_specific_perm {
+            if !has_update_perm {
+                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for confirm transition")));
+            }
+            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "confirm", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:confirm");
         }
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: RegistrationStateState = entity.state.to_string().parse()
-        .unwrap_or(RegistrationStateState::default());
+    let current_state: RegistrationStateState = match entity.state.to_string().parse() {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::CONFLICT, Json(ApiResponse::<RegistrationResponseDto>::error("The stored state is not a state of this machine"))),
+    };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::Confirm) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
@@ -281,9 +293,9 @@ pub async fn confirm_transition(
 
     // Apply transition via partial update
     let mut fields: HashMap<String, serde_json::Value> = HashMap::new();
-    fields.insert("state".to_string(), serde_json::Value::String("Open".to_string()));
+    fields.insert("state".to_string(), serde_json::Value::String("open".to_string()));
 
-    match service.partial_update(&id, fields).await {
+    match backbone_core::write_guard::as_transition("confirm", service.partial_update(&id, fields)).await {
         Ok(Some(updated)) => {
             let response: RegistrationResponseDto = updated.into();
             (StatusCode::OK, Json(ApiResponse::ok(response)))
@@ -316,14 +328,20 @@ pub async fn set_done_transition(
         let allowed_roles = RegistrationStateTransition::SetDone.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:set_done");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
-        if !has_specific_perm && !has_update_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for set_done transition")));
+        let _ = &allowed_roles;
+        if !has_specific_perm {
+            if !has_update_perm {
+                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for set_done transition")));
+            }
+            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "set_done", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:set_done");
         }
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: RegistrationStateState = entity.state.to_string().parse()
-        .unwrap_or(RegistrationStateState::default());
+    let current_state: RegistrationStateState = match entity.state.to_string().parse() {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::CONFLICT, Json(ApiResponse::<RegistrationResponseDto>::error("The stored state is not a state of this machine"))),
+    };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::SetDone) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
@@ -331,9 +349,9 @@ pub async fn set_done_transition(
 
     // Apply transition via partial update
     let mut fields: HashMap<String, serde_json::Value> = HashMap::new();
-    fields.insert("state".to_string(), serde_json::Value::String("Done".to_string()));
+    fields.insert("state".to_string(), serde_json::Value::String("done".to_string()));
 
-    match service.partial_update(&id, fields).await {
+    match backbone_core::write_guard::as_transition("set_done", service.partial_update(&id, fields)).await {
         Ok(Some(updated)) => {
             let response: RegistrationResponseDto = updated.into();
             (StatusCode::OK, Json(ApiResponse::ok(response)))
@@ -366,14 +384,20 @@ pub async fn cancel_transition(
         let allowed_roles = RegistrationStateTransition::Cancel.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:cancel");
         let has_update_perm = auth.permissions.iter().any(|p| p == "registration:update");
-        if !has_specific_perm && !has_update_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for cancel transition")));
+        let _ = &allowed_roles;
+        if !has_specific_perm {
+            if !has_update_perm {
+                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for cancel transition")));
+            }
+            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "cancel", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:cancel");
         }
     }
 
     // Create state machine from entity's actual status and validate transition
-    let current_state: RegistrationStateState = entity.state.to_string().parse()
-        .unwrap_or(RegistrationStateState::default());
+    let current_state: RegistrationStateState = match entity.state.to_string().parse() {
+        Ok(s) => s,
+        Err(_) => return (StatusCode::CONFLICT, Json(ApiResponse::<RegistrationResponseDto>::error("The stored state is not a state of this machine"))),
+    };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::Cancel) {
         return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
@@ -381,9 +405,9 @@ pub async fn cancel_transition(
 
     // Apply transition via partial update
     let mut fields: HashMap<String, serde_json::Value> = HashMap::new();
-    fields.insert("state".to_string(), serde_json::Value::String("Cancel".to_string()));
+    fields.insert("state".to_string(), serde_json::Value::String("cancel".to_string()));
 
-    match service.partial_update(&id, fields).await {
+    match backbone_core::write_guard::as_transition("cancel", service.partial_update(&id, fields)).await {
         Ok(Some(updated)) => {
             let response: RegistrationResponseDto = updated.into();
             (StatusCode::OK, Json(ApiResponse::ok(response)))

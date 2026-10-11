@@ -281,7 +281,7 @@ impl EventModuleBuilder {
 
         // Booth service
         let booth_repository = Arc::new(BoothRepository::new(db_pool.clone()));
-        let booth_service = Arc::new(BoothService::with_repository(booth_repository.clone()));
+        let booth_service = Arc::new(BoothService::with_repository(booth_repository.clone()).with_guard(Arc::new(crate::application::service::BoothRowRules)));
 
         // TypeBooth service
         let type_booth_repository = Arc::new(TypeBoothRepository::new(db_pool.clone()));
@@ -345,7 +345,7 @@ impl EventModuleBuilder {
 
         // Registration service
         let registration_repository = Arc::new(RegistrationRepository::new(db_pool.clone()));
-        let registration_service = Arc::new(RegistrationService::with_repository(registration_repository.clone()));
+        let registration_service = Arc::new(RegistrationService::with_repository(registration_repository.clone()).with_guard(Arc::new(crate::application::service::RegistrationRowRules)));
 
         // RegistrationAnswer service
         let registration_answer_repository = Arc::new(RegistrationAnswerRepository::new(db_pool.clone()));
