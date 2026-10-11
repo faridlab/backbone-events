@@ -189,22 +189,54 @@ impl Drop for TestDb {
 /// lives in the audit module. The probes therefore apply that module's
 /// migrations first.
 ///
-/// The directory comes from the audit module's published MIGRATIONS_DIR const
-/// (resolved at that crate's compile time, so it is the checkout of the exact
-/// pinned tag). `EVENT_TEST_AUDITLOG_MIGRATIONS` overrides it for a host that
-/// has the files somewhere else.
+/// The directory is the audit crate's own `migrations/` in the cargo registry
+/// checkout of the exact version this module's `Cargo.lock` pins, so the probes
+/// apply the schema of the revision they compile against.
+/// `EVENT_TEST_AUDITLOG_MIGRATIONS` overrides it for a host that has the files
+/// somewhere else.
 fn audit_migrations_dir() -> Result<std::path::PathBuf, String> {
     if let Ok(dir) = std::env::var("EVENT_TEST_AUDITLOG_MIGRATIONS") {
         return Ok(std::path::PathBuf::from(dir));
     }
-    // The audit module publishes its migrations directory as a compile-time
-    // const, so this lands in the cargo checkout of the pinned tag — the
-    // exact revision in the graph, no cargo-metadata lookup needed.
-    let dir = std::path::PathBuf::from(backbone_auditlog::MIGRATIONS_DIR);
-    if !dir.is_dir() {
-        return Err(format!("{} is not a directory", dir.display()));
+    const CRATE: &str = "backbone-auditlog";
+    let lock_path = concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.lock");
+    let lock = std::fs::read_to_string(lock_path)
+        .map_err(|e| format!("cannot read {lock_path}: {e}"))?;
+    // The pinned version is the `version = "…"` line right after the crate's
+    // `name = "…"` line in its [[package]] entry.
+    let mut lines = lock.lines();
+    let version = loop {
+        match lines.next() {
+            Some(l) if l.trim() == format!("name = \"{CRATE}\"") => {
+                break lines
+                    .next()
+                    .and_then(|v| v.trim().strip_prefix("version = \""))
+                    .and_then(|v| v.strip_suffix('"'))
+                    .map(str::to_string)
+                    .ok_or_else(|| format!("{lock_path}: no version line after {CRATE}"))?;
+            }
+            Some(_) => continue,
+            None => return Err(format!("{lock_path} does not pin {CRATE}")),
+        }
+    };
+    let cargo_home = std::env::var("CARGO_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|_| std::env::var("HOME").map(|h| std::path::Path::new(&h).join(".cargo")))
+        .map_err(|_| "neither CARGO_HOME nor HOME is set".to_string())?;
+    let registry = cargo_home.join("registry").join("src");
+    let indexes = std::fs::read_dir(&registry)
+        .map_err(|e| format!("cannot read {}: {e}", registry.display()))?;
+    for index in indexes.filter_map(|e| e.ok()) {
+        let dir = index.path().join(format!("{CRATE}-{version}")).join("migrations");
+        if dir.is_dir() {
+            return Ok(dir);
+        }
     }
-    Ok(dir)
+    Err(format!(
+        "no {CRATE}-{version}/migrations under {}; run a cargo build first, \
+         or set EVENT_TEST_AUDITLOG_MIGRATIONS",
+        registry.display()
+    ))
 }
 
 /// Apply the migrations of one directory with a raw SQL file runner (sorted
