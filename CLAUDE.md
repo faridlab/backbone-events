@@ -155,8 +155,10 @@ Rules:
 This module's tables are audited: writes cast to `audit_event_type` and land
 on `auditlog.audit_trails`, both owned by backbone-auditlog. A scratch
 database carrying only this module's migrations cannot take a single write.
-Apply the audit module's migrations FIRST — it publishes its directory as
-`backbone_auditlog::MIGRATIONS_DIR` (a compile-time const pointing into the
-pinned tag's checkout), which is what this module's probe harness uses. By
-hand: `psql -d <scratch> -f $(...)/backbone-auditlog/migrations/*.up.sql`
-in filename order, then this module's own migrations.
+Apply the audit module's migrations FIRST. The probe harness finds them in
+the cargo registry checkout of the auditlog version this module's
+`Cargo.lock` pins (`$CARGO_HOME/registry/src/*/backbone-auditlog-<version>/
+migrations`, `CARGO_HOME` defaulting to `~/.cargo`), so the probes apply the
+schema of the revision they compile against; `EVENT_TEST_AUDITLOG_MIGRATIONS`
+points it elsewhere. By hand: `psql -d <scratch> -f <that dir>/*.up.sql` in
+filename order, then this module's own migrations.
