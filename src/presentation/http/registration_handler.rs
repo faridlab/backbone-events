@@ -16,7 +16,6 @@ use chrono::{DateTime, Utc};
 use backbone_core::http::{ApiResponse, BackboneCrudHandler};
 
 // Auth integration (optional)
-#[cfg(feature = "auth")]
 use backbone_auth::middleware::AuthContext;
 #[cfg(feature = "auth")]
 use backbone_auth::AuthMiddleware;
@@ -199,7 +198,7 @@ pub fn create_protected_registration_routes<A: AuthMiddleware + Send + Sync + 's
 pub async fn set_draft_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    #[cfg(feature = "auth")] axum::Extension(auth): axum::Extension<AuthContext>,
+    auth: Option<axum::Extension<AuthContext>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
 
@@ -210,8 +209,10 @@ pub async fn set_draft_transition(
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
     };
 
-    // Check permission (if auth enabled)
-    #[cfg(feature = "auth")]
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
+    };
     {
         let allowed_roles = RegistrationStateTransition::SetDraft.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:set_draft");
@@ -255,7 +256,7 @@ pub async fn set_draft_transition(
 pub async fn confirm_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    #[cfg(feature = "auth")] axum::Extension(auth): axum::Extension<AuthContext>,
+    auth: Option<axum::Extension<AuthContext>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
 
@@ -266,8 +267,10 @@ pub async fn confirm_transition(
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
     };
 
-    // Check permission (if auth enabled)
-    #[cfg(feature = "auth")]
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
+    };
     {
         let allowed_roles = RegistrationStateTransition::Confirm.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:confirm");
@@ -311,7 +314,7 @@ pub async fn confirm_transition(
 pub async fn set_done_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    #[cfg(feature = "auth")] axum::Extension(auth): axum::Extension<AuthContext>,
+    auth: Option<axum::Extension<AuthContext>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
 
@@ -322,8 +325,10 @@ pub async fn set_done_transition(
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
     };
 
-    // Check permission (if auth enabled)
-    #[cfg(feature = "auth")]
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
+    };
     {
         let allowed_roles = RegistrationStateTransition::SetDone.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:set_done");
@@ -367,7 +372,7 @@ pub async fn set_done_transition(
 pub async fn cancel_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    #[cfg(feature = "auth")] axum::Extension(auth): axum::Extension<AuthContext>,
+    auth: Option<axum::Extension<AuthContext>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
 
@@ -378,8 +383,10 @@ pub async fn cancel_transition(
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
     };
 
-    // Check permission (if auth enabled)
-    #[cfg(feature = "auth")]
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
+    };
     {
         let allowed_roles = RegistrationStateTransition::Cancel.allowed_roles();
         let has_specific_perm = auth.permissions.iter().any(|p| p == "registration:transition:cancel");
