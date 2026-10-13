@@ -32,3 +32,49 @@ pub type LeadProvenanceService = GenericCrudService<
     LeadProvenanceRepository,
 >;
 
+/// The rules the schema declares for LeadProvenance, checked against the row a create or update
+/// would store. The generated build attaches it to [`LeadProvenanceService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct LeadProvenanceRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<LeadProvenance> for LeadProvenanceRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, LeadProvenance>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `rule_id_required` (@required on LeadProvenance.rule_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["rule_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "rule_id")), r::not(r::is_empty(r::trim(r::field(row, "rule_id")))))) {
+            refuse.push(Violation::new("rule_id", "required", "rule_id is required"));
+        }
+        // `event_id_required` (@required on LeadProvenance.event_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["event_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "event_id")), r::not(r::is_empty(r::trim(r::field(row, "event_id")))))) {
+            refuse.push(Violation::new("event_id", "required", "event_id is required"));
+        }
+        // `group_key_required` (@required on LeadProvenance.group_key)
+        if (create || (update && r::changed(old.as_ref(), row, &["group_key"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "group_key")), r::not(r::is_empty(r::trim(r::field(row, "group_key")))))) {
+            refuse.push(Violation::new("group_key", "required", "group_key is required"));
+        }
+        // `group_key_max_length` (@max(160) on LeadProvenance.group_key)
+        if (create || (update && r::changed(old.as_ref(), row, &["group_key"]))) && !r::holds(&r::le(r::length(r::field(row, "group_key")), r::Val::Num(160.0_f64))) {
+            shadow.push(Violation::new("group_key", "max_length", "group_key must be at most 160 characters").with_param("max", 160_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

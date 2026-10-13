@@ -277,7 +277,7 @@ impl EventModuleBuilder {
 
         // BoothCategory service
         let booth_category_repository = Arc::new(BoothCategoryRepository::new(db_pool.clone()));
-        let booth_category_service = Arc::new(BoothCategoryService::with_repository(booth_category_repository.clone()));
+        let booth_category_service = Arc::new(BoothCategoryService::with_repository(booth_category_repository.clone()).with_guard(Arc::new(crate::application::service::BoothCategoryRowRules)));
 
         // Booth service
         let booth_repository = Arc::new(BoothRepository::new(db_pool.clone()));
@@ -285,63 +285,63 @@ impl EventModuleBuilder {
 
         // TypeBooth service
         let type_booth_repository = Arc::new(TypeBoothRepository::new(db_pool.clone()));
-        let type_booth_service = Arc::new(TypeBoothService::with_repository(type_booth_repository.clone()));
+        let type_booth_service = Arc::new(TypeBoothService::with_repository(type_booth_repository.clone()).with_guard(Arc::new(crate::application::service::TypeBoothRowRules)));
 
         // BoothBooking service
         let booth_booking_repository = Arc::new(BoothBookingRepository::new(db_pool.clone()));
-        let booth_booking_service = Arc::new(BoothBookingService::with_repository(booth_booking_repository.clone()));
+        let booth_booking_service = Arc::new(BoothBookingService::with_repository(booth_booking_repository.clone()).with_guard(Arc::new(crate::application::service::BoothBookingRowRules)));
 
         // Event service
         let event_repository = Arc::new(EventRepository::new(db_pool.clone()));
-        let event_service = Arc::new(EventService::with_repository(event_repository.clone()));
+        let event_service = Arc::new(EventService::with_repository(event_repository.clone()).with_guard(Arc::new(crate::application::service::EventRowRules)));
 
         // EventType service
         let event_type_repository = Arc::new(EventTypeRepository::new(db_pool.clone()));
-        let event_type_service = Arc::new(EventTypeService::with_repository(event_type_repository.clone()));
+        let event_type_service = Arc::new(EventTypeService::with_repository(event_type_repository.clone()).with_guard(Arc::new(crate::application::service::EventTypeRowRules)));
 
         // LeadProvenance service
         let lead_provenance_repository = Arc::new(LeadProvenanceRepository::new(db_pool.clone()));
-        let lead_provenance_service = Arc::new(LeadProvenanceService::with_repository(lead_provenance_repository.clone()));
+        let lead_provenance_service = Arc::new(LeadProvenanceService::with_repository(lead_provenance_repository.clone()).with_guard(Arc::new(crate::application::service::LeadProvenanceRowRules)));
 
         // LeadProvenanceRegistration service
         let lead_provenance_registration_repository = Arc::new(LeadProvenanceRegistrationRepository::new(db_pool.clone()));
-        let lead_provenance_registration_service = Arc::new(LeadProvenanceRegistrationService::with_repository(lead_provenance_registration_repository.clone()));
+        let lead_provenance_registration_service = Arc::new(LeadProvenanceRegistrationService::with_repository(lead_provenance_registration_repository.clone()).with_guard(Arc::new(crate::application::service::LeadProvenanceRegistrationRowRules)));
 
         // LeadRequest service
         let lead_request_repository = Arc::new(LeadRequestRepository::new(db_pool.clone()));
-        let lead_request_service = Arc::new(LeadRequestService::with_repository(lead_request_repository.clone()));
+        let lead_request_service = Arc::new(LeadRequestService::with_repository(lead_request_repository.clone()).with_guard(Arc::new(crate::application::service::LeadRequestRowRules)));
 
         // LeadRule service
         let lead_rule_repository = Arc::new(LeadRuleRepository::new(db_pool.clone()));
-        let lead_rule_service = Arc::new(LeadRuleService::with_repository(lead_rule_repository.clone()));
+        let lead_rule_service = Arc::new(LeadRuleService::with_repository(lead_rule_repository.clone()).with_guard(Arc::new(crate::application::service::LeadRuleRowRules)));
 
         // LeadRulePredicate service
         let lead_rule_predicate_repository = Arc::new(LeadRulePredicateRepository::new(db_pool.clone()));
-        let lead_rule_predicate_service = Arc::new(LeadRulePredicateService::with_repository(lead_rule_predicate_repository.clone()));
+        let lead_rule_predicate_service = Arc::new(LeadRulePredicateService::with_repository(lead_rule_predicate_repository.clone()).with_guard(Arc::new(crate::application::service::LeadRulePredicateRowRules)));
 
         // Mail service
         let mail_repository = Arc::new(MailRepository::new(db_pool.clone()));
-        let mail_service = Arc::new(MailService::with_repository(mail_repository.clone()));
+        let mail_service = Arc::new(MailService::with_repository(mail_repository.clone()).with_guard(Arc::new(crate::application::service::MailRowRules)));
 
         // MailRegistration service
         let mail_registration_repository = Arc::new(MailRegistrationRepository::new(db_pool.clone()));
-        let mail_registration_service = Arc::new(MailRegistrationService::with_repository(mail_registration_repository.clone()));
+        let mail_registration_service = Arc::new(MailRegistrationService::with_repository(mail_registration_repository.clone()).with_guard(Arc::new(crate::application::service::MailRegistrationRowRules)));
 
         // MailSlot service
         let mail_slot_repository = Arc::new(MailSlotRepository::new(db_pool.clone()));
-        let mail_slot_service = Arc::new(MailSlotService::with_repository(mail_slot_repository.clone()));
+        let mail_slot_service = Arc::new(MailSlotService::with_repository(mail_slot_repository.clone()).with_guard(Arc::new(crate::application::service::MailSlotRowRules)));
 
         // Question service
         let question_repository = Arc::new(QuestionRepository::new(db_pool.clone()));
-        let question_service = Arc::new(QuestionService::with_repository(question_repository.clone()));
+        let question_service = Arc::new(QuestionService::with_repository(question_repository.clone()).with_guard(Arc::new(crate::application::service::QuestionRowRules)));
 
         // QuestionAnswer service
         let question_answer_repository = Arc::new(QuestionAnswerRepository::new(db_pool.clone()));
-        let question_answer_service = Arc::new(QuestionAnswerService::with_repository(question_answer_repository.clone()));
+        let question_answer_service = Arc::new(QuestionAnswerService::with_repository(question_answer_repository.clone()).with_guard(Arc::new(crate::application::service::QuestionAnswerRowRules)));
 
         // RegistrationQuestion service
         let registration_question_repository = Arc::new(RegistrationQuestionRepository::new(db_pool.clone()));
-        let registration_question_service = Arc::new(RegistrationQuestionService::with_repository(registration_question_repository.clone()));
+        let registration_question_service = Arc::new(RegistrationQuestionService::with_repository(registration_question_repository.clone()).with_guard(Arc::new(crate::application::service::RegistrationQuestionRowRules)));
 
         // Registration service
         let registration_repository = Arc::new(RegistrationRepository::new(db_pool.clone()));
@@ -349,31 +349,31 @@ impl EventModuleBuilder {
 
         // RegistrationAnswer service
         let registration_answer_repository = Arc::new(RegistrationAnswerRepository::new(db_pool.clone()));
-        let registration_answer_service = Arc::new(RegistrationAnswerService::with_repository(registration_answer_repository.clone()));
+        let registration_answer_service = Arc::new(RegistrationAnswerService::with_repository(registration_answer_repository.clone()).with_guard(Arc::new(crate::application::service::RegistrationAnswerRowRules)));
 
         // Slot service
         let slot_repository = Arc::new(SlotRepository::new(db_pool.clone()));
-        let slot_service = Arc::new(SlotService::with_repository(slot_repository.clone()));
+        let slot_service = Arc::new(SlotService::with_repository(slot_repository.clone()).with_guard(Arc::new(crate::application::service::SlotRowRules)));
 
         // Stage service
         let stage_repository = Arc::new(StageRepository::new(db_pool.clone()));
-        let stage_service = Arc::new(StageService::with_repository(stage_repository.clone()));
+        let stage_service = Arc::new(StageService::with_repository(stage_repository.clone()).with_guard(Arc::new(crate::application::service::StageRowRules)));
 
         // TagCategory service
         let tag_category_repository = Arc::new(TagCategoryRepository::new(db_pool.clone()));
-        let tag_category_service = Arc::new(TagCategoryService::with_repository(tag_category_repository.clone()));
+        let tag_category_service = Arc::new(TagCategoryService::with_repository(tag_category_repository.clone()).with_guard(Arc::new(crate::application::service::TagCategoryRowRules)));
 
         // Tag service
         let tag_repository = Arc::new(TagRepository::new(db_pool.clone()));
-        let tag_service = Arc::new(TagService::with_repository(tag_repository.clone()));
+        let tag_service = Arc::new(TagService::with_repository(tag_repository.clone()).with_guard(Arc::new(crate::application::service::TagRowRules)));
 
         // Ticket service
         let ticket_repository = Arc::new(TicketRepository::new(db_pool.clone()));
-        let ticket_service = Arc::new(TicketService::with_repository(ticket_repository.clone()));
+        let ticket_service = Arc::new(TicketService::with_repository(ticket_repository.clone()).with_guard(Arc::new(crate::application::service::TicketRowRules)));
 
         // TypeMail service
         let type_mail_repository = Arc::new(TypeMailRepository::new(db_pool.clone()));
-        let type_mail_service = Arc::new(TypeMailService::with_repository(type_mail_repository.clone()));
+        let type_mail_service = Arc::new(TypeMailService::with_repository(type_mail_repository.clone()).with_guard(Arc::new(crate::application::service::TypeMailRowRules)));
 
 
         Ok(EventModule {

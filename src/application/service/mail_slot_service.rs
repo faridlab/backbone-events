@@ -32,3 +32,41 @@ pub type MailSlotService = GenericCrudService<
     MailSlotRepository,
 >;
 
+/// The rules the schema declares for MailSlot, checked against the row a create or update
+/// would store. The generated build attaches it to [`MailSlotService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct MailSlotRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<MailSlot> for MailSlotRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, MailSlot>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `scheduler_id_required` (@required on MailSlot.scheduler_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["scheduler_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "scheduler_id")), r::not(r::is_empty(r::trim(r::field(row, "scheduler_id")))))) {
+            refuse.push(Violation::new("scheduler_id", "required", "scheduler_id is required"));
+        }
+        // `slot_id_required` (@required on MailSlot.slot_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["slot_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "slot_id")), r::not(r::is_empty(r::trim(r::field(row, "slot_id")))))) {
+            refuse.push(Violation::new("slot_id", "required", "slot_id is required"));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

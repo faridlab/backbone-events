@@ -32,3 +32,45 @@ pub type TypeMailService = GenericCrudService<
     TypeMailRepository,
 >;
 
+/// The rules the schema declares for TypeMail, checked against the row a create or update
+/// would store. The generated build attaches it to [`TypeMailService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct TypeMailRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<TypeMail> for TypeMailRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, TypeMail>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `event_type_id_required` (@required on TypeMail.event_type_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["event_type_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "event_type_id")), r::not(r::is_empty(r::trim(r::field(row, "event_type_id")))))) {
+            refuse.push(Violation::new("event_type_id", "required", "event_type_id is required"));
+        }
+        // `interval_nbr_non_negative` (@non_negative on TypeMail.interval_nbr)
+        if (create || (update && r::changed(old.as_ref(), row, &["interval_nbr"]))) && !r::holds(&r::ge(r::field(row, "interval_nbr"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("interval_nbr", "non_negative", "interval_nbr must not be negative"));
+        }
+        // `template_kind_max_length` (@max(40) on TypeMail.template_kind)
+        if (create || (update && r::changed(old.as_ref(), row, &["template_kind"]))) && !r::holds(&r::le(r::length(r::field(row, "template_kind")), r::Val::Num(40.0_f64))) {
+            shadow.push(Violation::new("template_kind", "max_length", "template_kind must be at most 40 characters").with_param("max", 40_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

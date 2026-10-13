@@ -32,9 +32,10 @@ pub type BoothService = GenericCrudService<
     BoothRepository,
 >;
 
-/// The row rules the schema declares for Booth, checked against the row a create or
-/// update would store. The generated build attaches it to [`BoothService`]. Every rule
-/// runs in shadow: a break is logged under `backbone::write_guard` and the write goes ahead.
+/// The rules the schema declares for Booth, checked against the row a create or update
+/// would store. The generated build attaches it to [`BoothService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
 pub struct BoothRowRules;
 
 #[async_trait::async_trait]
@@ -56,11 +57,44 @@ impl backbone_core::write_guard::WriteGuard<Booth> for BoothRowRules {
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
         let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
         // `state` belongs to a state machine: only its verbs move it
         if update && ctx.transition.is_none() && r::changed(old.as_ref(), row, &["state"]) {
             shadow.push(Violation::new("state", "state_field_verbs_only", "the state field moves only through its verbs"));
         }
-        GuardOutcome { refuse: Vec::new(), shadow }
+        // `event_id_required` (@required on Booth.event_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["event_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "event_id")), r::not(r::is_empty(r::trim(r::field(row, "event_id")))))) {
+            refuse.push(Violation::new("event_id", "required", "event_id is required"));
+        }
+        // `booth_category_id_required` (@required on Booth.booth_category_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["booth_category_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "booth_category_id")), r::not(r::is_empty(r::trim(r::field(row, "booth_category_id")))))) {
+            refuse.push(Violation::new("booth_category_id", "required", "booth_category_id is required"));
+        }
+        // `name_required` (@required on Booth.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
+            refuse.push(Violation::new("name", "required", "name is required"));
+        }
+        // `name_max_length` (@max(200) on Booth.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(200.0_f64))) {
+            shadow.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
+        }
+        // `contact_name_max_length` (@max(200) on Booth.contact_name)
+        if (create || (update && r::changed(old.as_ref(), row, &["contact_name"]))) && !r::holds(&r::le(r::length(r::field(row, "contact_name")), r::Val::Num(200.0_f64))) {
+            shadow.push(Violation::new("contact_name", "max_length", "contact_name must be at most 200 characters").with_param("max", 200_i64));
+        }
+        // `contact_email_max_length` (@max(254) on Booth.contact_email)
+        if (create || (update && r::changed(old.as_ref(), row, &["contact_email"]))) && !r::holds(&r::le(r::length(r::field(row, "contact_email")), r::Val::Num(254.0_f64))) {
+            shadow.push(Violation::new("contact_email", "max_length", "contact_email must be at most 254 characters").with_param("max", 254_i64));
+        }
+        // `contact_email_email` (type email on Booth.contact_email)
+        if (create || (update && r::changed(old.as_ref(), row, &["contact_email"]))) && !r::holds(&r::matches(r::field(row, "contact_email"), "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            shadow.push(Violation::new("contact_email", "email", "contact_email must be an email address"));
+        }
+        // `contact_phone_max_length` (@max(40) on Booth.contact_phone)
+        if (create || (update && r::changed(old.as_ref(), row, &["contact_phone"]))) && !r::holds(&r::le(r::length(r::field(row, "contact_phone")), r::Val::Num(40.0_f64))) {
+            shadow.push(Violation::new("contact_phone", "max_length", "contact_phone must be at most 40 characters").with_param("max", 40_i64));
+        }
+        GuardOutcome { refuse, shadow }
     }
 }
 

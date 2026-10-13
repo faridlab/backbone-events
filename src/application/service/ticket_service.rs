@@ -32,3 +32,53 @@ pub type TicketService = GenericCrudService<
     TicketRepository,
 >;
 
+/// The rules the schema declares for Ticket, checked against the row a create or update
+/// would store. The generated build attaches it to [`TicketService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct TicketRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<Ticket> for TicketRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, Ticket>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `event_id_required` (@required on Ticket.event_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["event_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "event_id")), r::not(r::is_empty(r::trim(r::field(row, "event_id")))))) {
+            refuse.push(Violation::new("event_id", "required", "event_id is required"));
+        }
+        // `name_required` (@required on Ticket.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
+            refuse.push(Violation::new("name", "required", "name is required"));
+        }
+        // `name_max_length` (@max(200) on Ticket.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(200.0_f64))) {
+            shadow.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
+        }
+        // `seats_max_non_negative` (@non_negative on Ticket.seats_max)
+        if (create || (update && r::changed(old.as_ref(), row, &["seats_max"]))) && !r::holds(&r::ge(r::field(row, "seats_max"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("seats_max", "non_negative", "seats_max must not be negative"));
+        }
+        // `seats_max_per_order_range` (@range(0, 30) on Ticket.seats_max_per_order)
+        if (create || (update && r::changed(old.as_ref(), row, &["seats_max_per_order"]))) && !r::holds(&r::and(r::ge(r::field(row, "seats_max_per_order"), r::Val::Num(0.0_f64)), r::le(r::field(row, "seats_max_per_order"), r::Val::Num(30.0_f64)))) {
+            shadow.push(Violation::new("seats_max_per_order", "range", "seats_max_per_order must be between 0 and 30").with_param("min", 0_i64).with_param("max", 30_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

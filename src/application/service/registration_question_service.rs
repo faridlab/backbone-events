@@ -32,3 +32,41 @@ pub type RegistrationQuestionService = GenericCrudService<
     RegistrationQuestionRepository,
 >;
 
+/// The rules the schema declares for RegistrationQuestion, checked against the row a create or update
+/// would store. The generated build attaches it to [`RegistrationQuestionService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct RegistrationQuestionRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<RegistrationQuestion> for RegistrationQuestionRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, RegistrationQuestion>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `question_id_required` (@required on RegistrationQuestion.question_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["question_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "question_id")), r::not(r::is_empty(r::trim(r::field(row, "question_id")))))) {
+            refuse.push(Violation::new("question_id", "required", "question_id is required"));
+        }
+        // `sequence_non_negative` (@non_negative on RegistrationQuestion.sequence)
+        if (create || (update && r::changed(old.as_ref(), row, &["sequence"]))) && !r::holds(&r::ge(r::field(row, "sequence"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("sequence", "non_negative", "sequence must not be negative"));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+
