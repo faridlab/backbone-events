@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<EventType> for EventTypeRowRules {
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `name_required` (@required on EventType.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
@@ -64,19 +64,19 @@ impl backbone_core::write_guard::WriteGuard<EventType> for EventTypeRowRules {
         }
         // `name_max_length` (@max(120) on EventType.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(120.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 120 characters").with_param("max", 120_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 120 characters").with_param("max", 120_i64));
         }
         // `description_max_length` (@max(2000) on EventType.description)
         if (create || (update && r::changed(old.as_ref(), row, &["description"]))) && !r::holds(&r::le(r::length(r::field(row, "description")), r::Val::Num(2000.0_f64))) {
-            shadow.push(Violation::new("description", "max_length", "description must be at most 2000 characters").with_param("max", 2000_i64));
+            refuse.push(Violation::new("description", "max_length", "description must be at most 2000 characters").with_param("max", 2000_i64));
         }
         // `seats_max_non_negative` (@non_negative on EventType.seats_max)
         if (create || (update && r::changed(old.as_ref(), row, &["seats_max"]))) && !r::holds(&r::ge(r::field(row, "seats_max"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("seats_max", "non_negative", "seats_max must not be negative"));
+            refuse.push(Violation::new("seats_max", "non_negative", "seats_max must not be negative"));
         }
         // `default_date_tz_max_length` (@max(60) on EventType.default_date_tz)
         if (create || (update && r::changed(old.as_ref(), row, &["default_date_tz"]))) && !r::holds(&r::le(r::length(r::field(row, "default_date_tz")), r::Val::Num(60.0_f64))) {
-            shadow.push(Violation::new("default_date_tz", "max_length", "default_date_tz must be at most 60 characters").with_param("max", 60_i64));
+            refuse.push(Violation::new("default_date_tz", "max_length", "default_date_tz must be at most 60 characters").with_param("max", 60_i64));
         }
         GuardOutcome { refuse, shadow }
     }

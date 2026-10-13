@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<RegistrationAnswer> for Registration
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `registration_id_required` (@required on RegistrationAnswer.registration_id)
         if (create || (update && r::changed(old.as_ref(), row, &["registration_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "registration_id")), r::not(r::is_empty(r::trim(r::field(row, "registration_id")))))) {
@@ -68,7 +68,7 @@ impl backbone_core::write_guard::WriteGuard<RegistrationAnswer> for Registration
         }
         // `value_text_max_length` (@max(2000) on RegistrationAnswer.value_text)
         if (create || (update && r::changed(old.as_ref(), row, &["value_text"]))) && !r::holds(&r::le(r::length(r::field(row, "value_text")), r::Val::Num(2000.0_f64))) {
-            shadow.push(Violation::new("value_text", "max_length", "value_text must be at most 2000 characters").with_param("max", 2000_i64));
+            refuse.push(Violation::new("value_text", "max_length", "value_text must be at most 2000 characters").with_param("max", 2000_i64));
         }
         GuardOutcome { refuse, shadow }
     }

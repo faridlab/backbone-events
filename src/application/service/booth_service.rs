@@ -76,23 +76,23 @@ impl backbone_core::write_guard::WriteGuard<Booth> for BoothRowRules {
         }
         // `name_max_length` (@max(200) on Booth.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(200.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
         }
         // `contact_name_max_length` (@max(200) on Booth.contact_name)
         if (create || (update && r::changed(old.as_ref(), row, &["contact_name"]))) && !r::holds(&r::le(r::length(r::field(row, "contact_name")), r::Val::Num(200.0_f64))) {
-            shadow.push(Violation::new("contact_name", "max_length", "contact_name must be at most 200 characters").with_param("max", 200_i64));
+            refuse.push(Violation::new("contact_name", "max_length", "contact_name must be at most 200 characters").with_param("max", 200_i64));
         }
         // `contact_email_max_length` (@max(254) on Booth.contact_email)
         if (create || (update && r::changed(old.as_ref(), row, &["contact_email"]))) && !r::holds(&r::le(r::length(r::field(row, "contact_email")), r::Val::Num(254.0_f64))) {
-            shadow.push(Violation::new("contact_email", "max_length", "contact_email must be at most 254 characters").with_param("max", 254_i64));
+            refuse.push(Violation::new("contact_email", "max_length", "contact_email must be at most 254 characters").with_param("max", 254_i64));
         }
         // `contact_email_email` (type email on Booth.contact_email)
         if (create || (update && r::changed(old.as_ref(), row, &["contact_email"]))) && !r::holds(&r::matches(r::field(row, "contact_email"), "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-            shadow.push(Violation::new("contact_email", "email", "contact_email must be an email address"));
+            refuse.push(Violation::new("contact_email", "email", "contact_email must be an email address"));
         }
         // `contact_phone_max_length` (@max(40) on Booth.contact_phone)
         if (create || (update && r::changed(old.as_ref(), row, &["contact_phone"]))) && !r::holds(&r::le(r::length(r::field(row, "contact_phone")), r::Val::Num(40.0_f64))) {
-            shadow.push(Violation::new("contact_phone", "max_length", "contact_phone must be at most 40 characters").with_param("max", 40_i64));
+            refuse.push(Violation::new("contact_phone", "max_length", "contact_phone must be at most 40 characters").with_param("max", 40_i64));
         }
         GuardOutcome { refuse, shadow }
     }

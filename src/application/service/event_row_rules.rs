@@ -29,7 +29,7 @@ impl backbone_core::write_guard::WriteGuard<Event> for EventRowRules {
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `name_required` (@required on Event.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
@@ -37,7 +37,7 @@ impl backbone_core::write_guard::WriteGuard<Event> for EventRowRules {
         }
         // `name_max_length` (@max(200) on Event.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(200.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
         }
         // `stage_id_required` (@required on Event.stage_id)
         if (create || (update && r::changed(old.as_ref(), row, &["stage_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "stage_id")), r::not(r::is_empty(r::trim(r::field(row, "stage_id")))))) {
@@ -45,19 +45,19 @@ impl backbone_core::write_guard::WriteGuard<Event> for EventRowRules {
         }
         // `date_tz_max_length` (@max(60) on Event.date_tz)
         if (create || (update && r::changed(old.as_ref(), row, &["date_tz"]))) && !r::holds(&r::le(r::length(r::field(row, "date_tz")), r::Val::Num(60.0_f64))) {
-            shadow.push(Violation::new("date_tz", "max_length", "date_tz must be at most 60 characters").with_param("max", 60_i64));
+            refuse.push(Violation::new("date_tz", "max_length", "date_tz must be at most 60 characters").with_param("max", 60_i64));
         }
         // `event_slot_count_range` (@range(1, 100) on Event.event_slot_count)
         if (create || (update && r::changed(old.as_ref(), row, &["event_slot_count"]))) && !r::holds(&r::and(r::ge(r::field(row, "event_slot_count"), r::Val::Num(1.0_f64)), r::le(r::field(row, "event_slot_count"), r::Val::Num(100.0_f64)))) {
-            shadow.push(Violation::new("event_slot_count", "range", "event_slot_count must be between 1 and 100").with_param("min", 1_i64).with_param("max", 100_i64));
+            refuse.push(Violation::new("event_slot_count", "range", "event_slot_count must be between 1 and 100").with_param("min", 1_i64).with_param("max", 100_i64));
         }
         // `seats_max_non_negative` (@non_negative on Event.seats_max)
         if (create || (update && r::changed(old.as_ref(), row, &["seats_max"]))) && !r::holds(&r::ge(r::field(row, "seats_max"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("seats_max", "non_negative", "seats_max must not be negative"));
+            refuse.push(Violation::new("seats_max", "non_negative", "seats_max must not be negative"));
         }
         // `event_url_url` (type url on Event.event_url)
         if (create || (update && r::changed(old.as_ref(), row, &["event_url"]))) && !r::holds(&r::matches(r::field(row, "event_url"), "^[a-zA-Z][a-zA-Z0-9+.-]*://\\S+$")) {
-            shadow.push(Violation::new("event_url", "url", "event_url must be an absolute URL"));
+            refuse.push(Violation::new("event_url", "url", "event_url must be an absolute URL"));
         }
         GuardOutcome { refuse, shadow }
     }

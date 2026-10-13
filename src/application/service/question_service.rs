@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<Question> for QuestionRowRules {
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `question_required` (@required on Question.question)
         if (create || (update && r::changed(old.as_ref(), row, &["question"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "question")), r::not(r::is_empty(r::trim(r::field(row, "question")))))) {
@@ -64,7 +64,7 @@ impl backbone_core::write_guard::WriteGuard<Question> for QuestionRowRules {
         }
         // `question_max_length` (@max(500) on Question.question)
         if (create || (update && r::changed(old.as_ref(), row, &["question"]))) && !r::holds(&r::le(r::length(r::field(row, "question")), r::Val::Num(500.0_f64))) {
-            shadow.push(Violation::new("question", "max_length", "question must be at most 500 characters").with_param("max", 500_i64));
+            refuse.push(Violation::new("question", "max_length", "question must be at most 500 characters").with_param("max", 500_i64));
         }
         GuardOutcome { refuse, shadow }
     }

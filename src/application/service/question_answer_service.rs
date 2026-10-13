@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<QuestionAnswer> for QuestionAnswerRo
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `question_id_required` (@required on QuestionAnswer.question_id)
         if (create || (update && r::changed(old.as_ref(), row, &["question_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "question_id")), r::not(r::is_empty(r::trim(r::field(row, "question_id")))))) {
@@ -68,11 +68,11 @@ impl backbone_core::write_guard::WriteGuard<QuestionAnswer> for QuestionAnswerRo
         }
         // `name_max_length` (@max(200) on QuestionAnswer.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(200.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 200 characters").with_param("max", 200_i64));
         }
         // `sequence_non_negative` (@non_negative on QuestionAnswer.sequence)
         if (create || (update && r::changed(old.as_ref(), row, &["sequence"]))) && !r::holds(&r::ge(r::field(row, "sequence"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("sequence", "non_negative", "sequence must not be negative"));
+            refuse.push(Violation::new("sequence", "non_negative", "sequence must not be negative"));
         }
         GuardOutcome { refuse, shadow }
     }

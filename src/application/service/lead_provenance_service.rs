@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<LeadProvenance> for LeadProvenanceRo
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `rule_id_required` (@required on LeadProvenance.rule_id)
         if (create || (update && r::changed(old.as_ref(), row, &["rule_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "rule_id")), r::not(r::is_empty(r::trim(r::field(row, "rule_id")))))) {
@@ -72,7 +72,7 @@ impl backbone_core::write_guard::WriteGuard<LeadProvenance> for LeadProvenanceRo
         }
         // `group_key_max_length` (@max(160) on LeadProvenance.group_key)
         if (create || (update && r::changed(old.as_ref(), row, &["group_key"]))) && !r::holds(&r::le(r::length(r::field(row, "group_key")), r::Val::Num(160.0_f64))) {
-            shadow.push(Violation::new("group_key", "max_length", "group_key must be at most 160 characters").with_param("max", 160_i64));
+            refuse.push(Violation::new("group_key", "max_length", "group_key must be at most 160 characters").with_param("max", 160_i64));
         }
         GuardOutcome { refuse, shadow }
     }
