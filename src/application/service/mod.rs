@@ -87,5 +87,205 @@ pub use tag_service::TagRowRules;
 pub use ticket_service::TicketRowRules;
 pub use type_mail_service::TypeMailRowRules;
 
+/// A `BoothCategoryService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_booth_category_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::BoothCategoryRepository>,
+) -> BoothCategoryService {
+    BoothCategoryService::with_repository(repository).with_guard(std::sync::Arc::new(BoothCategoryRowRules))
+}
+
+/// A `BoothService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_booth_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::BoothRepository>,
+) -> BoothService {
+    BoothService::with_repository(repository).with_guard(std::sync::Arc::new(BoothRowRules))
+}
+
+/// A `TypeBoothService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_type_booth_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::TypeBoothRepository>,
+) -> TypeBoothService {
+    TypeBoothService::with_repository(repository).with_guard(std::sync::Arc::new(TypeBoothRowRules))
+}
+
+/// A `BoothBookingService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_booth_booking_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::BoothBookingRepository>,
+) -> BoothBookingService {
+    BoothBookingService::with_repository(repository).with_guard(std::sync::Arc::new(BoothBookingRowRules))
+}
+
+/// A `EventService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_event_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::EventRepository>,
+) -> EventService {
+    EventService::with_repository(repository).with_guard(std::sync::Arc::new(EventRowRules))
+}
+
+/// A `EventTypeService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_event_type_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::EventTypeRepository>,
+) -> EventTypeService {
+    EventTypeService::with_repository(repository).with_guard(std::sync::Arc::new(EventTypeRowRules))
+}
+
+/// A `LeadProvenanceService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_lead_provenance_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::LeadProvenanceRepository>,
+) -> LeadProvenanceService {
+    LeadProvenanceService::with_repository(repository).with_guard(std::sync::Arc::new(LeadProvenanceRowRules))
+}
+
+/// A `LeadProvenanceRegistrationService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_lead_provenance_registration_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::LeadProvenanceRegistrationRepository>,
+) -> LeadProvenanceRegistrationService {
+    LeadProvenanceRegistrationService::with_repository(repository).with_guard(std::sync::Arc::new(LeadProvenanceRegistrationRowRules))
+}
+
+/// A `LeadRequestService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_lead_request_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::LeadRequestRepository>,
+) -> LeadRequestService {
+    LeadRequestService::with_repository(repository).with_guard(std::sync::Arc::new(LeadRequestRowRules))
+}
+
+/// A `LeadRuleService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_lead_rule_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::LeadRuleRepository>,
+) -> LeadRuleService {
+    LeadRuleService::with_repository(repository).with_guard(std::sync::Arc::new(LeadRuleRowRules))
+}
+
+/// A `LeadRulePredicateService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_lead_rule_predicate_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::LeadRulePredicateRepository>,
+) -> LeadRulePredicateService {
+    LeadRulePredicateService::with_repository(repository).with_guard(std::sync::Arc::new(LeadRulePredicateRowRules))
+}
+
+/// A `MailService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_mail_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MailRepository>,
+) -> MailService {
+    MailService::with_repository(repository).with_guard(std::sync::Arc::new(MailRowRules))
+}
+
+/// A `MailRegistrationService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_mail_registration_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MailRegistrationRepository>,
+) -> MailRegistrationService {
+    MailRegistrationService::with_repository(repository).with_guard(std::sync::Arc::new(MailRegistrationRowRules))
+}
+
+/// A `MailSlotService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_mail_slot_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MailSlotRepository>,
+) -> MailSlotService {
+    MailSlotService::with_repository(repository).with_guard(std::sync::Arc::new(MailSlotRowRules))
+}
+
+/// A `QuestionService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_question_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::QuestionRepository>,
+) -> QuestionService {
+    QuestionService::with_repository(repository).with_guard(std::sync::Arc::new(QuestionRowRules))
+}
+
+/// A `QuestionAnswerService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_question_answer_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::QuestionAnswerRepository>,
+) -> QuestionAnswerService {
+    QuestionAnswerService::with_repository(repository).with_guard(std::sync::Arc::new(QuestionAnswerRowRules))
+}
+
+/// A `RegistrationQuestionService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_registration_question_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::RegistrationQuestionRepository>,
+) -> RegistrationQuestionService {
+    RegistrationQuestionService::with_repository(repository).with_guard(std::sync::Arc::new(RegistrationQuestionRowRules))
+}
+
+/// A `RegistrationService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_registration_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::RegistrationRepository>,
+) -> RegistrationService {
+    RegistrationService::with_repository(repository).with_guard(std::sync::Arc::new(RegistrationRowRules))
+}
+
+/// A `RegistrationAnswerService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_registration_answer_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::RegistrationAnswerRepository>,
+) -> RegistrationAnswerService {
+    RegistrationAnswerService::with_repository(repository).with_guard(std::sync::Arc::new(RegistrationAnswerRowRules))
+}
+
+/// A `SlotService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_slot_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::SlotRepository>,
+) -> SlotService {
+    SlotService::with_repository(repository).with_guard(std::sync::Arc::new(SlotRowRules))
+}
+
+/// A `StageService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_stage_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::StageRepository>,
+) -> StageService {
+    StageService::with_repository(repository).with_guard(std::sync::Arc::new(StageRowRules))
+}
+
+/// A `TagCategoryService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_tag_category_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::TagCategoryRepository>,
+) -> TagCategoryService {
+    TagCategoryService::with_repository(repository).with_guard(std::sync::Arc::new(TagCategoryRowRules))
+}
+
+/// A `TagService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_tag_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::TagRepository>,
+) -> TagService {
+    TagService::with_repository(repository).with_guard(std::sync::Arc::new(TagRowRules))
+}
+
+/// A `TicketService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_ticket_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::TicketRepository>,
+) -> TicketService {
+    TicketService::with_repository(repository).with_guard(std::sync::Arc::new(TicketRowRules))
+}
+
+/// A `TypeMailService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_type_mail_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::TypeMailRepository>,
+) -> TypeMailService {
+    TypeMailService::with_repository(repository).with_guard(std::sync::Arc::new(TypeMailRowRules))
+}
+
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");
