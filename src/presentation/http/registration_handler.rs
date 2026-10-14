@@ -221,13 +221,9 @@ pub async fn set_draft_transition(
                 && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
         });
         let has_specific_perm = granted("registration:transition:set_draft");
-        let has_update_perm = granted("registration:update");
         let _ = &allowed_roles;
         if !has_specific_perm {
-            if !has_update_perm {
-                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for set_draft transition")));
-            }
-            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "set_draft", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:set_draft");
+            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("set_draft needs registration:transition:set_draft")));
         }
     }
 
@@ -284,13 +280,9 @@ pub async fn confirm_transition(
                 && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
         });
         let has_specific_perm = granted("registration:transition:confirm");
-        let has_update_perm = granted("registration:update");
         let _ = &allowed_roles;
         if !has_specific_perm {
-            if !has_update_perm {
-                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for confirm transition")));
-            }
-            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "confirm", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:confirm");
+            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("confirm needs registration:transition:confirm")));
         }
     }
 
@@ -347,13 +339,9 @@ pub async fn set_done_transition(
                 && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
         });
         let has_specific_perm = granted("registration:transition:set_done");
-        let has_update_perm = granted("registration:update");
         let _ = &allowed_roles;
         if !has_specific_perm {
-            if !has_update_perm {
-                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for set_done transition")));
-            }
-            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "set_done", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:set_done");
+            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("set_done needs registration:transition:set_done")));
         }
     }
 
@@ -410,13 +398,9 @@ pub async fn cancel_transition(
                 && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
         });
         let has_specific_perm = granted("registration:transition:cancel");
-        let has_update_perm = granted("registration:update");
         let _ = &allowed_roles;
         if !has_specific_perm {
-            if !has_update_perm {
-                return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("Insufficient permissions for cancel transition")));
-            }
-            tracing::warn!(target: "backbone::write_guard", entity = "Registration", verb = "cancel", code = "transition_by_update_permission", "a transition granted only by registration:update, running in shadow; it needs registration:transition:cancel");
+            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("cancel needs registration:transition:cancel")));
         }
     }
 

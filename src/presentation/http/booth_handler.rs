@@ -220,13 +220,9 @@ pub async fn confirm_transition(
                 && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
         });
         let has_specific_perm = granted("booth:transition:confirm");
-        let has_update_perm = granted("booth:update");
         let _ = &allowed_roles;
         if !has_specific_perm {
-            if !has_update_perm {
-                return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("Insufficient permissions for confirm transition")));
-            }
-            tracing::warn!(target: "backbone::write_guard", entity = "Booth", verb = "confirm", code = "transition_by_update_permission", "a transition granted only by booth:update, running in shadow; it needs booth:transition:confirm");
+            return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("confirm needs booth:transition:confirm")));
         }
     }
 
@@ -283,13 +279,9 @@ pub async fn release_transition(
                 && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
         });
         let has_specific_perm = granted("booth:transition:release");
-        let has_update_perm = granted("booth:update");
         let _ = &allowed_roles;
         if !has_specific_perm {
-            if !has_update_perm {
-                return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("Insufficient permissions for release transition")));
-            }
-            tracing::warn!(target: "backbone::write_guard", entity = "Booth", verb = "release", code = "transition_by_update_permission", "a transition granted only by booth:update, running in shadow; it needs booth:transition:release");
+            return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("release needs booth:transition:release")));
         }
     }
 
