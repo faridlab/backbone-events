@@ -865,9 +865,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-auditlog"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bffcdfd76f2cc7ffe3b28fc75f0498e9e00dc820749c87897f34f14f89927e23"
+checksum = "a2b318913f0f81720e4d62862df4c93552ba125fb6aad74bf4b6932d68de35f0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -953,7 +953,7 @@ dependencies = [
 
 [[package]]
 name = "backbone-events"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1021,9 +1021,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-mail"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "094fe4cddf4fd4ece5ff60fc1f53c93045ca46235ed02a4ceb95f5f56380026a"
+checksum = "095c280c56a1dbf769776995c83b14c27716347e4c88cea3f51745694ffc87f2"
 dependencies = [
  "anyhow",
  "async-trait",
