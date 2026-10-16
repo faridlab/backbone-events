@@ -37,7 +37,6 @@ pub struct CreateBoothDto {
     pub booth_category_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
-    pub state: EventBoothState,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "partner_id")]
     pub partner_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "contact_name")]
@@ -268,7 +267,7 @@ impl From<CreateBoothDto> for Booth {
             event_id: dto.event_id,
             booth_category_id: dto.booth_category_id,
             name: dto.name,
-            state: dto.state,
+            state: EventBoothState::Available,
             partner_id: dto.partner_id,
             contact_name: dto.contact_name,
             contact_email: dto.contact_email,

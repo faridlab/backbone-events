@@ -31,8 +31,6 @@ use crate::domain::entity::EventQuestionKind;
 pub struct CreateQuestionDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub question: String,
-    #[serde(alias = "question_kind")]
-    pub question_kind: EventQuestionKind,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(alias = "is_default")]
     pub is_default: bool,
@@ -228,7 +226,7 @@ impl From<CreateQuestionDto> for Question {
         Self {
             id: Uuid::new_v4(),
             question: dto.question,
-            question_kind: dto.question_kind,
+            question_kind: EventQuestionKind::TextBox,
             is_default: dto.is_default,
             is_reusable: dto.is_reusable,
             once_per_order: dto.once_per_order,

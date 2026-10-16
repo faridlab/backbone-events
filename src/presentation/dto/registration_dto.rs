@@ -48,7 +48,6 @@ pub struct CreateRegistrationDto {
     pub company_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "partner_id")]
     pub partner_id: Option<Uuid>,
-    pub state: EventRegistrationState,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "date_closed")]
     pub date_closed: Option<DateTime<Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "sale_order_id")]
@@ -313,7 +312,7 @@ impl From<CreateRegistrationDto> for Registration {
             phone: dto.phone,
             company_name: dto.company_name,
             partner_id: dto.partner_id,
-            state: dto.state,
+            state: EventRegistrationState::Open,
             date_closed: dto.date_closed,
             sale_order_id: dto.sale_order_id,
             sale_order_state: dto.sale_order_state,
