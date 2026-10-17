@@ -37,7 +37,7 @@ pub struct CreateMailSlotDto {
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
     pub scheduled_date: Option<DateTime<Utc>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "mail_done")]
+    #[serde(default, alias = "mail_done")]
     pub mail_done: bool,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "last_registration_id")]
     pub last_registration_id: Option<Uuid>,
@@ -88,13 +88,13 @@ pub struct PatchMailSlotDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "slot_id")]
     pub slot_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
-    pub scheduled_date: Option<DateTime<Utc>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "scheduled_date")]
+    pub scheduled_date: Option<Option<DateTime<Utc>>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "mail_done")]
     pub mail_done: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "last_registration_id")]
-    pub last_registration_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "last_registration_id")]
+    pub last_registration_id: Option<Option<Uuid>>,
 }
 
 impl PatchMailSlotDto {
@@ -264,12 +264,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMailSlotDto> for MailSlot {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MailSlot here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

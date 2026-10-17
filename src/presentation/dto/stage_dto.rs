@@ -31,12 +31,18 @@ pub struct CreateStageDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
+    #[serde(default = "default_create_stage_sequence")]
     pub sequence: i32,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default)]
     pub fold: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "pipe_end")]
+    #[serde(default, alias = "pipe_end")]
     pub pipe_end: bool,
+}
+
+fn default_create_stage_sequence() -> i32 {
+    1
 }
 
 // =============================================================================
@@ -251,12 +257,4 @@ impl backbone_core::ApplyUpdateDto<UpdateStageDto> for Stage {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Stage here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

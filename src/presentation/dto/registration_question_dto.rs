@@ -36,7 +36,12 @@ pub struct CreateRegistrationQuestionDto {
     #[serde(alias = "question_id")]
     pub question_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
+    #[serde(default = "default_create_registration_question_sequence")]
     pub sequence: i32,
+}
+
+fn default_create_registration_question_sequence() -> i32 {
+    1
 }
 
 // =============================================================================
@@ -74,10 +79,10 @@ pub struct UpdateRegistrationQuestionDto {
 #[cfg_attr(feature = "openapi", derive(ToSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchRegistrationQuestionDto {
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_id")]
-    pub event_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_type_id")]
-    pub event_type_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_id")]
+    pub event_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_type_id")]
+    pub event_type_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "question_id")]
     pub question_id: Option<Uuid>,
@@ -247,12 +252,4 @@ impl backbone_core::ApplyUpdateDto<UpdateRegistrationQuestionDto> for Registrati
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to RegistrationQuestion here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

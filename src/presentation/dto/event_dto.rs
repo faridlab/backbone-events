@@ -37,7 +37,7 @@ pub struct CreateEventDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "stage_id")]
     pub stage_id: Uuid,
-    #[serde(alias = "kanban_state")]
+    #[serde(default = "default_create_event_kanban_state", alias = "kanban_state")]
     pub kanban_state: EventKanbanState,
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01T00:00:00Z"))]
     #[serde(alias = "date_begin")]
@@ -46,19 +46,19 @@ pub struct CreateEventDto {
     #[serde(alias = "date_end")]
     pub date_end: DateTime<Utc>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
-    #[serde(alias = "date_tz")]
+    #[serde(default = "default_create_event_date_tz", alias = "date_tz")]
     pub date_tz: String,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_multi_slots")]
+    #[serde(default, alias = "is_multi_slots")]
     pub is_multi_slots: bool,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "event_slot_count")]
+    #[serde(default = "default_create_event_event_slot_count", alias = "event_slot_count")]
     pub event_slot_count: i32,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "seats_limited")]
+    #[serde(default, alias = "seats_limited")]
     pub seats_limited: bool,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "seats_max")]
+    #[serde(default, alias = "seats_max")]
     pub seats_max: i32,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "address_id")]
     pub address_id: Option<Uuid>,
@@ -68,13 +68,29 @@ pub struct CreateEventDto {
     pub user_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "event_url")]
     pub event_url: Option<String>,
-    #[serde(alias = "badge_format")]
+    #[serde(default = "default_create_event_badge_format", alias = "badge_format")]
     pub badge_format: EventBadgeFormat,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_published")]
+    #[serde(default, alias = "is_published")]
     pub is_published: bool,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "date_publish")]
     pub date_publish: Option<DateTime<Utc>>,
+}
+
+fn default_create_event_kanban_state() -> EventKanbanState {
+    EventKanbanState::Normal
+}
+
+fn default_create_event_date_tz() -> String {
+    "UTC".to_string()
+}
+
+fn default_create_event_event_slot_count() -> i32 {
+    1
+}
+
+fn default_create_event_badge_format() -> EventBadgeFormat {
+    EventBadgeFormat::A4FrenchFold
 }
 
 // =============================================================================
@@ -151,8 +167,8 @@ pub struct PatchEventDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_type_id")]
-    pub event_type_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_type_id")]
+    pub event_type_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "stage_id")]
     pub stage_id: Option<Uuid>,
@@ -179,21 +195,21 @@ pub struct PatchEventDto {
     #[cfg_attr(feature = "openapi", schema(example = 42))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "seats_max")]
     pub seats_max: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "address_id")]
-    pub address_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "organizer_id")]
-    pub organizer_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "user_id")]
-    pub user_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_url")]
-    pub event_url: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "address_id")]
+    pub address_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "organizer_id")]
+    pub organizer_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "user_id")]
+    pub user_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_url")]
+    pub event_url: Option<Option<String>>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "badge_format")]
     pub badge_format: Option<EventBadgeFormat>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "is_published")]
     pub is_published: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "date_publish")]
-    pub date_publish: Option<DateTime<Utc>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "date_publish")]
+    pub date_publish: Option<Option<DateTime<Utc>>>,
 }
 
 impl PatchEventDto {
@@ -435,12 +451,4 @@ impl backbone_core::ApplyUpdateDto<UpdateEventDto> for Event {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Event here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

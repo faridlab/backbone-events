@@ -71,10 +71,10 @@ pub struct PatchTagDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "category_id")]
-    pub category_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "category_id")]
+    pub category_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub color: Option<Option<String>>,
 }
 
 impl PatchTagDto {
@@ -232,12 +232,4 @@ impl backbone_core::ApplyUpdateDto<UpdateTagDto> for Tag {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Tag here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

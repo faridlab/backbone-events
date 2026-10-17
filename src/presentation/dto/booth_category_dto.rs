@@ -76,12 +76,12 @@ pub struct PatchBoothCategoryDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "product_id")]
-    pub product_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub price: Option<Decimal>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub description: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "product_id")]
+    pub product_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub price: Option<Option<Decimal>>,
 }
 
 impl PatchBoothCategoryDto {
@@ -244,12 +244,4 @@ impl backbone_core::ApplyUpdateDto<UpdateBoothCategoryDto> for BoothCategory {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to BoothCategory here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

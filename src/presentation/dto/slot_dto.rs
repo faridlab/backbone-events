@@ -85,8 +85,8 @@ pub struct PatchSlotDto {
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01T00:00:00Z"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "date_begin")]
     pub date_begin: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "date_end")]
-    pub date_end: Option<DateTime<Utc>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "date_end")]
+    pub date_end: Option<Option<DateTime<Utc>>>,
 }
 
 impl PatchSlotDto {
@@ -251,12 +251,4 @@ impl backbone_core::ApplyUpdateDto<UpdateSlotDto> for Slot {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Slot here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

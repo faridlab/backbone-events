@@ -37,7 +37,7 @@ pub struct CreateMailRegistrationDto {
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
     pub scheduled_date: Option<DateTime<Utc>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "mail_sent")]
+    #[serde(default, alias = "mail_sent")]
     pub mail_sent: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub outcome: Option<String>,
@@ -88,13 +88,13 @@ pub struct PatchMailRegistrationDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "registration_id")]
     pub registration_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
-    pub scheduled_date: Option<DateTime<Utc>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "scheduled_date")]
+    pub scheduled_date: Option<Option<DateTime<Utc>>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "mail_sent")]
     pub mail_sent: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub outcome: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub outcome: Option<Option<String>>,
 }
 
 impl PatchMailRegistrationDto {
@@ -264,12 +264,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMailRegistrationDto> for MailRegistrati
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MailRegistration here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

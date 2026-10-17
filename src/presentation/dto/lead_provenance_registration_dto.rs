@@ -226,11 +226,3 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadProvenanceRegistrationDto> for Lead
     }
 }
 
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to LeadProvenanceRegistration here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
-

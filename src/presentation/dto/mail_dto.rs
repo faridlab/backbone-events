@@ -36,18 +36,18 @@ pub struct CreateMailDto {
     #[serde(alias = "event_id")]
     pub event_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "interval_nbr")]
+    #[serde(default = "default_create_mail_interval_nbr", alias = "interval_nbr")]
     pub interval_nbr: i32,
-    #[serde(alias = "interval_unit")]
+    #[serde(default = "default_create_mail_interval_unit", alias = "interval_unit")]
     pub interval_unit: EventIntervalUnit,
-    #[serde(alias = "interval_kind")]
+    #[serde(default = "default_create_mail_interval_kind", alias = "interval_kind")]
     pub interval_kind: EventIntervalKind,
-    #[serde(alias = "notification_channel")]
+    #[serde(default = "default_create_mail_notification_channel", alias = "notification_channel")]
     pub notification_channel: EventNotificationChannel,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
     pub scheduled_date: Option<DateTime<Utc>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "mail_done")]
+    #[serde(default, alias = "mail_done")]
     pub mail_done: bool,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "last_registration_id")]
     pub last_registration_id: Option<Uuid>,
@@ -59,6 +59,22 @@ pub struct CreateMailDto {
     pub error_datetime: Option<DateTime<Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "error_kind")]
     pub error_kind: Option<EventMailErrorKind>,
+}
+
+fn default_create_mail_interval_nbr() -> i32 {
+    1
+}
+
+fn default_create_mail_interval_unit() -> EventIntervalUnit {
+    EventIntervalUnit::Now
+}
+
+fn default_create_mail_interval_kind() -> EventIntervalKind {
+    EventIntervalKind::AfterSub
+}
+
+fn default_create_mail_notification_channel() -> EventNotificationChannel {
+    EventNotificationChannel::Mail
 }
 
 // =============================================================================
@@ -126,21 +142,21 @@ pub struct PatchMailDto {
     pub interval_kind: Option<EventIntervalKind>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "notification_channel")]
     pub notification_channel: Option<EventNotificationChannel>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
-    pub scheduled_date: Option<DateTime<Utc>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "scheduled_date")]
+    pub scheduled_date: Option<Option<DateTime<Utc>>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "mail_done")]
     pub mail_done: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "last_registration_id")]
-    pub last_registration_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "template_ref")]
-    pub template_ref: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "template_kind")]
-    pub template_kind: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "error_datetime")]
-    pub error_datetime: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "error_kind")]
-    pub error_kind: Option<EventMailErrorKind>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "last_registration_id")]
+    pub last_registration_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "template_ref")]
+    pub template_ref: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "template_kind")]
+    pub template_kind: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "error_datetime")]
+    pub error_datetime: Option<Option<DateTime<Utc>>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "error_kind")]
+    pub error_kind: Option<Option<EventMailErrorKind>>,
 }
 
 impl PatchMailDto {
@@ -345,12 +361,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMailDto> for Mail {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Mail here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

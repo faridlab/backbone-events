@@ -207,11 +207,3 @@ impl backbone_core::ApplyUpdateDto<UpdateTagCategoryDto> for TagCategory {
     }
 }
 
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to TagCategory here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
-

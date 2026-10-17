@@ -34,6 +34,7 @@ pub struct CreateBoothBookingDto {
     pub event_booth_id: Uuid,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "sale_order_line_id")]
     pub sale_order_line_id: Option<Uuid>,
+    #[serde(default = "default_create_booth_booking_status")]
     pub status: EventBoothBookingStatus,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "partner_id")]
     pub partner_id: Option<Uuid>,
@@ -43,6 +44,10 @@ pub struct CreateBoothBookingDto {
     pub contact_email: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "contact_phone")]
     pub contact_phone: Option<String>,
+}
+
+fn default_create_booth_booking_status() -> EventBoothBookingStatus {
+    EventBoothBookingStatus::Pending
 }
 
 // =============================================================================
@@ -88,18 +93,18 @@ pub struct PatchBoothBookingDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "event_booth_id")]
     pub event_booth_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "sale_order_line_id")]
-    pub sale_order_line_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "sale_order_line_id")]
+    pub sale_order_line_id: Option<Option<Uuid>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<EventBoothBookingStatus>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "partner_id")]
-    pub partner_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "contact_name")]
-    pub contact_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "contact_email")]
-    pub contact_email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "contact_phone")]
-    pub contact_phone: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "partner_id")]
+    pub partner_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "contact_name")]
+    pub contact_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "contact_email")]
+    pub contact_email: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "contact_phone")]
+    pub contact_phone: Option<Option<String>>,
 }
 
 impl PatchBoothBookingDto {
@@ -277,12 +282,4 @@ impl backbone_core::ApplyUpdateDto<UpdateBoothBookingDto> for BoothBooking {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to BoothBooking here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

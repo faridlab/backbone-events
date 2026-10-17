@@ -34,10 +34,10 @@ pub struct CreateTicketDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "seats_max")]
+    #[serde(default, alias = "seats_max")]
     pub seats_max: i32,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "seats_max_per_order")]
+    #[serde(default, alias = "seats_max_per_order")]
     pub seats_max_per_order: i32,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "start_sale_datetime")]
     pub start_sale_datetime: Option<DateTime<Utc>>,
@@ -102,12 +102,12 @@ pub struct PatchTicketDto {
     #[cfg_attr(feature = "openapi", schema(example = 42))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "seats_max_per_order")]
     pub seats_max_per_order: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "start_sale_datetime")]
-    pub start_sale_datetime: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "end_sale_datetime")]
-    pub end_sale_datetime: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "product_id")]
-    pub product_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "start_sale_datetime")]
+    pub start_sale_datetime: Option<Option<DateTime<Utc>>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "end_sale_datetime")]
+    pub end_sale_datetime: Option<Option<DateTime<Utc>>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "product_id")]
+    pub product_id: Option<Option<Uuid>>,
 }
 
 impl PatchTicketDto {
@@ -288,12 +288,4 @@ impl backbone_core::ApplyUpdateDto<UpdateTicketDto> for Ticket {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Ticket here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

@@ -57,9 +57,14 @@ pub struct CreateRegistrationDto {
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "sale_status")]
     pub sale_status: Option<EventSaleStatus>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default = "default_create_registration_active")]
     pub active: bool,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub barcode: String,
+}
+
+fn default_create_registration_active() -> bool {
+    true
 }
 
 // =============================================================================
@@ -121,32 +126,32 @@ pub struct PatchRegistrationDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "event_id")]
     pub event_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_slot_id")]
-    pub event_slot_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_ticket_id")]
-    pub event_ticket_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_slot_id")]
+    pub event_slot_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_ticket_id")]
+    pub event_ticket_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "user@example.com"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_name")]
-    pub company_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "partner_id")]
-    pub partner_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub phone: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "company_name")]
+    pub company_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "partner_id")]
+    pub partner_id: Option<Option<Uuid>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<EventRegistrationState>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "date_closed")]
-    pub date_closed: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "sale_order_id")]
-    pub sale_order_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "sale_order_state")]
-    pub sale_order_state: Option<EventSaleOrderState>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "sale_status")]
-    pub sale_status: Option<EventSaleStatus>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "date_closed")]
+    pub date_closed: Option<Option<DateTime<Utc>>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "sale_order_id")]
+    pub sale_order_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "sale_order_state")]
+    pub sale_order_state: Option<Option<EventSaleOrderState>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "sale_status")]
+    pub sale_status: Option<Option<EventSaleStatus>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active: Option<bool>,
@@ -374,12 +379,4 @@ impl backbone_core::ApplyUpdateDto<UpdateRegistrationDto> for Registration {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Registration here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

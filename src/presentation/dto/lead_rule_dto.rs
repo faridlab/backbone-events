@@ -33,18 +33,28 @@ pub struct CreateLeadRuleDto {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "event_id")]
     pub event_id: Option<Uuid>,
+    #[serde(default = "default_create_lead_rule_basis")]
     pub basis: EventLeadBasis,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "on_create")]
+    #[serde(default, alias = "on_create")]
     pub on_create: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "on_confirm")]
+    #[serde(default, alias = "on_confirm")]
     pub on_confirm: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "on_done")]
+    #[serde(default, alias = "on_done")]
     pub on_done: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default = "default_create_lead_rule_active")]
     pub active: bool,
+}
+
+fn default_create_lead_rule_basis() -> EventLeadBasis {
+    EventLeadBasis::Registration
+}
+
+fn default_create_lead_rule_active() -> bool {
+    true
 }
 
 // =============================================================================
@@ -92,8 +102,8 @@ pub struct PatchLeadRuleDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "event_id")]
-    pub event_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "event_id")]
+    pub event_id: Option<Option<Uuid>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub basis: Option<EventLeadBasis>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
@@ -289,12 +299,4 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadRuleDto> for LeadRule {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to LeadRule here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

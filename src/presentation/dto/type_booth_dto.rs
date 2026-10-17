@@ -241,11 +241,3 @@ impl backbone_core::ApplyUpdateDto<UpdateTypeBoothDto> for TypeBooth {
     }
 }
 
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to TypeBooth here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
-

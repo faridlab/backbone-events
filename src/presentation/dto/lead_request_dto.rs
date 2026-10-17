@@ -32,6 +32,7 @@ pub struct CreateLeadRequestDto {
     #[serde(alias = "event_id")]
     pub event_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default)]
     pub done: bool,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "error_detail")]
     pub error_detail: Option<String>,
@@ -80,10 +81,10 @@ pub struct PatchLeadRequestDto {
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub done: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "error_detail")]
-    pub error_detail: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "claimed_at")]
-    pub claimed_at: Option<DateTime<Utc>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "error_detail")]
+    pub error_detail: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "claimed_at")]
+    pub claimed_at: Option<Option<DateTime<Utc>>>,
 }
 
 impl PatchLeadRequestDto {
@@ -247,12 +248,4 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadRequestDto> for LeadRequest {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to LeadRequest here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

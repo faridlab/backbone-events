@@ -82,10 +82,10 @@ pub struct PatchRegistrationAnswerDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "question_id")]
     pub question_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "value_text")]
-    pub value_text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "value_answer_id")]
-    pub value_answer_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "value_text")]
+    pub value_text: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "value_answer_id")]
+    pub value_answer_id: Option<Option<Uuid>>,
 }
 
 impl PatchRegistrationAnswerDto {
@@ -249,12 +249,4 @@ impl backbone_core::ApplyUpdateDto<UpdateRegistrationAnswerDto> for Registration
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to RegistrationAnswer here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

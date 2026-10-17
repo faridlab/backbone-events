@@ -34,7 +34,12 @@ pub struct CreateQuestionAnswerDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
+    #[serde(default = "default_create_question_answer_sequence")]
     pub sequence: i32,
+}
+
+fn default_create_question_answer_sequence() -> i32 {
+    1
 }
 
 // =============================================================================
@@ -238,12 +243,4 @@ impl backbone_core::ApplyUpdateDto<UpdateQuestionAnswerDto> for QuestionAnswer {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to QuestionAnswer here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

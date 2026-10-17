@@ -32,13 +32,13 @@ pub struct CreateQuestionDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub question: String,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_default")]
+    #[serde(default, alias = "is_default")]
     pub is_default: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_reusable")]
+    #[serde(default, alias = "is_reusable")]
     pub is_reusable: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "once_per_order")]
+    #[serde(default, alias = "once_per_order")]
     pub once_per_order: bool,
 }
 
@@ -265,12 +265,4 @@ impl backbone_core::ApplyUpdateDto<UpdateQuestionDto> for Question {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Question here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

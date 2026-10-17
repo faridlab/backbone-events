@@ -87,8 +87,8 @@ pub struct PatchLeadProvenanceDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "event_id")]
     pub event_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "lead_id")]
-    pub lead_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "lead_id")]
+    pub lead_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "group_key")]
     pub group_key: Option<String>,
@@ -263,12 +263,4 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadProvenanceDto> for LeadProvenance {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to LeadProvenance here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

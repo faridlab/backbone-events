@@ -74,6 +74,10 @@ impl backbone_core::write_guard::WriteGuard<EventType> for EventTypeRowRules {
         if (create || (update && r::changed(old.as_ref(), row, &["seats_max"]))) && !r::holds(&r::ge(r::field(row, "seats_max"), r::Val::Num(0.0_f64))) {
             refuse.push(Violation::new("seats_max", "non_negative", "seats_max must not be negative"));
         }
+        // `default_date_tz_required` (@required on EventType.default_date_tz)
+        if (create || (update && r::changed(old.as_ref(), row, &["default_date_tz"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "default_date_tz")), r::not(r::is_empty(r::trim(r::field(row, "default_date_tz")))))) {
+            refuse.push(Violation::new("default_date_tz", "required", "default_date_tz is required"));
+        }
         // `default_date_tz_max_length` (@max(60) on EventType.default_date_tz)
         if (create || (update && r::changed(old.as_ref(), row, &["default_date_tz"]))) && !r::holds(&r::le(r::length(r::field(row, "default_date_tz")), r::Val::Num(60.0_f64))) {
             refuse.push(Violation::new("default_date_tz", "max_length", "default_date_tz must be at most 60 characters").with_param("max", 60_i64));

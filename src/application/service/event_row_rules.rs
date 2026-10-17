@@ -43,6 +43,10 @@ impl backbone_core::write_guard::WriteGuard<Event> for EventRowRules {
         if (create || (update && r::changed(old.as_ref(), row, &["stage_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "stage_id")), r::not(r::is_empty(r::trim(r::field(row, "stage_id")))))) {
             refuse.push(Violation::new("stage_id", "required", "stage_id is required"));
         }
+        // `date_tz_required` (@required on Event.date_tz)
+        if (create || (update && r::changed(old.as_ref(), row, &["date_tz"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "date_tz")), r::not(r::is_empty(r::trim(r::field(row, "date_tz")))))) {
+            refuse.push(Violation::new("date_tz", "required", "date_tz is required"));
+        }
         // `date_tz_max_length` (@max(60) on Event.date_tz)
         if (create || (update && r::changed(old.as_ref(), row, &["date_tz"]))) && !r::holds(&r::le(r::length(r::field(row, "date_tz")), r::Val::Num(60.0_f64))) {
             refuse.push(Violation::new("date_tz", "max_length", "date_tz must be at most 60 characters").with_param("max", 60_i64));

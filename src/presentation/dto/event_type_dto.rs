@@ -33,17 +33,21 @@ pub struct CreateEventTypeDto {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "seats_limited")]
+    #[serde(default, alias = "seats_limited")]
     pub seats_limited: bool,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "seats_max")]
+    #[serde(default, alias = "seats_max")]
     pub seats_max: i32,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
-    #[serde(alias = "default_date_tz")]
+    #[serde(default = "default_create_event_type_default_date_tz", alias = "default_date_tz")]
     pub default_date_tz: String,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_multi_slots")]
+    #[serde(default, alias = "is_multi_slots")]
     pub is_multi_slots: bool,
+}
+
+fn default_create_event_type_default_date_tz() -> String {
+    "UTC".to_string()
 }
 
 // =============================================================================
@@ -91,8 +95,8 @@ pub struct PatchEventTypeDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub description: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "seats_limited")]
     pub seats_limited: Option<bool>,
@@ -281,12 +285,4 @@ impl backbone_core::ApplyUpdateDto<UpdateEventTypeDto> for EventType {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to EventType here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

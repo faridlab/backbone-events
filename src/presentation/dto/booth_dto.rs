@@ -48,7 +48,7 @@ pub struct CreateBoothDto {
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "sale_order_line_id")]
     pub sale_order_line_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_paid")]
+    #[serde(default, alias = "is_paid")]
     pub is_paid: bool,
 }
 
@@ -111,16 +111,16 @@ pub struct PatchBoothDto {
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<EventBoothState>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "partner_id")]
-    pub partner_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "contact_name")]
-    pub contact_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "contact_email")]
-    pub contact_email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "contact_phone")]
-    pub contact_phone: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "sale_order_line_id")]
-    pub sale_order_line_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "partner_id")]
+    pub partner_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "contact_name")]
+    pub contact_name: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "contact_email")]
+    pub contact_email: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "contact_phone")]
+    pub contact_phone: Option<Option<String>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "sale_order_line_id")]
+    pub sale_order_line_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = true))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "is_paid")]
     pub is_paid: Option<bool>,
@@ -319,12 +319,4 @@ impl backbone_core::ApplyUpdateDto<UpdateBoothDto> for Booth {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to Booth here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

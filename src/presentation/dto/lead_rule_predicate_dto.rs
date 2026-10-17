@@ -78,8 +78,8 @@ pub struct PatchLeadRulePredicateDto {
     pub rule_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub axis: Option<EventLeadPredicateAxis>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "question_id")]
-    pub question_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "question_id")]
+    pub question_id: Option<Option<Uuid>>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "value_ids")]
     pub value_ids: Option<serde_json::Value>,
 }
@@ -244,12 +244,4 @@ impl backbone_core::ApplyUpdateDto<UpdateLeadRulePredicateDto> for LeadRulePredi
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to LeadRulePredicate here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

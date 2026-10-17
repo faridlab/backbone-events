@@ -35,18 +35,34 @@ pub struct CreateTypeMailDto {
     #[serde(alias = "event_type_id")]
     pub event_type_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "interval_nbr")]
+    #[serde(default = "default_create_type_mail_interval_nbr", alias = "interval_nbr")]
     pub interval_nbr: i32,
-    #[serde(alias = "interval_unit")]
+    #[serde(default = "default_create_type_mail_interval_unit", alias = "interval_unit")]
     pub interval_unit: EventIntervalUnit,
-    #[serde(alias = "interval_kind")]
+    #[serde(default = "default_create_type_mail_interval_kind", alias = "interval_kind")]
     pub interval_kind: EventIntervalKind,
-    #[serde(alias = "notification_channel")]
+    #[serde(default = "default_create_type_mail_notification_channel", alias = "notification_channel")]
     pub notification_channel: EventNotificationChannel,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "template_ref")]
     pub template_ref: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "template_kind")]
     pub template_kind: Option<String>,
+}
+
+fn default_create_type_mail_interval_nbr() -> i32 {
+    1
+}
+
+fn default_create_type_mail_interval_unit() -> EventIntervalUnit {
+    EventIntervalUnit::Now
+}
+
+fn default_create_type_mail_interval_kind() -> EventIntervalKind {
+    EventIntervalKind::AfterSub
+}
+
+fn default_create_type_mail_notification_channel() -> EventNotificationChannel {
+    EventNotificationChannel::Mail
 }
 
 // =============================================================================
@@ -103,10 +119,10 @@ pub struct PatchTypeMailDto {
     pub interval_kind: Option<EventIntervalKind>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "notification_channel")]
     pub notification_channel: Option<EventNotificationChannel>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "template_ref")]
-    pub template_ref: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "template_kind")]
-    pub template_kind: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "template_ref")]
+    pub template_ref: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "template_kind")]
+    pub template_kind: Option<Option<String>>,
 }
 
 impl PatchTypeMailDto {
@@ -285,12 +301,4 @@ impl backbone_core::ApplyUpdateDto<UpdateTypeMailDto> for TypeMail {
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to TypeMail here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 
