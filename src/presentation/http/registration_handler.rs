@@ -206,7 +206,7 @@ pub async fn set_draft_transition(
     let entity = match service.get_by_id(&id).await {
         Ok(Some(e)) => e,
         Ok(None) => return (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
     // Check permission
@@ -247,7 +247,7 @@ pub async fn set_draft_transition(
             (StatusCode::OK, Json(ApiResponse::ok(response)))
         }
         Ok(None) => (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     }
 }
 
@@ -265,7 +265,7 @@ pub async fn confirm_transition(
     let entity = match service.get_by_id(&id).await {
         Ok(Some(e)) => e,
         Ok(None) => return (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
     // Check permission
@@ -306,7 +306,7 @@ pub async fn confirm_transition(
             (StatusCode::OK, Json(ApiResponse::ok(response)))
         }
         Ok(None) => (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     }
 }
 
@@ -324,7 +324,7 @@ pub async fn set_done_transition(
     let entity = match service.get_by_id(&id).await {
         Ok(Some(e)) => e,
         Ok(None) => return (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
     // Check permission
@@ -365,7 +365,7 @@ pub async fn set_done_transition(
             (StatusCode::OK, Json(ApiResponse::ok(response)))
         }
         Ok(None) => (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     }
 }
 
@@ -383,7 +383,7 @@ pub async fn cancel_transition(
     let entity = match service.get_by_id(&id).await {
         Ok(Some(e)) => e,
         Ok(None) => return (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
     // Check permission
@@ -424,7 +424,7 @@ pub async fn cancel_transition(
             (StatusCode::OK, Json(ApiResponse::ok(response)))
         }
         Ok(None) => (StatusCode::NOT_FOUND, Json(ApiResponse::<RegistrationResponseDto>::not_found("Registration", &id))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<RegistrationResponseDto>::error(e.to_string()))),
+        Err(e) => backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     }
 }
 

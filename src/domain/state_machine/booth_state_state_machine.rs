@@ -66,9 +66,9 @@ impl BoothStateState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BoothStateTransition {
-    /// * -> unavailable
+    /// available, unavailable -> unavailable
     Confirm,
-    /// * -> available
+    /// available, unavailable -> available
     Release,
 }
 
@@ -147,13 +147,12 @@ impl BoothStateStateMachine {
 
     /// Check if a transition is allowed from the current state
     pub fn can_transition(&self, transition: BoothStateTransition) -> bool {
-        if matches!(self.current_state, BoothStateState::Unavailable) {
-            return false;
-        }
-
         match (self.current_state, transition) {
-            (_, BoothStateTransition::Confirm) => true,
-            (_, BoothStateTransition::Release) => true,
+            (BoothStateState::Available, BoothStateTransition::Confirm) => true,
+            (BoothStateState::Unavailable, BoothStateTransition::Confirm) => true,
+            (BoothStateState::Available, BoothStateTransition::Release) => true,
+            (BoothStateState::Unavailable, BoothStateTransition::Release) => true,
+            _ => false,
         }
     }
 
@@ -259,7 +258,7 @@ mod tests {
 
     #[test]
     fn test_valid_transition() {
-        let mut sm = BoothStateStateMachine::new();
+        let mut sm = BoothStateStateMachine::from_state(BoothStateState::Available);
         assert!(sm.can_transition(BoothStateTransition::Confirm));
         let result = sm.transition(BoothStateTransition::Confirm);
         assert!(result.is_ok());

@@ -74,13 +74,13 @@ impl RegistrationStateState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RegistrationStateTransition {
-    /// * -> draft
+    /// draft, open, done, cancel -> draft
     SetDraft,
-    /// * -> open
+    /// draft, open, done, cancel -> open
     Confirm,
-    /// * -> done
+    /// draft, open, done, cancel -> done
     SetDone,
-    /// * -> cancel
+    /// draft, open, done, cancel -> cancel
     Cancel,
 }
 
@@ -169,15 +169,24 @@ impl RegistrationStateStateMachine {
 
     /// Check if a transition is allowed from the current state
     pub fn can_transition(&self, transition: RegistrationStateTransition) -> bool {
-        if matches!(self.current_state, RegistrationStateState::Done) {
-            return false;
-        }
-
         match (self.current_state, transition) {
-            (_, RegistrationStateTransition::SetDraft) => true,
-            (_, RegistrationStateTransition::Confirm) => true,
-            (_, RegistrationStateTransition::SetDone) => true,
-            (_, RegistrationStateTransition::Cancel) => true,
+            (RegistrationStateState::Draft, RegistrationStateTransition::SetDraft) => true,
+            (RegistrationStateState::Open, RegistrationStateTransition::SetDraft) => true,
+            (RegistrationStateState::Done, RegistrationStateTransition::SetDraft) => true,
+            (RegistrationStateState::Cancel, RegistrationStateTransition::SetDraft) => true,
+            (RegistrationStateState::Draft, RegistrationStateTransition::Confirm) => true,
+            (RegistrationStateState::Open, RegistrationStateTransition::Confirm) => true,
+            (RegistrationStateState::Done, RegistrationStateTransition::Confirm) => true,
+            (RegistrationStateState::Cancel, RegistrationStateTransition::Confirm) => true,
+            (RegistrationStateState::Draft, RegistrationStateTransition::SetDone) => true,
+            (RegistrationStateState::Open, RegistrationStateTransition::SetDone) => true,
+            (RegistrationStateState::Done, RegistrationStateTransition::SetDone) => true,
+            (RegistrationStateState::Cancel, RegistrationStateTransition::SetDone) => true,
+            (RegistrationStateState::Draft, RegistrationStateTransition::Cancel) => true,
+            (RegistrationStateState::Open, RegistrationStateTransition::Cancel) => true,
+            (RegistrationStateState::Done, RegistrationStateTransition::Cancel) => true,
+            (RegistrationStateState::Cancel, RegistrationStateTransition::Cancel) => true,
+            _ => false,
         }
     }
 
@@ -283,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_valid_transition() {
-        let mut sm = RegistrationStateStateMachine::new();
+        let mut sm = RegistrationStateStateMachine::from_state(RegistrationStateState::Draft);
         assert!(sm.can_transition(RegistrationStateTransition::SetDraft));
         let result = sm.transition(RegistrationStateTransition::SetDraft);
         assert!(result.is_ok());

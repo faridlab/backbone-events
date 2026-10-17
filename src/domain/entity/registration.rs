@@ -299,6 +299,9 @@ impl super::Entity for Registration {
 }
 
 impl backbone_core::PersistentEntity for Registration {
+    fn state_fields() -> &'static [&'static str] {
+        &["state"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

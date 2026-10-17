@@ -31,12 +31,15 @@ states:
       description: "Held by a confirmed booking (or manually blocked)"
 
   # `transitions` nests UNDER `states:` (the parser scopes it there).
+  # Every edge names all states rather than "*": the generated machine treats a
+  # final state as terminal unless an edge names it as a source, and these
+  # edges must leave the final state too.
   transitions:
     confirm:
-      from: "*"
+      from: [available, unavailable]
       to: unavailable
       message: "The booking-confirm verb (EBT-3) — writes the booking row, the five booth values (state unavailable, sale_order_line_id, partner/contact fill-if-empty) and the audit row in one transaction."
     release:
-      from: "*"
+      from: [available, unavailable]
       to: available
       message: "The release verb — unguarded and silent (a human decision; an order cancel never triggers it). Clears nothing else: is_paid keeps its latch, and sale-linked booths refuse the delete verb (EBS-5c) — release only reopens BOOKING."
