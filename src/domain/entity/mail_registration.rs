@@ -187,6 +187,13 @@ impl super::Entity for MailRegistration {
 }
 
 impl backbone_core::PersistentEntity for MailRegistration {
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("scheduler_id", "event.mails", "id"),
+            backbone_core::Reference::new("registration_id", "event.registrations", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for BoothError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `booth:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn booth_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("booth")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for Booth.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for BoothError {
 /// let router = create_booth_routes(service);
 /// ```
 pub fn create_booth_routes(service: Arc<BoothService>) -> Router {
-    BackboneCrudHandler::<BoothService, Booth, CreateBoothDto, UpdateBoothDto, BoothResponseDto>::routes(
+    BackboneCrudHandler::<BoothService, Booth, CreateBoothDto, UpdateBoothDto, BoothResponseDto>::routes_guarded(
         service,
         "/booths",
+        booth_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for Booth.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_booth_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_booth_read_routes(service: Arc<BoothService>) -> Router {
-    BackboneCrudHandler::<BoothService, Booth, CreateBoothDto, UpdateBoothDto, BoothResponseDto>::read_routes(
+    BackboneCrudHandler::<BoothService, Booth, CreateBoothDto, UpdateBoothDto, BoothResponseDto>::read_routes_guarded(
         service,
         "/booths",
+        booth_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_booth_read_routes(service: Arc<BoothService>) -> Router {
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_booth_write_routes(service: Arc<BoothService>) -> Router {
-    BackboneCrudHandler::<BoothService, Booth, CreateBoothDto, UpdateBoothDto, BoothResponseDto>::write_routes(
+    BackboneCrudHandler::<BoothService, Booth, CreateBoothDto, UpdateBoothDto, BoothResponseDto>::write_routes_guarded(
         service,
         "/booths",
+        booth_permissions(),
     )
 }
 
@@ -198,8 +208,19 @@ pub async fn confirm_transition(
     axum::extract::State(service): axum::extract::State<Arc<BoothService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
     auth: Option<axum::Extension<AuthContext>>,
+    waiver: Option<axum::Extension<backbone_auth::PermissionWaiver>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
+
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return backbone_core::http::unauthenticated_refusal::<BoothResponseDto>();
+    };
+    if waiver.is_none() {
+        if let Err(refused) = auth.require_with("booth:confirm", &["event:confirm"]) {
+            return backbone_core::http::permission_refusal::<BoothResponseDto>(&refused);
+        }
+    }
 
     // Get current entity
     let entity = match service.get_by_id(&id).await {
@@ -208,24 +229,6 @@ pub async fn confirm_transition(
         Err(e) => return backbone_core::http::service_error_response::<BoothResponseDto>(&e),
     };
 
-    // Check permission
-    let Some(axum::Extension(auth)) = auth else {
-        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<BoothResponseDto>::error("A transition needs an authenticated caller")));
-    };
-    {
-        let allowed_roles = BoothStateTransition::Confirm.allowed_roles();
-        let granted = |required: &str| auth.permissions.iter().any(|p| {
-            let (have, want): (Vec<&str>, Vec<&str>) = (p.split(':').collect(), required.split(':').collect());
-            have.iter().enumerate().all(|(i, h)| *h == "*" || want.get(i) == Some(h))
-                && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
-        });
-        let has_specific_perm = granted("booth:transition:confirm");
-        let _ = &allowed_roles;
-        if !has_specific_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("confirm needs booth:transition:confirm")));
-        }
-    }
-
     // Create state machine from entity's actual status and validate transition
     let current_state: BoothStateState = match entity.state.to_string().parse() {
         Ok(s) => s,
@@ -233,7 +236,11 @@ pub async fn confirm_transition(
     };
     let sm = BoothStateStateMachine::from_state(current_state);
     if !sm.can_transition(BoothStateTransition::Confirm) {
-        return (StatusCode::BAD_REQUEST, Json(ApiResponse::<BoothResponseDto>::error("Transition not allowed from current state")));
+        let refusal = backbone_core::service::ServiceError::Violations(vec![backbone_core::Violation::new("state", "transition_not_allowed", "confirm is not allowed from the current state")
+            .with_param("transition", "confirm")
+            .with_param("from", serde_json::to_value(&entity.state).unwrap_or_default())
+            .with_param("to", "unavailable")]);
+        return backbone_core::http::service_error_response::<BoothResponseDto>(&refusal);
     }
 
     // Apply transition via partial update
@@ -257,8 +264,19 @@ pub async fn release_transition(
     axum::extract::State(service): axum::extract::State<Arc<BoothService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
     auth: Option<axum::Extension<AuthContext>>,
+    waiver: Option<axum::Extension<backbone_auth::PermissionWaiver>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
+
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return backbone_core::http::unauthenticated_refusal::<BoothResponseDto>();
+    };
+    if waiver.is_none() {
+        if let Err(refused) = auth.require_with("booth:release", &["event:release"]) {
+            return backbone_core::http::permission_refusal::<BoothResponseDto>(&refused);
+        }
+    }
 
     // Get current entity
     let entity = match service.get_by_id(&id).await {
@@ -267,24 +285,6 @@ pub async fn release_transition(
         Err(e) => return backbone_core::http::service_error_response::<BoothResponseDto>(&e),
     };
 
-    // Check permission
-    let Some(axum::Extension(auth)) = auth else {
-        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<BoothResponseDto>::error("A transition needs an authenticated caller")));
-    };
-    {
-        let allowed_roles = BoothStateTransition::Release.allowed_roles();
-        let granted = |required: &str| auth.permissions.iter().any(|p| {
-            let (have, want): (Vec<&str>, Vec<&str>) = (p.split(':').collect(), required.split(':').collect());
-            have.iter().enumerate().all(|(i, h)| *h == "*" || want.get(i) == Some(h))
-                && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
-        });
-        let has_specific_perm = granted("booth:transition:release");
-        let _ = &allowed_roles;
-        if !has_specific_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<BoothResponseDto>::error("release needs booth:transition:release")));
-        }
-    }
-
     // Create state machine from entity's actual status and validate transition
     let current_state: BoothStateState = match entity.state.to_string().parse() {
         Ok(s) => s,
@@ -292,7 +292,11 @@ pub async fn release_transition(
     };
     let sm = BoothStateStateMachine::from_state(current_state);
     if !sm.can_transition(BoothStateTransition::Release) {
-        return (StatusCode::BAD_REQUEST, Json(ApiResponse::<BoothResponseDto>::error("Transition not allowed from current state")));
+        let refusal = backbone_core::service::ServiceError::Violations(vec![backbone_core::Violation::new("state", "transition_not_allowed", "release is not allowed from the current state")
+            .with_param("transition", "release")
+            .with_param("from", serde_json::to_value(&entity.state).unwrap_or_default())
+            .with_param("to", "available")]);
+        return backbone_core::http::service_error_response::<BoothResponseDto>(&refusal);
     }
 
     // Apply transition via partial update
@@ -317,5 +321,6 @@ pub fn create_booth_transition_routes(service: Arc<BoothService>) -> Router {
         .route("/booths/:id/transitions/confirm", post(confirm_transition))
         .route("/booths/:id/transitions/release", post(release_transition))
         .with_state(service)
+        .layer(axum::middleware::from_fn(backbone_core::http::correlation_middleware))
 }
 

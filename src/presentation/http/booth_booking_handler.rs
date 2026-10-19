@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for BoothBookingError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `booth_booking:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn booth_booking_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("booth_booking")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for BoothBooking.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for BoothBookingError {
 /// let router = create_booth_booking_routes(service);
 /// ```
 pub fn create_booth_booking_routes(service: Arc<BoothBookingService>) -> Router {
-    BackboneCrudHandler::<BoothBookingService, BoothBooking, CreateBoothBookingDto, UpdateBoothBookingDto, BoothBookingResponseDto>::routes(
+    BackboneCrudHandler::<BoothBookingService, BoothBooking, CreateBoothBookingDto, UpdateBoothBookingDto, BoothBookingResponseDto>::routes_guarded(
         service,
         "/booth_bookings",
+        booth_booking_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for BoothBooking.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_booth_booking_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_booth_booking_read_routes(service: Arc<BoothBookingService>) -> Router {
-    BackboneCrudHandler::<BoothBookingService, BoothBooking, CreateBoothBookingDto, UpdateBoothBookingDto, BoothBookingResponseDto>::read_routes(
+    BackboneCrudHandler::<BoothBookingService, BoothBooking, CreateBoothBookingDto, UpdateBoothBookingDto, BoothBookingResponseDto>::read_routes_guarded(
         service,
         "/booth_bookings",
+        booth_booking_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_booth_booking_read_routes(service: Arc<BoothBookingService>) -> Ro
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_booth_booking_write_routes(service: Arc<BoothBookingService>) -> Router {
-    BackboneCrudHandler::<BoothBookingService, BoothBooking, CreateBoothBookingDto, UpdateBoothBookingDto, BoothBookingResponseDto>::write_routes(
+    BackboneCrudHandler::<BoothBookingService, BoothBooking, CreateBoothBookingDto, UpdateBoothBookingDto, BoothBookingResponseDto>::write_routes_guarded(
         service,
         "/booth_bookings",
+        booth_booking_permissions(),
     )
 }
 

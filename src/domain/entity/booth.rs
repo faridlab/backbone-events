@@ -254,6 +254,13 @@ impl backbone_core::PersistentEntity for Booth {
     fn state_fields() -> &'static [&'static str] {
         &["state"]
     }
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("event_id", "event.events", "id"),
+            backbone_core::Reference::new("booth_category_id", "event.booth_categories", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

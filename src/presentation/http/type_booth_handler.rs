@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for TypeBoothError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `type_booth:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn type_booth_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("type_booth")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for TypeBooth.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for TypeBoothError {
 /// let router = create_type_booth_routes(service);
 /// ```
 pub fn create_type_booth_routes(service: Arc<TypeBoothService>) -> Router {
-    BackboneCrudHandler::<TypeBoothService, TypeBooth, CreateTypeBoothDto, UpdateTypeBoothDto, TypeBoothResponseDto>::routes(
+    BackboneCrudHandler::<TypeBoothService, TypeBooth, CreateTypeBoothDto, UpdateTypeBoothDto, TypeBoothResponseDto>::routes_guarded(
         service,
         "/type_booths",
+        type_booth_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for TypeBooth.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_type_booth_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_type_booth_read_routes(service: Arc<TypeBoothService>) -> Router {
-    BackboneCrudHandler::<TypeBoothService, TypeBooth, CreateTypeBoothDto, UpdateTypeBoothDto, TypeBoothResponseDto>::read_routes(
+    BackboneCrudHandler::<TypeBoothService, TypeBooth, CreateTypeBoothDto, UpdateTypeBoothDto, TypeBoothResponseDto>::read_routes_guarded(
         service,
         "/type_booths",
+        type_booth_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_type_booth_read_routes(service: Arc<TypeBoothService>) -> Router {
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_type_booth_write_routes(service: Arc<TypeBoothService>) -> Router {
-    BackboneCrudHandler::<TypeBoothService, TypeBooth, CreateTypeBoothDto, UpdateTypeBoothDto, TypeBoothResponseDto>::write_routes(
+    BackboneCrudHandler::<TypeBoothService, TypeBooth, CreateTypeBoothDto, UpdateTypeBoothDto, TypeBoothResponseDto>::write_routes_guarded(
         service,
         "/type_booths",
+        type_booth_permissions(),
     )
 }
 

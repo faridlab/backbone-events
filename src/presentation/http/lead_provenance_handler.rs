@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for LeadProvenanceError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `lead_provenance:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn lead_provenance_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("lead_provenance")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for LeadProvenance.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for LeadProvenanceError {
 /// let router = create_lead_provenance_routes(service);
 /// ```
 pub fn create_lead_provenance_routes(service: Arc<LeadProvenanceService>) -> Router {
-    BackboneCrudHandler::<LeadProvenanceService, LeadProvenance, CreateLeadProvenanceDto, UpdateLeadProvenanceDto, LeadProvenanceResponseDto>::routes(
+    BackboneCrudHandler::<LeadProvenanceService, LeadProvenance, CreateLeadProvenanceDto, UpdateLeadProvenanceDto, LeadProvenanceResponseDto>::routes_guarded(
         service,
         "/lead_provenances",
+        lead_provenance_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for LeadProvenance.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_lead_provenance_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_lead_provenance_read_routes(service: Arc<LeadProvenanceService>) -> Router {
-    BackboneCrudHandler::<LeadProvenanceService, LeadProvenance, CreateLeadProvenanceDto, UpdateLeadProvenanceDto, LeadProvenanceResponseDto>::read_routes(
+    BackboneCrudHandler::<LeadProvenanceService, LeadProvenance, CreateLeadProvenanceDto, UpdateLeadProvenanceDto, LeadProvenanceResponseDto>::read_routes_guarded(
         service,
         "/lead_provenances",
+        lead_provenance_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_lead_provenance_read_routes(service: Arc<LeadProvenanceService>) -
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_lead_provenance_write_routes(service: Arc<LeadProvenanceService>) -> Router {
-    BackboneCrudHandler::<LeadProvenanceService, LeadProvenance, CreateLeadProvenanceDto, UpdateLeadProvenanceDto, LeadProvenanceResponseDto>::write_routes(
+    BackboneCrudHandler::<LeadProvenanceService, LeadProvenance, CreateLeadProvenanceDto, UpdateLeadProvenanceDto, LeadProvenanceResponseDto>::write_routes_guarded(
         service,
         "/lead_provenances",
+        lead_provenance_permissions(),
     )
 }
 

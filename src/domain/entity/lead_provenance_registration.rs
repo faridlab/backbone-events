@@ -156,6 +156,13 @@ impl super::Entity for LeadProvenanceRegistration {
 }
 
 impl backbone_core::PersistentEntity for LeadProvenanceRegistration {
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("provenance_id", "event.lead_provenances", "id"),
+            backbone_core::Reference::new("registration_id", "event.registrations", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

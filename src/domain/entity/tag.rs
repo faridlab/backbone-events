@@ -177,6 +177,12 @@ impl super::Entity for Tag {
 }
 
 impl backbone_core::PersistentEntity for Tag {
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("category_id", "event.tag_categories", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

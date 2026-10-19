@@ -187,6 +187,13 @@ impl super::Entity for MailSlot {
 }
 
 impl backbone_core::PersistentEntity for MailSlot {
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("scheduler_id", "event.mails", "id"),
+            backbone_core::Reference::new("slot_id", "event.slots", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

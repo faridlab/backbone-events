@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for QuestionError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `question:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn question_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("question")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for Question.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for QuestionError {
 /// let router = create_question_routes(service);
 /// ```
 pub fn create_question_routes(service: Arc<QuestionService>) -> Router {
-    BackboneCrudHandler::<QuestionService, Question, CreateQuestionDto, UpdateQuestionDto, QuestionResponseDto>::routes(
+    BackboneCrudHandler::<QuestionService, Question, CreateQuestionDto, UpdateQuestionDto, QuestionResponseDto>::routes_guarded(
         service,
         "/questions",
+        question_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for Question.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_question_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_question_read_routes(service: Arc<QuestionService>) -> Router {
-    BackboneCrudHandler::<QuestionService, Question, CreateQuestionDto, UpdateQuestionDto, QuestionResponseDto>::read_routes(
+    BackboneCrudHandler::<QuestionService, Question, CreateQuestionDto, UpdateQuestionDto, QuestionResponseDto>::read_routes_guarded(
         service,
         "/questions",
+        question_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_question_read_routes(service: Arc<QuestionService>) -> Router {
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_question_write_routes(service: Arc<QuestionService>) -> Router {
-    BackboneCrudHandler::<QuestionService, Question, CreateQuestionDto, UpdateQuestionDto, QuestionResponseDto>::write_routes(
+    BackboneCrudHandler::<QuestionService, Question, CreateQuestionDto, UpdateQuestionDto, QuestionResponseDto>::write_routes_guarded(
         service,
         "/questions",
+        question_permissions(),
     )
 }
 

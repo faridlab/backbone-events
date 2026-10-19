@@ -161,6 +161,13 @@ impl super::Entity for TypeBooth {
 }
 
 impl backbone_core::PersistentEntity for TypeBooth {
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("event_type_id", "event.types", "id"),
+            backbone_core::Reference::new("booth_category_id", "event.booth_categories", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

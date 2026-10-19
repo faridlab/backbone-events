@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for RegistrationAnswerError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `registration_answer:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn registration_answer_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("registration_answer")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for RegistrationAnswer.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for RegistrationAnswerError {
 /// let router = create_registration_answer_routes(service);
 /// ```
 pub fn create_registration_answer_routes(service: Arc<RegistrationAnswerService>) -> Router {
-    BackboneCrudHandler::<RegistrationAnswerService, RegistrationAnswer, CreateRegistrationAnswerDto, UpdateRegistrationAnswerDto, RegistrationAnswerResponseDto>::routes(
+    BackboneCrudHandler::<RegistrationAnswerService, RegistrationAnswer, CreateRegistrationAnswerDto, UpdateRegistrationAnswerDto, RegistrationAnswerResponseDto>::routes_guarded(
         service,
         "/registration_answers",
+        registration_answer_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for RegistrationAnswer.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_registration_answer_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_registration_answer_read_routes(service: Arc<RegistrationAnswerService>) -> Router {
-    BackboneCrudHandler::<RegistrationAnswerService, RegistrationAnswer, CreateRegistrationAnswerDto, UpdateRegistrationAnswerDto, RegistrationAnswerResponseDto>::read_routes(
+    BackboneCrudHandler::<RegistrationAnswerService, RegistrationAnswer, CreateRegistrationAnswerDto, UpdateRegistrationAnswerDto, RegistrationAnswerResponseDto>::read_routes_guarded(
         service,
         "/registration_answers",
+        registration_answer_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_registration_answer_read_routes(service: Arc<RegistrationAnswerSer
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_registration_answer_write_routes(service: Arc<RegistrationAnswerService>) -> Router {
-    BackboneCrudHandler::<RegistrationAnswerService, RegistrationAnswer, CreateRegistrationAnswerDto, UpdateRegistrationAnswerDto, RegistrationAnswerResponseDto>::write_routes(
+    BackboneCrudHandler::<RegistrationAnswerService, RegistrationAnswer, CreateRegistrationAnswerDto, UpdateRegistrationAnswerDto, RegistrationAnswerResponseDto>::write_routes_guarded(
         service,
         "/registration_answers",
+        registration_answer_permissions(),
     )
 }
 

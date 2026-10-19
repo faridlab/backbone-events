@@ -80,6 +80,13 @@ impl axum::response::IntoResponse for LeadProvenanceRegistrationError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `lead_provenance_registration:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn lead_provenance_registration_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("lead_provenance_registration")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for LeadProvenanceRegistration.
 ///
 /// # Routes
@@ -109,21 +116,23 @@ impl axum::response::IntoResponse for LeadProvenanceRegistrationError {
 /// let router = create_lead_provenance_registration_routes(service);
 /// ```
 pub fn create_lead_provenance_registration_routes(service: Arc<LeadProvenanceRegistrationService>) -> Router {
-    BackboneCrudHandler::<LeadProvenanceRegistrationService, LeadProvenanceRegistration, CreateLeadProvenanceRegistrationDto, UpdateLeadProvenanceRegistrationDto, LeadProvenanceRegistrationResponseDto>::routes(
+    BackboneCrudHandler::<LeadProvenanceRegistrationService, LeadProvenanceRegistration, CreateLeadProvenanceRegistrationDto, UpdateLeadProvenanceRegistrationDto, LeadProvenanceRegistrationResponseDto>::routes_guarded(
         service,
         "/lead_provenance_registrations",
+        lead_provenance_registration_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for LeadProvenanceRegistration.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_lead_provenance_registration_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_lead_provenance_registration_read_routes(service: Arc<LeadProvenanceRegistrationService>) -> Router {
-    BackboneCrudHandler::<LeadProvenanceRegistrationService, LeadProvenanceRegistration, CreateLeadProvenanceRegistrationDto, UpdateLeadProvenanceRegistrationDto, LeadProvenanceRegistrationResponseDto>::read_routes(
+    BackboneCrudHandler::<LeadProvenanceRegistrationService, LeadProvenanceRegistration, CreateLeadProvenanceRegistrationDto, UpdateLeadProvenanceRegistrationDto, LeadProvenanceRegistrationResponseDto>::read_routes_guarded(
         service,
         "/lead_provenance_registrations",
+        lead_provenance_registration_permissions(),
     )
 }
 
@@ -139,9 +148,10 @@ pub fn create_lead_provenance_registration_read_routes(service: Arc<LeadProvenan
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_lead_provenance_registration_write_routes(service: Arc<LeadProvenanceRegistrationService>) -> Router {
-    BackboneCrudHandler::<LeadProvenanceRegistrationService, LeadProvenanceRegistration, CreateLeadProvenanceRegistrationDto, UpdateLeadProvenanceRegistrationDto, LeadProvenanceRegistrationResponseDto>::write_routes(
+    BackboneCrudHandler::<LeadProvenanceRegistrationService, LeadProvenanceRegistration, CreateLeadProvenanceRegistrationDto, UpdateLeadProvenanceRegistrationDto, LeadProvenanceRegistrationResponseDto>::write_routes_guarded(
         service,
         "/lead_provenance_registrations",
+        lead_provenance_registration_permissions(),
     )
 }
 

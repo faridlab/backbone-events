@@ -81,6 +81,13 @@ impl axum::response::IntoResponse for RegistrationError {
 // Route Configuration
 // =============================================================================
 
+/// The permissions this entity's generic routes require: `registration:<action>` for `read`, `create`,
+/// `update`, `delete`, `restore` and `purge`, with any rename the schema's `requires:` declares.
+pub fn registration_permissions() -> backbone_core::http::CrudPermissions {
+    backbone_core::http::CrudPermissions::new("registration")
+        .in_module("event")
+}
+
 /// Create Axum router with all 16 Backbone endpoints for Registration.
 ///
 /// # Routes
@@ -110,21 +117,23 @@ impl axum::response::IntoResponse for RegistrationError {
 /// let router = create_registration_routes(service);
 /// ```
 pub fn create_registration_routes(service: Arc<RegistrationService>) -> Router {
-    BackboneCrudHandler::<RegistrationService, Registration, CreateRegistrationDto, UpdateRegistrationDto, RegistrationResponseDto>::routes(
+    BackboneCrudHandler::<RegistrationService, Registration, CreateRegistrationDto, UpdateRegistrationDto, RegistrationResponseDto>::routes_guarded(
         service,
         "/registrations",
+        registration_permissions(),
     )
 }
 
 /// Create Axum router with only the read (GET) endpoints for Registration.
 ///
-/// Safe for public, unauthenticated exposure (e.g., reference data).
+/// Each route requires the entity's `read` permission, so it needs an authenticated caller.
 /// Mutations must be served separately via `create_registration_write_routes`,
 /// typically wrapped in an auth middleware layer.
 pub fn create_registration_read_routes(service: Arc<RegistrationService>) -> Router {
-    BackboneCrudHandler::<RegistrationService, Registration, CreateRegistrationDto, UpdateRegistrationDto, RegistrationResponseDto>::read_routes(
+    BackboneCrudHandler::<RegistrationService, Registration, CreateRegistrationDto, UpdateRegistrationDto, RegistrationResponseDto>::read_routes_guarded(
         service,
         "/registrations",
+        registration_permissions(),
     )
 }
 
@@ -140,9 +149,10 @@ pub fn create_registration_read_routes(service: Arc<RegistrationService>) -> Rou
 /// service (e.g. a command router over its domain engine), serve THAT instead
 /// for any mutation that must respect domain rules.
 pub fn create_registration_write_routes(service: Arc<RegistrationService>) -> Router {
-    BackboneCrudHandler::<RegistrationService, Registration, CreateRegistrationDto, UpdateRegistrationDto, RegistrationResponseDto>::write_routes(
+    BackboneCrudHandler::<RegistrationService, Registration, CreateRegistrationDto, UpdateRegistrationDto, RegistrationResponseDto>::write_routes_guarded(
         service,
         "/registrations",
+        registration_permissions(),
     )
 }
 
@@ -199,8 +209,19 @@ pub async fn set_draft_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
     auth: Option<axum::Extension<AuthContext>>,
+    waiver: Option<axum::Extension<backbone_auth::PermissionWaiver>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
+
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return backbone_core::http::unauthenticated_refusal::<RegistrationResponseDto>();
+    };
+    if waiver.is_none() {
+        if let Err(refused) = auth.require_with("registration:set_draft", &["event:set_draft"]) {
+            return backbone_core::http::permission_refusal::<RegistrationResponseDto>(&refused);
+        }
+    }
 
     // Get current entity
     let entity = match service.get_by_id(&id).await {
@@ -209,24 +230,6 @@ pub async fn set_draft_transition(
         Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
-    // Check permission
-    let Some(axum::Extension(auth)) = auth else {
-        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
-    };
-    {
-        let allowed_roles = RegistrationStateTransition::SetDraft.allowed_roles();
-        let granted = |required: &str| auth.permissions.iter().any(|p| {
-            let (have, want): (Vec<&str>, Vec<&str>) = (p.split(':').collect(), required.split(':').collect());
-            have.iter().enumerate().all(|(i, h)| *h == "*" || want.get(i) == Some(h))
-                && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
-        });
-        let has_specific_perm = granted("registration:transition:set_draft");
-        let _ = &allowed_roles;
-        if !has_specific_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("set_draft needs registration:transition:set_draft")));
-        }
-    }
-
     // Create state machine from entity's actual status and validate transition
     let current_state: RegistrationStateState = match entity.state.to_string().parse() {
         Ok(s) => s,
@@ -234,7 +237,11 @@ pub async fn set_draft_transition(
     };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::SetDraft) {
-        return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
+        let refusal = backbone_core::service::ServiceError::Violations(vec![backbone_core::Violation::new("state", "transition_not_allowed", "set_draft is not allowed from the current state")
+            .with_param("transition", "set_draft")
+            .with_param("from", serde_json::to_value(&entity.state).unwrap_or_default())
+            .with_param("to", "draft")]);
+        return backbone_core::http::service_error_response::<RegistrationResponseDto>(&refusal);
     }
 
     // Apply transition via partial update
@@ -258,8 +265,19 @@ pub async fn confirm_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
     auth: Option<axum::Extension<AuthContext>>,
+    waiver: Option<axum::Extension<backbone_auth::PermissionWaiver>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
+
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return backbone_core::http::unauthenticated_refusal::<RegistrationResponseDto>();
+    };
+    if waiver.is_none() {
+        if let Err(refused) = auth.require_with("registration:confirm", &["event:confirm"]) {
+            return backbone_core::http::permission_refusal::<RegistrationResponseDto>(&refused);
+        }
+    }
 
     // Get current entity
     let entity = match service.get_by_id(&id).await {
@@ -268,24 +286,6 @@ pub async fn confirm_transition(
         Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
-    // Check permission
-    let Some(axum::Extension(auth)) = auth else {
-        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
-    };
-    {
-        let allowed_roles = RegistrationStateTransition::Confirm.allowed_roles();
-        let granted = |required: &str| auth.permissions.iter().any(|p| {
-            let (have, want): (Vec<&str>, Vec<&str>) = (p.split(':').collect(), required.split(':').collect());
-            have.iter().enumerate().all(|(i, h)| *h == "*" || want.get(i) == Some(h))
-                && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
-        });
-        let has_specific_perm = granted("registration:transition:confirm");
-        let _ = &allowed_roles;
-        if !has_specific_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("confirm needs registration:transition:confirm")));
-        }
-    }
-
     // Create state machine from entity's actual status and validate transition
     let current_state: RegistrationStateState = match entity.state.to_string().parse() {
         Ok(s) => s,
@@ -293,7 +293,11 @@ pub async fn confirm_transition(
     };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::Confirm) {
-        return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
+        let refusal = backbone_core::service::ServiceError::Violations(vec![backbone_core::Violation::new("state", "transition_not_allowed", "confirm is not allowed from the current state")
+            .with_param("transition", "confirm")
+            .with_param("from", serde_json::to_value(&entity.state).unwrap_or_default())
+            .with_param("to", "open")]);
+        return backbone_core::http::service_error_response::<RegistrationResponseDto>(&refusal);
     }
 
     // Apply transition via partial update
@@ -317,8 +321,19 @@ pub async fn set_done_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
     auth: Option<axum::Extension<AuthContext>>,
+    waiver: Option<axum::Extension<backbone_auth::PermissionWaiver>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
+
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return backbone_core::http::unauthenticated_refusal::<RegistrationResponseDto>();
+    };
+    if waiver.is_none() {
+        if let Err(refused) = auth.require_with("registration:set_done", &["event:set_done"]) {
+            return backbone_core::http::permission_refusal::<RegistrationResponseDto>(&refused);
+        }
+    }
 
     // Get current entity
     let entity = match service.get_by_id(&id).await {
@@ -327,24 +342,6 @@ pub async fn set_done_transition(
         Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
-    // Check permission
-    let Some(axum::Extension(auth)) = auth else {
-        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
-    };
-    {
-        let allowed_roles = RegistrationStateTransition::SetDone.allowed_roles();
-        let granted = |required: &str| auth.permissions.iter().any(|p| {
-            let (have, want): (Vec<&str>, Vec<&str>) = (p.split(':').collect(), required.split(':').collect());
-            have.iter().enumerate().all(|(i, h)| *h == "*" || want.get(i) == Some(h))
-                && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
-        });
-        let has_specific_perm = granted("registration:transition:set_done");
-        let _ = &allowed_roles;
-        if !has_specific_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("set_done needs registration:transition:set_done")));
-        }
-    }
-
     // Create state machine from entity's actual status and validate transition
     let current_state: RegistrationStateState = match entity.state.to_string().parse() {
         Ok(s) => s,
@@ -352,7 +349,11 @@ pub async fn set_done_transition(
     };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::SetDone) {
-        return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
+        let refusal = backbone_core::service::ServiceError::Violations(vec![backbone_core::Violation::new("state", "transition_not_allowed", "set_done is not allowed from the current state")
+            .with_param("transition", "set_done")
+            .with_param("from", serde_json::to_value(&entity.state).unwrap_or_default())
+            .with_param("to", "done")]);
+        return backbone_core::http::service_error_response::<RegistrationResponseDto>(&refusal);
     }
 
     // Apply transition via partial update
@@ -376,8 +377,19 @@ pub async fn cancel_transition(
     axum::extract::State(service): axum::extract::State<Arc<RegistrationService>>,
     axum::extract::Path(id): axum::extract::Path<String>,
     auth: Option<axum::Extension<AuthContext>>,
+    waiver: Option<axum::Extension<backbone_auth::PermissionWaiver>>,
 ) -> impl axum::response::IntoResponse {
     use axum::{http::StatusCode, Json};
+
+    // Check permission
+    let Some(axum::Extension(auth)) = auth else {
+        return backbone_core::http::unauthenticated_refusal::<RegistrationResponseDto>();
+    };
+    if waiver.is_none() {
+        if let Err(refused) = auth.require_with("registration:cancel", &["event:cancel"]) {
+            return backbone_core::http::permission_refusal::<RegistrationResponseDto>(&refused);
+        }
+    }
 
     // Get current entity
     let entity = match service.get_by_id(&id).await {
@@ -386,24 +398,6 @@ pub async fn cancel_transition(
         Err(e) => return backbone_core::http::service_error_response::<RegistrationResponseDto>(&e),
     };
 
-    // Check permission
-    let Some(axum::Extension(auth)) = auth else {
-        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<RegistrationResponseDto>::error("A transition needs an authenticated caller")));
-    };
-    {
-        let allowed_roles = RegistrationStateTransition::Cancel.allowed_roles();
-        let granted = |required: &str| auth.permissions.iter().any(|p| {
-            let (have, want): (Vec<&str>, Vec<&str>) = (p.split(':').collect(), required.split(':').collect());
-            have.iter().enumerate().all(|(i, h)| *h == "*" || want.get(i) == Some(h))
-                && (have.len() == want.len() || (have.len() < want.len() && have.last() == Some(&"*")))
-        });
-        let has_specific_perm = granted("registration:transition:cancel");
-        let _ = &allowed_roles;
-        if !has_specific_perm {
-            return (StatusCode::FORBIDDEN, Json(ApiResponse::<RegistrationResponseDto>::error("cancel needs registration:transition:cancel")));
-        }
-    }
-
     // Create state machine from entity's actual status and validate transition
     let current_state: RegistrationStateState = match entity.state.to_string().parse() {
         Ok(s) => s,
@@ -411,7 +405,11 @@ pub async fn cancel_transition(
     };
     let sm = RegistrationStateStateMachine::from_state(current_state);
     if !sm.can_transition(RegistrationStateTransition::Cancel) {
-        return (StatusCode::BAD_REQUEST, Json(ApiResponse::<RegistrationResponseDto>::error("Transition not allowed from current state")));
+        let refusal = backbone_core::service::ServiceError::Violations(vec![backbone_core::Violation::new("state", "transition_not_allowed", "cancel is not allowed from the current state")
+            .with_param("transition", "cancel")
+            .with_param("from", serde_json::to_value(&entity.state).unwrap_or_default())
+            .with_param("to", "cancel")]);
+        return backbone_core::http::service_error_response::<RegistrationResponseDto>(&refusal);
     }
 
     // Apply transition via partial update
@@ -438,5 +436,6 @@ pub fn create_registration_transition_routes(service: Arc<RegistrationService>) 
         .route("/registrations/:id/transitions/set_done", post(set_done_transition))
         .route("/registrations/:id/transitions/cancel", post(cancel_transition))
         .with_state(service)
+        .layer(axum::middleware::from_fn(backbone_core::http::correlation_middleware))
 }
 

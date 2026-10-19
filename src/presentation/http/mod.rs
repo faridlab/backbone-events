@@ -33,31 +33,31 @@ pub mod type_mail_handler;
 
 
 // Re-exports
-pub use booth_category_handler::{create_booth_category_routes, create_booth_category_read_routes, create_booth_category_write_routes};
-pub use booth_handler::{create_booth_routes, create_booth_read_routes, create_booth_write_routes};
-pub use type_booth_handler::{create_type_booth_routes, create_type_booth_read_routes, create_type_booth_write_routes};
-pub use booth_booking_handler::{create_booth_booking_routes, create_booth_booking_read_routes, create_booth_booking_write_routes};
-pub use event_handler::{create_event_routes, create_event_read_routes, create_event_write_routes};
-pub use event_type_handler::{create_event_type_routes, create_event_type_read_routes, create_event_type_write_routes};
-pub use lead_provenance_handler::{create_lead_provenance_routes, create_lead_provenance_read_routes, create_lead_provenance_write_routes};
-pub use lead_provenance_registration_handler::{create_lead_provenance_registration_routes, create_lead_provenance_registration_read_routes, create_lead_provenance_registration_write_routes};
-pub use lead_request_handler::{create_lead_request_routes, create_lead_request_read_routes, create_lead_request_write_routes};
-pub use lead_rule_handler::{create_lead_rule_routes, create_lead_rule_read_routes, create_lead_rule_write_routes};
-pub use lead_rule_predicate_handler::{create_lead_rule_predicate_routes, create_lead_rule_predicate_read_routes, create_lead_rule_predicate_write_routes};
-pub use mail_handler::{create_mail_routes, create_mail_read_routes, create_mail_write_routes};
-pub use mail_registration_handler::{create_mail_registration_routes, create_mail_registration_read_routes, create_mail_registration_write_routes};
-pub use mail_slot_handler::{create_mail_slot_routes, create_mail_slot_read_routes, create_mail_slot_write_routes};
-pub use question_handler::{create_question_routes, create_question_read_routes, create_question_write_routes};
-pub use question_answer_handler::{create_question_answer_routes, create_question_answer_read_routes, create_question_answer_write_routes};
-pub use registration_question_handler::{create_registration_question_routes, create_registration_question_read_routes, create_registration_question_write_routes};
-pub use registration_handler::{create_registration_routes, create_registration_read_routes, create_registration_write_routes};
-pub use registration_answer_handler::{create_registration_answer_routes, create_registration_answer_read_routes, create_registration_answer_write_routes};
-pub use slot_handler::{create_slot_routes, create_slot_read_routes, create_slot_write_routes};
-pub use stage_handler::{create_stage_routes, create_stage_read_routes, create_stage_write_routes};
-pub use tag_category_handler::{create_tag_category_routes, create_tag_category_read_routes, create_tag_category_write_routes};
-pub use tag_handler::{create_tag_routes, create_tag_read_routes, create_tag_write_routes};
-pub use ticket_handler::{create_ticket_routes, create_ticket_read_routes, create_ticket_write_routes};
-pub use type_mail_handler::{create_type_mail_routes, create_type_mail_read_routes, create_type_mail_write_routes};
+pub use booth_category_handler::{create_booth_category_routes, create_booth_category_read_routes, create_booth_category_write_routes, booth_category_permissions};
+pub use booth_handler::{create_booth_routes, create_booth_read_routes, create_booth_write_routes, booth_permissions};
+pub use type_booth_handler::{create_type_booth_routes, create_type_booth_read_routes, create_type_booth_write_routes, type_booth_permissions};
+pub use booth_booking_handler::{create_booth_booking_routes, create_booth_booking_read_routes, create_booth_booking_write_routes, booth_booking_permissions};
+pub use event_handler::{create_event_routes, create_event_read_routes, create_event_write_routes, event_permissions};
+pub use event_type_handler::{create_event_type_routes, create_event_type_read_routes, create_event_type_write_routes, event_type_permissions};
+pub use lead_provenance_handler::{create_lead_provenance_routes, create_lead_provenance_read_routes, create_lead_provenance_write_routes, lead_provenance_permissions};
+pub use lead_provenance_registration_handler::{create_lead_provenance_registration_routes, create_lead_provenance_registration_read_routes, create_lead_provenance_registration_write_routes, lead_provenance_registration_permissions};
+pub use lead_request_handler::{create_lead_request_routes, create_lead_request_read_routes, create_lead_request_write_routes, lead_request_permissions};
+pub use lead_rule_handler::{create_lead_rule_routes, create_lead_rule_read_routes, create_lead_rule_write_routes, lead_rule_permissions};
+pub use lead_rule_predicate_handler::{create_lead_rule_predicate_routes, create_lead_rule_predicate_read_routes, create_lead_rule_predicate_write_routes, lead_rule_predicate_permissions};
+pub use mail_handler::{create_mail_routes, create_mail_read_routes, create_mail_write_routes, mail_permissions};
+pub use mail_registration_handler::{create_mail_registration_routes, create_mail_registration_read_routes, create_mail_registration_write_routes, mail_registration_permissions};
+pub use mail_slot_handler::{create_mail_slot_routes, create_mail_slot_read_routes, create_mail_slot_write_routes, mail_slot_permissions};
+pub use question_handler::{create_question_routes, create_question_read_routes, create_question_write_routes, question_permissions};
+pub use question_answer_handler::{create_question_answer_routes, create_question_answer_read_routes, create_question_answer_write_routes, question_answer_permissions};
+pub use registration_question_handler::{create_registration_question_routes, create_registration_question_read_routes, create_registration_question_write_routes, registration_question_permissions};
+pub use registration_handler::{create_registration_routes, create_registration_read_routes, create_registration_write_routes, registration_permissions};
+pub use registration_answer_handler::{create_registration_answer_routes, create_registration_answer_read_routes, create_registration_answer_write_routes, registration_answer_permissions};
+pub use slot_handler::{create_slot_routes, create_slot_read_routes, create_slot_write_routes, slot_permissions};
+pub use stage_handler::{create_stage_routes, create_stage_read_routes, create_stage_write_routes, stage_permissions};
+pub use tag_category_handler::{create_tag_category_routes, create_tag_category_read_routes, create_tag_category_write_routes, tag_category_permissions};
+pub use tag_handler::{create_tag_routes, create_tag_read_routes, create_tag_write_routes, tag_permissions};
+pub use ticket_handler::{create_ticket_routes, create_ticket_read_routes, create_ticket_write_routes, ticket_permissions};
+pub use type_mail_handler::{create_type_mail_routes, create_type_mail_read_routes, create_type_mail_write_routes, type_mail_permissions};
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

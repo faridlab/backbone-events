@@ -302,6 +302,14 @@ impl backbone_core::PersistentEntity for Registration {
     fn state_fields() -> &'static [&'static str] {
         &["state"]
     }
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("event_id", "event.events", "id"),
+            backbone_core::Reference::new("event_slot_id", "event.slots", "id"),
+            backbone_core::Reference::new("event_ticket_id", "event.tickets", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

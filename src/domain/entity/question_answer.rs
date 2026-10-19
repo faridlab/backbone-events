@@ -161,6 +161,12 @@ impl super::Entity for QuestionAnswer {
 }
 
 impl backbone_core::PersistentEntity for QuestionAnswer {
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("question_id", "event.questions", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }
