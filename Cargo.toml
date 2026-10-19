@@ -1,6 +1,6 @@
 [package]
 name = "backbone-events"
-version = "0.12.1"
+version = "0.12.2"
 edition = "2021"
 description = "Events core + the sale/booth/crm/sms/desk overlay — registrations under one authoritative seat counter, the sale seam (order-minted registrations, forward-only paid heal, SO-cancel mirror cascade), booth bookings with the DB exclusivity wall, closed-vocabulary lead rules through a host sink port, the dual-channel (mail/sms) self-arming scheduler, and the exact-match desk verb (Odoo event port, core + overlay)"
 license = "MIT OR Apache-2.0"
@@ -22,8 +22,8 @@ utoipa = { version = "5", optional = true, features = ["chrono", "uuid", "decima
 # resolved graph resolves to this one tag — no branch floats, no [patch]).
 # -----------------------------------------------------------------------------
 backbone-auditlog = { version = "0.7.0" }
-backbone-core = { version = "3.11.0", features = ["postgres"] }
-backbone-orm = { version = "3.0.0" }
+backbone-core = { version = "3.18.0", features = ["postgres"] }
+backbone-orm = { version = "3.18.0" }
 backbone-auth = { version = "3.0.0" }
 backbone-rate-limit = { version = "3.0.0" }
 # NOTE (recorded deviation from docs/spec.md §10.4, forced by the pinned
